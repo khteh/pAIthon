@@ -50,7 +50,7 @@ def train_and_test():
     prices_train = x_train[:, -1] # for last column which contains the price
     x_train = x_train[:, :-1] # for all but last column
     #print(f"x: {x}, prices: {prices}")
-    c = np.linalg.lstsq(x_train, prices_train)[0]
+    c = np.linalg.lstsq(x_train, prices_train, rcond=None)[0]
      
     # fit a linear regression model to the data and get the coefficients
 
