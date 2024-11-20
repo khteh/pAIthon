@@ -4,3 +4,50 @@ Likelihood Ratio: P(A|B) / P(A|C) : (80/100) / (10/100) = (80/100) * (100/10) = 
 Posterior Odds: 40:95
 
 P(A∣B)=P(B∣A)P(A) / P(B)
+
+Supervised Learning > Classification:
+Perceptron Learning Rule: Given data point (x,y), update each weight according to: w =  w + alpha*(y - h(X)) * x
+Start with random weights, learn from data and update the weights that result in better weight vector which reduces loss.
+
+Support Vector Machines:
+  Maximum Margin Separator: Boundary that maximizes the distance between any of the data points
+If the data is not linearly separable, it works from higher dimension to find the separation boundary. For example, other shapes than linear lines.
+
+Supervised Learning > Regression:
+Learning a function mapping an input point to a continuous value.
+
+Types of loss functions:
+0-1 Loss: Used in discrete classification
+L1 Loss: |actual - prediction| -> Used in continuous number prediction. Used when we don't care about outliers.
+L2 Loss: (actual - prediction)^2 -> Penalizes worse / bigger loss more harshly. Used when we care about outliers.
+
+Overfitting:
+A model that fits too closely to a particular data set and therefore may fail to generalize to future data.
+This is a side effect of minimizing loss of a model. If loss = 0, the model may only work on the specific data set.
+One way to counter this problem is add other parameters to optimization. For example, consider complexity:
+
+Cost(h) = Loss(h) + w*Complexity(h) : 'w' gives weight to the complexity
+
+Adding the term w*Complexity(h) is called "Regularization": Penalizing hypotheses that are more complex to favour simpler, more general hypotheses
+
+Hold-out cross validation splits data into training and testing data sets. How to split?
+k-fold corss-validation: Splitting data into k sets, and experimenting k times, using each set as a test set once, and using remaining data as training set.
+
+Reinforcement Learning:
+Given a set of rewards or penalties, learn what actions to take in the future.
+Markov Decision Process:
+Model for decision-making, representing states, actions, and their rewards.
+Q-Learning:
+Method for learning a function Q(s,a), estimate of the value (reward) of performing action 'a' in state 's'. Start with Q(s,a) = 0 for all s,a.
+Q(s,a) <- Q(s,a) + w*(new estimate - old estimate): w:0 old values are more important; w:1 new values are more important.
+Q(s,a) <- Q(s,a) + w*((r + future reward estimate) - Q(s,a)) 
+Q(s,a) <- Q(s,a) + w*((r + w1*max(Q(s',a') for all a')) - Q(s,a)): w1 provides weights for future vs current reward
+
+Balance between Exploration and Exploitation.
+
+Function Approximation:
+Approximating Q(s,a), often by a function combining various features, rathen than storing one value for every state-action pair.
+Similar to depth-limiting approach in MiniMax. Used when it is not feasible to explore all the posible values of Q(s,a) in a bigger state space.
+
+Unsupervised Learning: Given input data without any additional feedback, learn patterns.
+k-means clustering: Algorithm for clustering data based on repeatedly assigning points to clusters and updating those clusters' centers.

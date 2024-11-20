@@ -56,8 +56,9 @@ def train_and_test():
 
     # read in the test data and separate x_test from it
     x_test = np.genfromtxt(test_file, skip_header=1)
-    prices_test = x_test[:, -1] # for last column which contains the price
-    x_test = x_test[:, :-1] # for all but last column
+    # Slicing 2-D arrays:
+    prices_test = x_test[:, -1] # For all the subarrays, get the last column which contains the price
+    x_test = x_test[:, :-1] # For all the subarrays, get all the elements except the last column
 
     # print out the linear regression coefficients
     print(c)
