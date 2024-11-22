@@ -1,7 +1,8 @@
 """
 Tic Tac Toe Player
+$ python runner.py
+$ check50 --local ai50/projects/2024/x/tictactoe
 """
-
 import math
 from math import inf
 from copy import copy, deepcopy
@@ -125,7 +126,6 @@ def utility(board):
     return 0
 
 def MinValue(board):
-    N = len(board)
     if terminal(board):
         return (utility(board), None)
     value = inf
@@ -138,7 +138,6 @@ def MinValue(board):
     return r
 
 def MaxValue(board):
-    N = len(board)
     if terminal(board):
         return (utility(board), None)
     value = -inf
