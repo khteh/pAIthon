@@ -66,6 +66,30 @@ def testZip():
     d = sum([abs(i- j) for i, j in zip(a, b)])
     print(f"Manhattan distance: {d}")
 
+def primary_diagonal(matrix):
+    sum = 0
+    for i in range(len(matrix)):
+        sum += matrix[i][i]
+    return sum
+
+def secondary_left_diagonal(matrix):
+    sum = 0
+    for i in range(len(matrix)):
+        sum += matrix[i][len(matrix) - i - 1]
+    return sum
+
+def matrix_sums():
+    matrix = [
+        [1,2,3,4],
+        [1,2,3,4],
+        [1,2,3,4],
+        [1,2,3,4]
+    ]
+    row_totals = [ sum(x) for x in matrix ]
+    col_totals = [ sum(x) for x in zip(*matrix) ]
+    diag1 = primary_diagonal(matrix)
+    diag2 = secondary_left_diagonal(matrix)
+    print(f"rows: {row_totals}, cols: {col_totals}, diag1: {diag1}, diag2: {diag2}")
 
 def main():
     permutations([0], list(range(1, len(portnames)))) # This will start the recursion with 0 ("PAN") as the first stop
@@ -73,5 +97,6 @@ def main():
     polynomial()
     kmin(3)
     testZip()
+    matrix_sums()
 
 main()
