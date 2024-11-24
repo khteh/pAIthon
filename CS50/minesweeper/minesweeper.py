@@ -1,7 +1,10 @@
 import itertools
 import random
 
-
+"""
+$ python runner.py
+$ check50 --local ai50/projects/2024/x/minesweeper
+"""
 class Minesweeper():
     """
     Minesweeper game representation
