@@ -1,9 +1,78 @@
+Conditional Probability:
+P(a|b) = P(a ^ b) / P(b)
+P(a ^ b) = P(a|b)P(b)
+P(a ^ b) = P(b|a)P(a)
+
+P(a|b)P(b) = P(b|a)P(a)
+P(a|b) = P(b|a)P(a) / P(b) <= Bayes' Rule
+P(b|a) = P(a|b)P(b) / P(a) <= Bayes' Rule
+
+Bayes' Rule: 
+Knowing - P(visible effect|unknown cause)
+We can conclude - P(unknown cause | visible effect)
+
+Example:
+Knowing - P(medical test result | disease)
+We can conclude - P(disease | medical test result)
+
+If Probability of 'a' and 'b' are independent,
+P(a ^ b) = P(b)P(a)
+
+P(a∣b) = P(b∣a)P(A) / P(B)
+
 Bayes rule/formula:
 Prior Odds: 5:95
 Likelihood Ratio: P(A|B) / P(A|C) : (80/100) / (10/100) = (80/100) * (100/10) = 80/10 = 8
 Posterior Odds: 40:95
 
-P(A∣B)=P(B∣A)P(A) / P(B)
+Joint Probability:
+P(A|b) = P(A, b) / P(b) : Comma signifies ^
+       = alpha * P(A, b), where alpha = 1/P(b) which is just some constant.
+       = alpha * <Probability distribution of 'b' which sums up to 1>
+=> Conditional probability is proportional to Joint probability
+
+Inclusion-Exclusion:
+P(a v b) = P(a) + P(b) - P(a^b)
+
+Marginalization:
+P(a) = P(a,b) + P(a, Not(b))
+P(X = xi) = Summation over all the values (j) y could take on of P(X = xi, Y = yj)
+
+Conditioning:
+P(a) = P(a|b)P(b) + P(a|Not(b))P(Not(b))
+P(X = xi) = Summation over all the values (j) y could take on of P(X = xi|Y = yj)P(Y = yj)
+
+Bayesian Network: Data structure which represents the dependencis among random variables.
+- Directed graph
+- Each node represents a random variable.
+- Arrow from X to Y means X is a parent of Y
+- Each node X has a probability distrubution P(X | Parents(X))
+
+Inference:
+- Query X: variable for which to compute distribution
+- Evidence variables E: observed variables for event e
+- Hidden variables Y: non-evidence and non-query variable
+- Goal: Calculate P(X | e) where e could be more than 1.
+
+Inference by Enumeration:
+P(X | e) = alpha * P(X,e) = alpha * Summation over all the values (j) y could take on of P(X, e, y)
+X: query variable
+e: evidence
+y: ranges over values of hidden variables
+alpha: normalizes the result.
+Cons: Time complexity grows with complexity of the network
+
+Aproximate Inference:
+- Sampling:
+  - Rejection Sampling: Filter out samples which do not match event specification
+  - Likelihood Weighting:
+    - Start by fixing the values of evidence variables.
+    - Sample the non-evidence variables using conditional probabilities in the Bayesian Network
+    - Weight each sample by its likelihood: the probability of all of the evidence.
+
+Markov Assumption: The assumption that the current state depends on only a finite fixed number of previous states.
+Markov Chain: A sequence of random variables where the distribution of each variable follows the Markov assumption.
+Hidden Markov Model: a Markov model for a system with hidden states which generate some observed events.
 
 Supervised Learning > Classification:
 Perceptron Learning Rule: Given data point (x,y), update each weight according to: w =  w + alpha*(y - h(X)) * x
