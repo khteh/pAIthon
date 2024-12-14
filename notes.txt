@@ -34,11 +34,11 @@ P(A|b) = P(A, b) / P(b) : Comma signifies ^
 Inclusion-Exclusion:
 P(a v b) = P(a) + P(b) - P(a^b)
 
-Marginalization:
+Marginalization: Calculate probability of independent variable based on given/known joint probabilities.
 P(a) = P(a,b) + P(a, Not(b))
 P(X = xi) = Summation over all the values (j) y could take on of P(X = xi, Y = yj)
 
-Conditioning:
+Conditioning: Calculate probability of independent variable based on given/known conditional probabilities.
 P(a) = P(a|b)P(b) + P(a|Not(b))P(Not(b))
 P(X = xi) = Summation over all the values (j) y could take on of P(X = xi|Y = yj)P(Y = yj)
 
@@ -73,6 +73,7 @@ Aproximate Inference:
 Markov Assumption: The assumption that the current state depends on only a finite fixed number of previous states.
 Markov Chain: A sequence of random variables where the distribution of each variable follows the Markov assumption.
 Hidden Markov Model: a Markov model for a system with hidden states which generate some observed events.
+Sensor Markov Assumption: the assumption that the evidence variable depends only on corresponding state.
 
 Supervised Learning > Classification:
 Perceptron Learning Rule: Given data point (x,y), update each weight according to: w =  w + alpha*(y - h(X)) * x
