@@ -83,6 +83,14 @@ Support Vector Machines:
   Maximum Margin Separator: Boundary that maximizes the distance between any of the data points
 If the data is not linearly separable, it works from higher dimension to find the separation boundary. For example, other shapes than linear lines.
 
+Optimization Problem Formulation:
+- Local Search: 
+  - Algorithms: Hill-Climbing, Simulated Annealing
+- Linear Programming
+  - Algorithms: 
+- Constraint Satisfaction
+  - Algorithms: AC3, Backtracking
+
 Supervised Learning > Regression:
 Learning a function mapping an input point to a continuous value.
 
