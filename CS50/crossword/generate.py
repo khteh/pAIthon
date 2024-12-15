@@ -258,6 +258,11 @@ class CrosswordCreator():
             if k not in assignment:
                 neighbours = len(self.crossword.neighbors(k))
                 result[k] = (len(v), neighbours)
+        """
+        You should return the variable with the fewest number of remaining values in its domain. If there is a tie between variables, you should choose among whichever among those variables has the largest degree (has the most neighbors).
+        item[1][0]: Count of values
+        item[1][1]: Count of neighbours. Use negative for descending ordering
+        """
         result = {k: v for k, v in sorted(result.items(), key=lambda item: (item[1][0], -item[1][1]))}
         return list(result.keys())[0] if len(result) > 0 else None
     

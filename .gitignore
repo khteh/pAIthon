@@ -1,5 +1,6 @@
 *.swp
 *.crt
 *.key
+**/.~lock*
 **/.env
 **/__pycache__/

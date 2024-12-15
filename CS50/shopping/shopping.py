@@ -114,23 +114,15 @@ def evaluate(labels, predictions):
     """
     label_pos = 0
     label_neg = 0
-    predict_pos = 0
-    predict_neg = 0
-    for i in labels:
+    match_pos = 0
+    match_neg = 0
+    for i,j in zip(labels, predictions):
         if i:
             label_pos +=1
         else:
             label_neg += 1
-    for i in predictions:
-        if i:
-            predict_pos +=1
-        else:
-            predict_neg += 1
-    match_pos = 0
-    match_neg = 0
-    for i in range(len(labels)):
-        if labels[i] == predictions[i]:
-            if labels[i] == 1:
+        if i == j:
+            if i:
                 match_pos += 1
             else:
                 match_neg += 1
