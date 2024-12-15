@@ -112,7 +112,7 @@ def iterate_pagerank(corpus, damping_factor):
     """
     result = {key: 1/len(corpus) for key in corpus}
     urls = dict()
-    references = {key: set() for key in corpus}#defaultdict(set) # key: p, value: i
+    references = {key: set() for key in corpus}
     for k,v in corpus.items():
         if len(v) > 0:
             urls[k] = len(v)
