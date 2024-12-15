@@ -91,12 +91,26 @@ def matrix_sums():
     diag2 = secondary_left_diagonal(matrix)
     print(f"rows: {row_totals}, cols: {col_totals}, diag1: {diag1}, diag2: {diag2}")
 
+def sort_dict_by_tuple_values():
+    result = {
+        "a": (0,10),
+        "b": (10,5),
+        "c": (5,5),
+        "d": (7,8),
+        "e": (8,7),
+        "f": (6,6),
+        "g": (5,6),
+    }
+    result = {k: v for k, v in sorted(result.items(), key=lambda item: (item[1][0], -item[1][1]))}
+    for k,v in result.items():
+        print(f"{k}: {v}")
+
 def main():
+    sort_dict_by_tuple_values()
     permutations([0], list(range(1, len(portnames)))) # This will start the recursion with 0 ("PAN") as the first stop
     print(' '.join([portnames[i] for i in bestroute]) + " %.1f kg" % smallest)
     polynomial()
     kmin(3)
     testZip()
     matrix_sums()
-
 main()
