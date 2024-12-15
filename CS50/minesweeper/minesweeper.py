@@ -303,8 +303,6 @@ class MinesweeperAI():
         Should choose randomly among cells that:
             1) have not already been chosen, and
             2) are not known to be mines
-        """
-        """
         i = random.randrange(self.height)
         j = random.randrange(self.width)
         if (i,j) not in self.mines and (i,j) not in self.moves_made:
