@@ -129,3 +129,9 @@ Similar to depth-limiting approach in MiniMax. Used when it is not feasible to e
 
 Unsupervised Learning: Given input data without any additional feedback, learn patterns.
 k-means clustering: Algorithm for clustering data based on repeatedly assigning points to clusters and updating those clusters' centers.
+
+Unsupervised Learning:
+Given input data without any additional feedback (label), learn patterns.
+Tasks:
+(1) Clustering: Organize a set of objects into groups in such a way that similar objects tend to be in the same group. Example: Genetic research, Image segmentation, Market research, Medical imaging, Social network analysis.
+    One technique is k-means clustering: Algorithm for clustering data based on repeatedly assigning points to clusters (k number of clusters) and updating those clusters' centers

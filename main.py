@@ -1,4 +1,5 @@
 import numpy as np
+import random
 portnames = ["PAN", "AMS", "CAS", "NYC", "HEL"]
 D = [
         [0,8943,8019,3652,10545],
