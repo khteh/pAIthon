@@ -2,7 +2,7 @@ import math
 import random
 import time
 import operator
-import numpy as np
+from math import inf
 """
 $ check50 --local ai50/projects/2024/x/nim
 """
@@ -104,8 +104,7 @@ class NimAI():
         Return the Q-value for the state `state` and the action `action`.
         If no Q-value exists yet in `self.q`, return 0.
         """
-        state = tuple(state)
-        return self.q[state, action] if (state,action) in self.q else 0
+        return self.q[tuple(state), action] if (tuple(state),action) in self.q else 0
 
     def update_q_value(self, state, action, old_q, reward, future_rewards):
         """
@@ -122,9 +121,7 @@ class NimAI():
         `alpha` is the learning rate, and `new value estimate`
         is the sum of the current reward and estimated future rewards.
         """
-        state = tuple(state)
-        reward += future_rewards
-        self.q[state, action] = old_q + self.alpha * (reward - old_q)
+        self.q[tuple(state), action] = old_q + self.alpha * (reward + future_rewards - old_q)
 
     def best_future_reward(self, state):
         """
@@ -161,25 +158,22 @@ If epsilon is False, your function should behave greedily and return the best po
 If epsilon is True, your function should behave according to the epsilon-greedy algorithm, choosing a random available action with probability self.epsilon and otherwise choosing the best action available.
 If multiple actions have the same Q-value, any of those options is an acceptable return value.        
         """
-        if len(self.q) == 0:
-            #Exploration
-            return random.choice(list(Nim.available_actions(state)))
-        q = 0
-        best_action = None
-        for k,v in self.q.items():
-            if k[0] == tuple(state):
-                if v > q:
-                    q = v
-                    best_action = k[1]
-        if epsilon:
-            actions = [k[1] for k,v in self.q.items() if k[0] == tuple(state)]
-            action = random.choice(actions)
-            options = [action, best_action]
-            choice = np.random.choice(len(options), p=[self.epsilon, 1 - self.epsilon], size=1)
-            return options[choice[0]]
+        actions = list(Nim.available_actions(state))
+        q = dict()
+        max_value_actions = []
+        value = -inf
+        for a in actions:
+            v = self.get_q_value(state, a)
+            q[tuple(state), a] = v
+            if v > value:
+                value = v
+        max_value_actions = [k[1] for k,v in q.items() if k[0] == tuple(state) and v == value]
+        #print(f"state: {state}, actions: {actions}, q: {q}, max: {value}, max_actions: {max_value_actions}")
+        if not epsilon:
+            return random.choice(max_value_actions)
         else:
-            return best_action
-
+            choice = random.choices([0,1], weights=[self.epsilon, 1 - self.epsilon], k=1)
+            return random.choice(actions) if choice[0] else random.choice(max_value_actions)
 def train(n):
     """
     Train an AI by playing `n` games against itself.
@@ -204,7 +198,7 @@ def train(n):
             # Keep track of current state and action
             state = game.piles.copy()
             action = player.choose_action(game.piles)
-
+            #print(f"action: {action}")
             # Keep track of last state and action
             last[game.player]["state"] = state
             last[game.player]["action"] = action
