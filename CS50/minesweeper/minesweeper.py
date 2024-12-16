@@ -252,12 +252,9 @@ class MinesweeperAI():
             for s2 in self.knowledge:
                 cells = set()
                 count = 0
-                if s1 != s2 and s1.cells.issubset(s2.cells):
-                    cells = s2.cells - s1.cells
-                    count = s2.count - s1.count
-                elif s1 != s2 and s2.cells.issubset(s1.cells):
-                    cells = s1.cells - s2.cells
-                    count = s1.count - s2.count
+                if s1 != s2:
+                    cells = s2.cells - s1.cells if s1.cells.issubset(s2.cells) else s1.cells - s2.cells
+                    count = s2.count - s1.count if s1.cells.issubset(s2.cells) else s1.count - s2.count
                 if len(cells) > 0:
                     s = Sentence(cells, count)
                     if s not in knowledge and s not in self.knowledge:
