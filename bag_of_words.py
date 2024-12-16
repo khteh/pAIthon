@@ -1,5 +1,25 @@
 import numpy as np
+"""
+Model that represents text as an unordered collection of words.
+This model can be used to build Naive Bayes classifier which classifies text based on Bayes' Rule
+Naive because of the assumption that the words are independent of each other
+Example: P(Happy | "I", "love", "it") = P("I", "love", "it" | Happy)P(Happy) / P("I", "love", "it")
+                                      ~= P("I", "love", "it" | Happy)P(Happy) <= Proportional to
+                                      ~= P("I", "love", "it", Happy) <= Proportional to this joint probability
+                                      ~= P(Happy)P("I"|Happy)P("love"|Happy)P("it"|Happy) <= Naively proportional to
+word2vec - Model for generating word vectors
+        - Example: Calculate distance/closeness between words, get a list of similar / nearest words, show relationships between words.
+"You shall know a word by the company it keeps" (J. R. Firth, 1957)
 
+Transformer:
+Encoder:
+Input word -> Positional Encoding -> [Self Attention (Multiple) -> NN (Feedforward)] -> Encoded representation
+[Self Attention (Multiple) -> NN] could be applied multiple times
+
+Decoder:
+Previous output word -> Positional Encoding -> [Self Attention (Multiple) -> Attention (Multiple) -> NN (Feedforward)] -> Next output word
+                                                    Encoded representations ->
+"""
 data = [[1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1],
         [1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1],
