@@ -76,11 +76,10 @@ def load_data(data_dir):
                         file = os.path.join(dir, f)
                         #print(f"file: {file}")
                         img = cv2.imread(file)   # reads an image in the BGR format
-                        #img = cv2.resize(img, dsize=(IMG_WIDTH, IMG_HEIGHT), interpolation=cv2.INTER_CUBIC)
-                        img = cv2.resize(img, dsize=(IMG_WIDTH, IMG_HEIGHT))
+                        img = cv2.resize(img, dsize=(IMG_WIDTH, IMG_HEIGHT), interpolation=cv2.INTER_CUBIC)
+                        #img = cv2.resize(img, dsize=(IMG_WIDTH, IMG_HEIGHT))
                         assert img.shape == (IMG_WIDTH, IMG_HEIGHT, 3)
                         assert img.ndim == 3
-                        #img = cv2.resize(img, dsize=(IMG_WIDTH, IMG_HEIGHT))
                         labels.append(category)
                         images.append(img)
             else:
@@ -97,7 +96,7 @@ def get_model():
     The output layer should have `NUM_CATEGORIES` units, one for each category.
     """
     model = models.Sequential()
-    model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)))
+    model.add(layers.Conv2D(64, (3, 3), activation='relu', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)))
     model.add(layers.MaxPooling2D((2, 2)))
     model.add(layers.Flatten())
     model.add(layers.Dense(64, activation='relu'))
