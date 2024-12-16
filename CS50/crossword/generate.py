@@ -18,7 +18,7 @@ Arc consistency: All the values in a variable's domain satisfy the variable's bi
 Python has a library called "python-constraint" for this problem
 
 $ pipenv install Pillow
-$ python generate.py data/structure0.txt data/words0.txt
+$ python generate.py data/structure1.txt data/words1.txt output.png
 $ check50 --local ai50/projects/2024/x/crossword
 """
 class CrosswordCreator():

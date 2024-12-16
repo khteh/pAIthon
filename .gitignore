@@ -4,3 +4,4 @@
 **/.~lock*
 **/.env
 **/__pycache__/
+**/output.png
