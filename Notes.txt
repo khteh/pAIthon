@@ -135,3 +135,48 @@ Given input data without any additional feedback (label), learn patterns.
 Tasks:
 (1) Clustering: Organize a set of objects into groups in such a way that similar objects tend to be in the same group. Example: Genetic research, Image segmentation, Market research, Medical imaging, Social network analysis.
     One technique is k-means clustering: Algorithm for clustering data based on repeatedly assigning points to clusters (k number of clusters) and updating those clusters' centers
+
+Neural Network:
+Activation functions:
+(1) Step function: g(x) = 1 if x >=0, else 0
+(2) Logistic Sigmoid: g(x) = e^x / (1 + e^x)
+(3) Rectifier Linear Unit (ReLu): g(x) = max(0,x)
+h(x1,x2) = g(w0 + w1x1 + w2x2 + ...)
+Example:
+(1) To mdel the OR function:
+    h(x1,x2) = g(-1 + x1 + x2); w0 = -1, w1=w2=1
+(2) To mdel the AND function:
+    h(x1,x2) = g(-2 + x1 + x2); w0 = -2, w1=w2=1
+Training - to calculate the parameters:
+- Trade-offs between speed and accuracy
+(1) Gradient Descent: Algorithm for minimizing loss when training NN
+    Start with a random choice of weights, repeat:
+    - Calculate the gradient based on ALL data points (training data set): direction that will lead to decreasing loss
+    - Update weights according to the gradient
+(2) Stochastic Gradient Descent: Same as Gradient Descent but "... based on ONE data point"
+(3) Mini-Batch Gradient Descent: Same as Gradient Descent but "... based on ONE SMALL BATCH of data points"
+Perceptron: Only capable of learning linearly separable decision boundary
+Multilayer NN: Artificial NN with an input layer, an output layer, and at least one hidden layer. Capable of modelling more complex problems compared to perceptron.
+To train multi-layer NN, we have to propagate the loss/error from the output back to the hidden layers:
+Backpropagation: Algorithm for training NN with hidden layers
+    Start with a random choice of weights, repeat:
+    - Calculate error for output layer
+    - For each layer, starting with output layer, and moving inwards towards the earliest hidden layer
+      - Propagate error back one layer
+To prevent Overfitting:
+Dropout: Temporarily removing units - selected at random - from a NN to prevent over-reliance on certain units
+playground.tensorflow.org
+Image Convolution: Applying a filter that adds each pixel value of an image to it's neighbours, weighted according to a kernel matrix.
+                  - Extracts features from input. Output is a feature map
+Pooling: reducing the size of an input by sampling from regions in the input
+(1) Max-pooling: pooling by choosing the maximum vallue in each region
+Convolutional NN: NN that uses convolution, usually for analyzing images (i.e., Image Convolution + Pooling in a NN)
+                - Training is done to figure out what's the best filters for the input image
+                - Models how human look at images
+Input image -> [Convolution (calculates filters) -> Pooling (Summarize and reduces the size of inputs)] -> Flattening (Feeds into the inputs of NN)
+[Convolution -> Pooling] can be applied multiple times before Flattening. Early layers of this to discover low-level features (Edges, Curves, Shapes); later layers to discover high-level features (objects, person, face, etc)
+
+Feed-forward NN: Good for classification. 1:1 mapping from input to output -Single-valued output.
+Recurrent NN: Output from the NN is fed to it's input for future calculation. It maintains some states. Good for dealing with sequences of data, both input and/or output. N:N mapping from input to output - Output sequence of values.
+              Example applications: Youtube to analyze videos, Google translator, etc
+              One example is Long Short Memory Network
