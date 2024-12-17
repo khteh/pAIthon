@@ -1,7 +1,7 @@
 import sys
 from crossword import *
 from itertools import permutations
-from pprint import pprint
+from copy import copy, deepcopy
 """
 Constraint Satisfaction Problem:
 - Set of variables {x1, x2, x3, ...}
@@ -18,7 +18,7 @@ Arc consistency: All the values in a variable's domain satisfy the variable's bi
 Python has a library called "python-constraint" for this problem
 
 $ pipenv install Pillow
-$ python generate.py data/structure1.txt data/words1.txt output.png
+$ python generate.py data/structure3.txt data/words2.txt output.png
 $ check50 --local ai50/projects/2024/x/crossword
 """
 class CrosswordCreator():
@@ -256,8 +256,8 @@ class CrosswordCreator():
         result = dict()
         for k,v in self.domains.items():
             if k not in assignment:
-                neighbours = len(self.crossword.neighbors(k))
-                result[k] = (len(v), neighbours)
+                degree = len(self.crossword.neighbors(k))
+                result[k] = (len(v), degree)
         """
         You should return the variable with the fewest number of remaining values in its domain. If there is a tie between variables, you should choose among whichever among those variables has the largest degree (has the most neighbors).
         item[1][0]: Count of values
@@ -265,6 +265,14 @@ class CrosswordCreator():
         """
         result = {k: v for k, v in sorted(result.items(), key=lambda item: (item[1][0], -item[1][1]))}
         return list(result.keys())[0] if len(result) > 0 else None
+    
+    def inference(self, assignment):
+        arcs = []
+        for k,v in assignment.items():
+            self.domains[k] = {assignment[k]}
+            neighbours = self.crossword.neighbors(k)
+            arcs.extend([(n, k) for n in neighbours])
+        return self.ac3(arcs)
     
     def backtrack(self, assignment):
         """
@@ -280,9 +288,13 @@ class CrosswordCreator():
         v = self.select_unassigned_variable(assignment)
         for s in self.domains[v]:
             assignment[v] = s
-            if self.consistent(assignment) and self.backtrack(assignment):
+            domaincopy = deepcopy(self.domains)
+            # This is for inference
+            # make an arcs as a list of tuple for the variable above and each of its neighbors
+            if self.consistent(assignment) and self.inference(assignment) and self.backtrack(assignment):
                 return assignment
-            assignment.remove(v)
+            del assignment[v]
+            self.domains = domaincopy
         return None
     
 def main():
