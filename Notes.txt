@@ -180,3 +180,9 @@ Feed-forward NN: Good for classification. 1:1 mapping from input to output -Sing
 Recurrent NN: Output from the NN is fed to it's input for future calculation. It maintains some states. Good for dealing with sequences of data, both input and/or output. N:N mapping from input to output - Output sequence of values.
               Example applications: Youtube to analyze videos, Google translator, etc
               One example is Long Short Memory Network
+=========================================================================================================================================================================================================================================
+File formats for training and evaluation.
+For large data sets, load the data from data warehouse into SSD storage (Cloud or local). This will prevent underusage of resources, GPU/CPU during the traning/evaluation process.
+JSONL: JSON Lines is a simple text-based format with rows. It is human readable and an ideal choice for small to medium-sized datasets.
+TFRecord: Binary format and easier to read for computers, ideal for efficient training.
+Parquet: Good for large and complex datasets.
