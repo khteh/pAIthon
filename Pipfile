@@ -9,6 +9,7 @@ pygame = "*"
 scikit-learn = "*"
 tensorflow = "*"
 opencv-python = "*"
+nltk = "*"
 
 [dev-packages]
 
