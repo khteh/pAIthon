@@ -21,7 +21,7 @@ def main():
 
     # Check command-line arguments
     if len(sys.argv) not in [2, 3]:
-        sys.exit("Usage: python traffic.py data_directory [model.h5]")
+        sys.exit("Usage: python traffic.py data_directory [model.keras]")
     print(f"TF v{tf.version.VERSION}")
     # Get image arrays and labels for all image files
     images, labels = load_data(sys.argv[1])
