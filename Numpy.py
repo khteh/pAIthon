@@ -16,7 +16,7 @@ def multiDArray(i:int, j: int, k:int):
     multi = numpy.zeros((i,j,k))
     print(f"{multi} shape: {multi.shape}\n")
 def csvArray(i:int, j: int, k: int, path):
-    print(csvArray.__name__)
+    print(f"=== csvArray.__name__ ===")
     data = numpy.zeros((i,j,k))
     print(f"id: {id(data)}")
     for index, file in enumerate(Path.cwd().glob(path)):
@@ -24,7 +24,7 @@ def csvArray(i:int, j: int, k: int, path):
         data[index] =  numpy.loadtxt(file, delimiter=",")
     print(f"data ({id(data)}): {data}\n")
 def csvArrayInsert(i:int, j: int, k: int, path, insertIndex: int, insertValue: int, insertAxis:int, insertFile):
-    print(csvArrayInsert.__name__)
+    print(f"=== csvArrayInsert.__name__ ===")
     data = numpy.zeros((i,j,k))
     print(f"id: {id(data)}")
     for index, file in enumerate(Path.cwd().glob(path)):
@@ -32,9 +32,9 @@ def csvArrayInsert(i:int, j: int, k: int, path, insertIndex: int, insertValue: i
         data[index] =  numpy.loadtxt(file, delimiter=",")
     print(f"data ({id(data)}): {data}")
     data = numpy.insert(arr=data, obj=insertIndex, values=insertValue, axis=insertAxis)
-    print(f"data ({id(data)}): {data}")
+    print(f"After inserting a row: data ({id(data)}): {data}")
     data[i-1] = numpy.loadtxt(insertFile, delimiter=",")
-    print(f"data ({id(data)}): {data}\n")
+    print(f"Load from new csv: data ({id(data)}): {data}\n")
 oneDArray(10)
 twoDArray(20)
 threeDArray(30)
