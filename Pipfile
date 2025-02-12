@@ -12,6 +12,7 @@ nltk = "*"
 numpy = "*"
 matplotlib = "*"
 natsort = "*"
+pandas = "*"
 
 [dev-packages]
 

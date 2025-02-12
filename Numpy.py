@@ -11,8 +11,9 @@ def twoDArray(n: int):
     print(f"=== {twoDArray.__name__} ===")
     cols = (int)(n / 3)
     two = numpy.array([range(cols), range(cols, 2*cols), range(2*cols, 3*cols)])
-    print(f"{two} shape: {two.shape}\n")
+    print(f"{two} ndim: {two.ndim}, size: {two.size}, shape: {two.shape}")
     numbers = numpy.array([[1,3,5], [7,9,11]])
+    print(f"ndim: {numbers.ndim}, size: {numbers.size}, shape: {numbers.shape}")
     aggregate0 = numpy.sum(numbers, axis=0) # Each column collapsed into a single row
     aggregate1 = numpy.sum(numbers, axis=1) # Each row collapsed into a single column
     print(f"Aggregates axis-0: {aggregate0}, axis-1: {aggregate1}\n")
@@ -30,7 +31,7 @@ def multiDArray(i:int, j: int, k:int):
     print(f"[1,3] [axis-0 index-1, axis-1 index-3]: {multi[1,3]}")
     # z-axis consists of 2 elements; y-axis consists of 3 elements; x-axis consists of 1 element:
     multi = numpy.array([[[1],[2],[3]], [[4],[5],[6]]])
-    print(f"shape: {multi.shape}")
+    print(f"ndim: {multi.ndim}, size: {multi.size}, shape: {multi.shape}")
     # If the number of objects in the selection tuple is less than N, then : is assumed for any subsequent dimensions. For example:
     print(f"axis-0 0:1 => {multi[:1]}")
     print(f"axis-0 1:2 => {multi[1:2]}")
@@ -46,7 +47,7 @@ def multiDArray(i:int, j: int, k:int):
 def csvArray(i:int, j: int, k: int, path):
     print(f"=== {csvArray.__name__} ===")
     data = numpy.zeros((i,j,k))
-    print(f"id: {id(data)}, shape: {data.shape}")
+    print(f"id: {id(data)}, ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     for index, file in enumerate(Path.cwd().glob(path)):
         print(f"index: {index}, file: {file.name}")
         data[index] =  numpy.loadtxt(file, delimiter=",")
@@ -59,7 +60,8 @@ def csvArrayInsert(i:int, j: int, k: int, path, insertIndex: int, insertValue: i
     for index, file in enumerate(Path.cwd().glob(path)):
         print(f"index: {index}, file: {file.name}")
         data[index] =  numpy.loadtxt(file, delimiter=",")
-    print(f"data ({id(data)}): {data} shape: {data.shape}")
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    print(data)
     data = numpy.insert(arr=data, obj=insertIndex, values=insertValue, axis=insertAxis)
     print(f"After inserting a row: data ({id(data)}): {data}")
     data[i-1] = numpy.loadtxt(Path(insertFile), delimiter=",")
