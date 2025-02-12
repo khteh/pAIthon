@@ -2,27 +2,46 @@ import decimal,numpy
 from pathlib import Path
 import numpy.lib.recfunctions as reconcile
 import matplotlib.pyplot as plt
+# https://numpy.org/doc/stable/user/basics.indexing.html
 def oneDArray(n: int):
     one = numpy.array(range(n))
     print(f"{one} shape: {one.shape}\n")
 
 def twoDArray(n: int):
-    cols = (int)(n / 2)
-    two = numpy.array([range(cols), range(cols, 2*cols)])
+    print(f"=== {twoDArray.__name__} ===")
+    cols = (int)(n / 3)
+    two = numpy.array([range(cols), range(cols, 2*cols), range(2*cols, 3*cols)])
     print(f"{two} shape: {two.shape}\n")
     numbers = numpy.array([[1,3,5], [7,9,11]])
     aggregate0 = numpy.sum(numbers, axis=0) # Each column collapsed into a single row
     aggregate1 = numpy.sum(numbers, axis=1) # Each row collapsed into a single column
-    print(f"Aggregates axis-0: {aggregate0}, axis-1: {aggregate1}")
-
-def threeDArray(n: int):
-    cols = (int)(n / 3)
-    three = numpy.array([range(cols), range(cols, 2*cols), range(2*cols, 3*cols)])
-    print(f"{three} shape: {three.shape}\n")
+    print(f"Aggregates axis-0: {aggregate0}, axis-1: {aggregate1}\n")
 
 def multiDArray(i:int, j: int, k:int):
+    print(f"=== {multiDArray.__name__} ===")
     multi = numpy.zeros((i,j,k))
     print(f"{multi} shape: {multi.shape}\n")
+    multi = numpy.arange(10)
+    #print(f"[1,3]: {multi[1,3]}")
+    multi.shape = (2,5)
+    # Note that if one indexes a multidimensional array with fewer indices than dimensions, one gets a subdimensional array. For example:
+    print(f"[0]: {multi[0]}, [1]: {multi[1]}")
+    # [1,3] [axis-0 index-1, axis-1 index-3]
+    print(f"[1,3] [axis-0 index-1, axis-1 index-3]: {multi[1,3]}")
+    # z-axis consists of 2 elements; y-axis consists of 3 elements; x-axis consists of 1 element:
+    multi = numpy.array([[[1],[2],[3]], [[4],[5],[6]]])
+    print(f"shape: {multi.shape}")
+    # If the number of objects in the selection tuple is less than N, then : is assumed for any subsequent dimensions. For example:
+    print(f"axis-0 0:1 => {multi[:1]}")
+    print(f"axis-0 1:2 => {multi[1:2]}")
+    print(f"axis-0 0:2 => {multi[:2]}")
+    print(f"axis-0 element-0, axis-1 0:1 => {multi[0, :1]}")
+    print(f"axis-0 element-0, axis-1 1:2 => {multi[0, 1:2]}")
+    print(f"axis-0 element-0, axis-1 0:2 => {multi[0, :2]}")
+    print(f"axis-0 element-1, axis-1 0:1 => {multi[1, :1]}")
+    print(f"axis-0 element-1, axis-1 1:2 => {multi[1, 1:2]}")
+    print(f"axis-0 element-1, axis-1 0:2 => {multi[1, :2]}")
+    print()
 
 def csvArray(i:int, j: int, k: int, path):
     print(f"=== {csvArray.__name__} ===")
@@ -159,8 +178,7 @@ def VectorOperations(data):
     print(f"Bonuses: {bonuses}")
 ############
 oneDArray(10)
-twoDArray(20)
-threeDArray(30)
+twoDArray(30)
 multiDArray(3,4,5)
 csvArray(3,2,3, "data/file?.csv")
 """
