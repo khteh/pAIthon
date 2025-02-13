@@ -191,6 +191,8 @@ In higher dimensions, where "row" and "column" stop really making sense, try to 
 
 https://stackoverflow.com/questions/46855793/understanding-axes-in-numpy
 In numpy, axis ordering follows zyx convention, instead of the usual (and maybe more intuitive) xyz.
+
+https://stackoverflow.com/questions/79429728/python-multidimension-array-axis-and-index-to-load-csv-file-into
 """
 csvArrayInsert(4,2,3,"data/file?.csv",2,0,1,"data/file4_extra_row.csv")
 structuredArray()
