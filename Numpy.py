@@ -8,7 +8,7 @@ def oneDArray(n: int):
     print(f"{one} shape: {one.shape}\n")
 
 def twoDArray(n: int):
-    print(f"=== {twoDArray.__name__} ===")
+    print(f"\n=== {twoDArray.__name__} ===")
     cols = (int)(n / 3)
     two = numpy.array([range(cols), range(cols, 2*cols), range(2*cols, 3*cols)])
     print(f"{two} ndim: {two.ndim}, size: {two.size}, shape: {two.shape}")
@@ -16,10 +16,10 @@ def twoDArray(n: int):
     print(f"ndim: {numbers.ndim}, size: {numbers.size}, shape: {numbers.shape}")
     aggregate0 = numpy.sum(numbers, axis=0) # Each column collapsed into a single row
     aggregate1 = numpy.sum(numbers, axis=1) # Each row collapsed into a single column
-    print(f"Aggregates axis-0: {aggregate0}, axis-1: {aggregate1}\n")
+    print(f"Aggregates axis-0: {aggregate0}, axis-1: {aggregate1}")
 
 def multiDArray(i:int, j: int, k:int):
-    print(f"=== {multiDArray.__name__} ===")
+    print(f"\n=== {multiDArray.__name__} ===")
     multi = numpy.zeros((i,j,k))
     print(f"{multi} shape: {multi.shape}\n")
     multi = numpy.arange(10)
@@ -42,19 +42,18 @@ def multiDArray(i:int, j: int, k:int):
     print(f"axis-0 element-1, axis-1 0:1 => {multi[1, :1]}")
     print(f"axis-0 element-1, axis-1 1:2 => {multi[1, 1:2]}")
     print(f"axis-0 element-1, axis-1 0:2 => {multi[1, :2]}")
-    print()
 
 def csvArray(i:int, j: int, k: int, path):
-    print(f"=== {csvArray.__name__} ===")
+    print(f"\n=== {csvArray.__name__} ===")
     data = numpy.zeros((i,j,k))
     print(f"id: {id(data)}, ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     for index, file in enumerate(Path.cwd().glob(path)):
         print(f"index: {index}, file: {file.name}")
         data[index] =  numpy.loadtxt(file, delimiter=",")
-    print(f"data ({id(data)}): {data}\n")
+    print(f"data ({id(data)}): {data}")
 
 def csvArrayInsert(i:int, j: int, k: int, path, insertIndex: int, insertValue: int, insertAxis:int, insertFile):
-    print(f"=== {csvArrayInsert.__name__} ===")
+    print(f"\n=== {csvArrayInsert.__name__} ===")
     data = numpy.zeros((i,j,k))
     print(f"id: {id(data)}")
     for index, file in enumerate(Path.cwd().glob(path)):
@@ -65,10 +64,10 @@ def csvArrayInsert(i:int, j: int, k: int, path, insertIndex: int, insertValue: i
     data = numpy.insert(arr=data, obj=insertIndex, values=insertValue, axis=insertAxis)
     print(f"After inserting a row: data ({id(data)}): {data}")
     data[i-1] = numpy.loadtxt(Path(insertFile), delimiter=",")
-    print(f"Load from new csv: data ({id(data)}): {data}\n")
+    print(f"Load from new csv: data ({id(data)}): {data}")
 
 def structuredArray():
-    print(f"=== {structuredArray.__name__} ===")
+    print(f"\n=== {structuredArray.__name__} ===")
     books = numpy.array(
         [
             ("The Subtle Art of Not Giving a F**k", 1.2, 3),
@@ -92,7 +91,7 @@ def structuredArray():
     print(f"Top-selling book title: {topselling["title"][0]}")
 
 def reconcilation(issuedChecks, cashedChecks, duplicateRows):
-    print(f"=== {reconcilation.__name__} ===")
+    print(f"\n=== {reconcilation.__name__} ===")
     issued_types = [
         ("id", "i8"),
         ("payee", "U128"),
@@ -121,7 +120,7 @@ def reconcilation(issuedChecks, cashedChecks, duplicateRows):
     print(f"Unique: {unique}")
 
 def HierarchicalDataAnalysis(companies, prices):
-    print(f"=== {HierarchicalDataAnalysis.__name__} ===")
+    print(f"\n=== {HierarchicalDataAnalysis.__name__} ===")
     weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri"]
     weekdays_dtype = [(day, "f8") for day in weekdays]
     company_dtype = [("company", "U128"), ("sector", "U128")]
@@ -156,7 +155,7 @@ def profit_with_bonus(first, last):
     return (last - first) * 1.1 if last >= first * 1.01 else last - first
 
 def VectorOperations(data):
-    print(f"=== {VectorOperations.__name__} ===")
+    print(f"\n=== {VectorOperations.__name__} ===")
     portfolio_dtype = [
         ("compay", "U128"),
         ("sector", "U128"),

@@ -12,10 +12,9 @@ def numpy_dataframe():
     print(data.head())
     print("\nTail:")
     print(data.tail())
-    print()
 
 def DataFrameAttributes():
-    print(f"=== {DataFrameAttributes.__name__} ===")
+    print(f"\n=== {DataFrameAttributes.__name__} ===")
     data = {
         'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
         'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
@@ -37,10 +36,9 @@ def DataFrameAttributes():
     print(data.head())
     print("\nTail:")
     print(data.tail())
-    print()
 
 def DataFrameAccess():
-    print(f"=== {DataFrameAccess.__name__} ===")
+    print(f"\n=== {DataFrameAccess.__name__} ===")
     data = {
         'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
         'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
@@ -71,10 +69,9 @@ def DataFrameAccess():
     print("\nModify the scores with evenly-spaced values between 50 and 90:")
     data.iloc[:, -1] = numpy.linspace(50,90,len(data))
     print(data)
-    print()
 
 def DataFrameModifications():
-    print(f"=== {DataFrameModifications.__name__} ===")
+    print(f"\n=== {DataFrameModifications.__name__} ===")
     data = {
         'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
         'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
@@ -107,10 +104,9 @@ def DataFrameModifications():
     print("\nDelete a column using drop():")
     data.drop(labels=['Age'], axis=1, inplace=True)
     print(data)
-    print()
 
 def DataFrameArithmetic():
-    print(f"=== {DataFrameArithmetic.__name__} ===")
+    print(f"\n=== {DataFrameArithmetic.__name__} ===")
     data = {
         'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
         'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
@@ -140,7 +136,6 @@ def DataFrameArithmetic():
     print("\nTotal score of each individual:")
     data['Total'] = numpy.sum(data[weights.index] * weights, axis=1)
     print(data)
-    print()
 #####
 numpy_dataframe()
 DataFrameAttributes()

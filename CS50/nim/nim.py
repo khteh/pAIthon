@@ -239,7 +239,6 @@ def play(ai, human_player=None):
     `human_player` can be set to 0 or 1 to specify whether
     human player moves first or second.
     """
-
     # If no player order set, choose human's order randomly
     if human_player is None:
         human_player = random.randint(0, 1)
@@ -249,10 +248,8 @@ def play(ai, human_player=None):
 
     # Game loop
     while True:
-
         # Print contents of piles
-        print()
-        print("Piles:")
+        print("\nPiles:")
         for i, pile in enumerate(game.piles):
             print(f"Pile {i}: {pile}")
         print()
@@ -282,8 +279,7 @@ def play(ai, human_player=None):
 
         # Check for winner
         if game.winner is not None:
-            print()
-            print("GAME OVER")
+            print("\nGAME OVER!")
             winner = "Human" if game.winner == human_player else "AI"
             print(f"Winner is {winner}")
             return
