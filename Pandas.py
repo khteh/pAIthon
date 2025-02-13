@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy
+from collections import namedtuple
 def numpy_dataframe():
     print(f"=== {numpy_dataframe.__name__} ===")
     d = {'x': range(10), 'y': numpy.arange(1,20, 2), 'z': 100}
@@ -19,7 +20,7 @@ def DataFrameAttributes():
         'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
         'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
         'Age': [41, 28, 33, 35, 37, 38, 45],
-        'Python': [88.0, 79.0, 81.0, 80.0, 68.0, 61.0, 84.0]
+        'Python': [88.5, 79.0, 81.5, 80.0, 68.5, 61.0, 84.5]
     }
     indices = range(101,108)
     data = pd.DataFrame(data, index = indices)
@@ -43,7 +44,7 @@ def DataFrameAccess():
         'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
         'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
         'Age': [41, 28, 33, 35, 37, 38, 45],
-        'Python': [88.0, 79.0, 81.0, 80.0, 68.0, 61.0, 84.0]
+        'Python': [88.5, 79.0, 81.5, 80.0, 68.5, 61.0, 84.5]
     }
     indices = range(101,108)
     data = pd.DataFrame(data, index = indices)
@@ -76,7 +77,7 @@ def DataFrameModifications():
         'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
         'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
         'Age': [41, 28, 33, 35, 37, 38, 45],
-        'Python': [88.0, 79.0, 81.0, 80.0, 68.0, 61.0, 84.0]
+        'Python': [88.5, 79.0, 81.5, 80.0, 68.5, 61.0, 84.5]
     }
     indices = range(101,108)
     data = pd.DataFrame(data, index = indices)
@@ -89,10 +90,10 @@ def DataFrameModifications():
     data.drop(labels=[108], inplace=True)
     print(data)
     print("\nAdding a column at the end:")
-    data["C++"] = [78.0, 69.0, 85.0, 83.0, 72.0, 68.0, 85.0]
+    data["C++"] = [78.5, 69.0, 85.5, 83.0, 72.5, 68.0, 85.5]
     print(data)
     print("\nAdding a column at specific location:")
-    data.insert(loc=3, column="C#",value= [78.0, 69.0, 85.0, 83.0, 72.0, 68.0, 85.0])
+    data.insert(loc=3, column="C#",value= [75.0, 69.0, 85.0, 81.5, 73.5, 68.5, 83.5])
     print(data)
     print("\nDelete a column using python dectionary deletion:")
     del data['C#']
@@ -111,16 +112,13 @@ def DataFrameArithmetic():
         'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
         'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
         'Age': [41, 28, 33, 35, 37, 38, 45],
-        'Python': [88.0, 79.0, 81.0, 80.0, 68.0, 61.0, 84.0]
+        'Python': [88.5, 79.0, 81.5, 80.0, 68.5, 61.0, 84.5]
     }
     indices = range(101,108)
     data = pd.DataFrame(data, index = indices)
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
-    print("\nAdding a column at the end:")
-    data["C++"] = [78.0, 69.0, 85.0, 83.0, 72.0, 68.0, 85.0]
-    print(data)
-    print("\nAdding a column at specific location:")
-    data.insert(loc=3, column="C#",value= [78.0, 69.0, 85.0, 83.0, 72.0, 68.0, 85.0])
+    data["C++"] = [78.5, 69.0, 85.5, 83.0, 72.5, 68.0, 85.5]
+    data.insert(loc=3, column="C#",value= [75.0, 83.5, 69.5, 81.5, 73.5, 68.5, 84.5])
     print(data)
     weights = pd.Series(data=[0.3,0.4,0.3],index=['C#','Python','C++'])
     print("\nWeights:")
@@ -129,16 +127,169 @@ def DataFrameArithmetic():
     print(weights.index)
     print("\nWeighted Scores:")
     print(data[weights.index] * weights)
-    print("\nTotal score of each skill:")
-    data.loc[data.index[-1] + 1] = numpy.sum(data[weights.index] * weights)
-    #print(numpy.sum(data[weights.index] * weights))
-    print(data)
+    print("\nWeighted Scores sum:")
+    print(numpy.sum(data[weights.index] * weights))
     print("\nTotal score of each individual:")
     data['Total'] = numpy.sum(data[weights.index] * weights, axis=1)
     print(data)
+    print("\nTotal score of each individual (sorted):")
+    print(f"data.index[-1]: {data.index[-1]}")
+    data = data.sort_values(by=['C++', 'C#'], ascending=[False, False]) # Tie-breaks in C++ scores between Jana and Nori
+    print(f"data.index[-1]: {data.index[-1]}")
+    # Add a row for the totals of each skill. Adding here will disrupt the data table due to reordering of data.index[-1]
+    #data.loc[data.index[-1] + 1] = numpy.sum(data[weights.index] * weights) 
+    print(data)
+
+def DataFrameFiltering():
+    print(f"\n=== {DataFrameFiltering.__name__} ===")
+    data = {
+        'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
+        'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
+        'Age': [41, 28, 33, 35, 37, 38, 45],
+        'Python': [88.5, 79.0, 81.5, 80.0, 68.5, 61.0, 84.5]
+    }
+    indices = range(101,108)
+    data = pd.DataFrame(data, index = indices)
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    data["C++"] = [78.5, 69.0, 85.5, 83.0, 72.5, 68.0, 85.5]
+    data.insert(loc=3, column="C#",value= [75.0, 83.5, 69.5, 81.5, 73.5, 68.5, 84.5])
+    print(data)
+    filter = (data['C++'] >= 80) & (data['C#'] >= 80)
+    print("\nFiltered data:")
+    print(data[filter])
+    print("\nFiltered data using where and setting default value for unmet condition:")
+    data['Python'] = data['Python'].where(cond=data['Python'] >= 80, other=0.0)
+    print(data)
+    print("\nFiltered data using regex:")
+    data = data.filter(regex=r"^C(?:\+\+|#)?$")
+    print(data)
+
+def DataFrameStatistics():
+    print(f"\n=== {DataFrameStatistics.__name__} ===")
+    data = {
+        'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
+        'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
+        'Age': [41, 28, 33, 35, 37, 38, 45],
+        'Python': [88.5, 79.0, 81.5, 80.0, 68.5, 61.0, 84.5]
+    }
+    indices = range(101,108)
+    data = pd.DataFrame(data, index = indices)
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    data["C++"] = [78.5, 69.0, 85.5, 83.0, 72.5, 68.0, 85.5]
+    data.insert(loc=3, column="C#",value= [75.0, 83.5, 69.5, 81.5, 73.5, 68.5, 84.5])
+    print(data)
+    print(data.describe())
+
+def DataFrameMissingDataHandling():
+    print(f"\n=== {DataFrameMissingDataHandling.__name__} ===")
+    data = pd.DataFrame({'x': [1,2,numpy.nan, 4]})
+    print(f"DataFrame with a missing value replaced with {numpy.nan}:")
+    print(data)
+    print(data.describe())
+    print(f"DataFrame with a missing value in a row dropped:")
+    data1 = data.dropna()
+    print(data1)
+    print(data1.describe())
+    print(f"DataFrame with a missing value in a column dropped:")
+    data1 = data.dropna(axis=1)
+    print(data1)
+    #print(data1.describe())
+    print(f"DataFrame with a missing value replaced with 0:")
+    data1 = data.fillna(value=0)
+    print(data1)
+    print(data1.describe())
+    print(f"DataFrame with a missing value replaced with previous value:")
+    data1 = data.ffill() # forward-fill
+    print(data1)
+    print(data1.describe())
+    print(f"DataFrame with a missing value replaced with next value:")
+    data1 = data.bfill() # backward-fill
+    print(data1)
+    print(data1.describe())
+    print(f"DataFrame with a missing value replaced with linear interpolation:")
+    data1 = data.interpolate()
+    print(data1)
+    print(data1.describe())
+
+def DataFrameIteration():
+    print(f"\n=== {DataFrameIteration.__name__} ===")
+    data = {
+        'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
+        'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
+        'Age': [41, 28, 33, 35, 37, 38, 45],
+        'Python': [88.5, 79.0, 81.5, 80.0, 68.5, 61.0, 84.5]
+    }
+    indices = range(101,108)
+    data = pd.DataFrame(data, index = indices)
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    data["C++"] = [78.5, 69.0, 85.5, 83.0, 72.5, 68.0, 85.5]
+    data.insert(loc=3, column="C#",value= [75.0, 83.5, 69.5, 81.5, 73.5, 68.5, 84.5])
+    print(data)
+    print("Iterating columns...")
+    for col_label, col in data.items():
+        print(col_label, col, sep="\n", end="\n\n")
+    print("Iterating rows...")
+    for row_label, row in data.iterrows():
+        print(row_label, row, sep="\n", end="\n\n")
+    #nt = namedtuple("C++", [123, 456])
+    #print(nt)
+    print("Iterating rows using named tuples...")
+    for row in data.itertuples():
+        #print(row)
+        print(f"Name: {row.Name}, City: {row.City}, Age: {row.Age}, C++: {row._4}, C#: {row._6}, Python: {row.Python}")
+
+def DataFrameTimeSeries():
+    print(f"\n=== {DataFrameTimeSeries.__name__} ===")
+    temp = [8.0,7.1,6.8,6.4,6.0,5.4,4.8,5.0,
+                    9.1,12.8,15.3,19.1,21.2,22.1,22.4,23.1,
+                    21.0,17.9,15.5,14.4,11.9,11.3,20.2,9.1]
+    dateRange = pd.date_range(start='2025--2-13 00:00:00', periods=24, freq='h')
+    temperatures = pd.DataFrame(data={'Temp (C)': temp}, index=dateRange)
+    print(temperatures)
+    print("\nTemperatures from 09:00 to 18:00") #Slicing
+    print(temperatures['2025-02-13 09':'2025-02-13 18'])
+    print("\nMean temperatures every 6h:")
+    print(temperatures.resample(rule='6h').mean())
+    print("\nTemperatures smoothed out every 3h:")
+    print(temperatures.rolling(window=3).mean())
+    print("\nTemperatures smoothed out every 3h (Center):")
+    print(temperatures.rolling(window=3, center=True).mean())
+
+def DataFramePlotting():
+    """
+    https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.plot.line.html
+    https://matplotlib.org/stable/api/pyplot_summary.html
+    """
+    print(f"\n=== {DataFramePlotting.__name__} ===")
+    temp = [8.0,7.1,6.8,6.4,6.0,5.4,4.8,5.0,
+                    9.1,12.8,15.3,19.1,21.2,22.1,22.4,23.1,
+                    21.0,17.9,15.5,14.4,11.9,11.3,20.2,9.1]
+    dateRange = pd.date_range(start='2025--2-13 00:00:00', periods=24, freq='h')
+    temperatures = pd.DataFrame(data={'Temp (C)': temp}, index=dateRange)
+    print(temperatures)
+    temperatures.plot.line(color='b', marker='.', markerfacecolor='r', markersize=10).get_figure().savefig('/tmp/temperatures.png')
+    data = {
+        'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
+        'City': ['Mexico City', 'Toronto', 'Prague', 'Shanghai', 'Manchester', 'Cairo', 'Osaka'],
+        'Age': [41, 28, 33, 35, 37, 38, 45],
+        'Python': [88.5, 79.0, 81.5, 80.0, 68.5, 61.0, 84.5]
+    }
+    indices = range(101,108)
+    data = pd.DataFrame(data, index = indices)
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    data["C++"] = [78.5, 69.0, 85.5, 83.0, 72.5, 68.0, 85.5]
+    data.insert(loc=3, column="C#",value= [75.0, 83.5, 69.5, 81.5, 73.5, 68.5, 84.5])
+    print(data)
+    data[['C++', 'C#', 'Python']].plot.hist(bins=3, alpha=0.5).get_figure().savefig('/tmp/job_candidates.png')
 #####
 numpy_dataframe()
 DataFrameAttributes()
 DataFrameAccess()
 DataFrameModifications()
 DataFrameArithmetic()
+DataFrameFiltering()
+DataFrameStatistics()
+DataFrameMissingDataHandling()
+DataFrameIteration()
+DataFrameTimeSeries()
+DataFramePlotting()
