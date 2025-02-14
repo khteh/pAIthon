@@ -13,6 +13,8 @@ numpy = "*"
 matplotlib = "*"
 natsort = "*"
 pandas = "*"
+polars = {extras = ["pandas", "numpy"], version = "*"}
+requests = "*"
 
 [dev-packages]
 
