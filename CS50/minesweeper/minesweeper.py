@@ -304,7 +304,7 @@ class MinesweeperAI():
         j = random.randrange(self.width)
         if (i,j) not in self.mines and (i,j) not in self.moves_made:
             return (i,j)
-        """     
+        """
         all_cells = set(itertools.product(range(self.height), range(self.width)))
         available_moves = list(all_cells - self.moves_made - self.mines)
         if available_moves:
