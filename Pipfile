@@ -15,7 +15,6 @@ natsort = "*"
 pandas = "*"
 polars = {extras = ["pandas", "numpy"], version = "*"}
 requests = "*"
-pint = "*"
 
 [dev-packages]
 
