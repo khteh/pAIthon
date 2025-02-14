@@ -50,11 +50,11 @@ def DataFrameAccess():
     data = pd.DataFrame(data, index = indices)
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     print("\nCities:")
-    print(data['City']) # pamdas.core.series.Series data type
+    print(data['City']) # pandas.core.series.Series data type
     print("\nRow 104 accessed by index key / row label:")
-    print(data.loc[104])# pamdas.core.series.Series data type
+    print(data.loc[104])# pandas.core.series.Series data type
     print("\nRow 104 accessed by 0-based index counter:")
-    print(data.iloc[3])# pamdas.core.series.Series data type
+    print(data.iloc[3])# pandas.core.series.Series data type
     print(f"City at row 103: {data.City[103]}") # Series object permits usage of direct indexing
     print("\nValues:")
     print(data.values)
@@ -67,7 +67,12 @@ def DataFrameAccess():
     print(data.at[104, 'City'])
     print("Row 104 City accessed using index counter:")
     print(data.iat[3, 1])
-    print("\nModify the scores with evenly-spaced values between 50 and 90:")
+    print("\nData before modification:")
+    print(data)
+    print("\nModify the row[1:5) Python column (axis-1) with evenly-spaced values between 0 and 100:")
+    data.iloc[1:5, -1] = numpy.linspace(0,100,4)
+    print(data)
+    print("\nModify the Python column (axis-1) with evenly-spaced values between 50 and 90:")
     data.iloc[:, -1] = numpy.linspace(50,90,len(data))
     print(data)
 

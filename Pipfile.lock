@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "16e4e80c2f5bd052906a28b1cddf7fdd67bdc7b291003cab08bf9ec72bf4d8a0"
+            "sha256": "cea116e65c825dd41130bb90e1706dbee4befc6cb56d906e0bfbe029730452be"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -211,6 +211,22 @@
                 "sha256:ebba5f4d5ea615af3f7fd70fc310636fbb2bbd1f566ac0a23d98dd412de50051"
             ],
             "version": "==25.2.10"
+        },
+        "flexcache": {
+            "hashes": [
+                "sha256:18743bd5a0621bfe2cf8d519e4c3bfdf57a269c15d1ced3fb4b64e0ff4600656",
+                "sha256:d43c9fea82336af6e0115e308d9d33a185390b8346a017564611f1466dcd2e32"
+            ],
+            "markers": "python_version >= '3.9'",
+            "version": "==0.3"
+        },
+        "flexparser": {
+            "hashes": [
+                "sha256:266d98905595be2ccc5da964fe0a2c3526fbbffdc45b65b3146d75db992ef6b2",
+                "sha256:3738b456192dcb3e15620f324c447721023c0293f6af9955b481e91d00179846"
+            ],
+            "markers": "python_version >= '3.9'",
+            "version": "==0.4"
         },
         "fonttools": {
             "hashes": [
@@ -966,6 +982,23 @@
             ],
             "markers": "python_version >= '3.9'",
             "version": "==11.1.0"
+        },
+        "pint": {
+            "hashes": [
+                "sha256:35275439b574837a6cd3020a5a4a73645eb125ce4152a73a2f126bf164b91b80",
+                "sha256:aa54926c8772159fcf65f82cc0d34de6768c151b32ad1deb0331291c38fe7659"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.9'",
+            "version": "==0.24.4"
+        },
+        "platformdirs": {
+            "hashes": [
+                "sha256:357fb2acbc885b0419afd3ce3ed34564c13c9b95c89360cd9563f73aa5e2b907",
+                "sha256:73e575e1408ab8103900836b97580d5307456908a03e92031bab39e4554cc3fb"
+            ],
+            "markers": "python_version >= '3.8'",
+            "version": "==4.3.6"
         },
         "polars": {
             "extras": [
