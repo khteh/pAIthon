@@ -47,6 +47,10 @@ def csvArray(i:int, j: int, k: int, path):
     print(f"\n=== {csvArray.__name__} ===")
     data = numpy.zeros((i,j,k))
     print(f"id: {id(data)}, ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    """
+    https://stackoverflow.com/questions/79429728/python-multidimension-array-axis-and-index-to-load-csv-file-into
+    Replacing the i-th element in axis 1 would be data[:, i] =, in axis 2 would be data[:, :, i] =. Here :, is shorthand for "all entries in axis" (i.e. all entries in axis 0 for data[:, i], all entries in axis 0 and 1 for data[:, :, i]) 
+    """
     for index, file in enumerate(Path.cwd().glob(path)):
         print(f"index: {index}, file: {file.name}")
         data[index] =  numpy.loadtxt(file, delimiter=",")
