@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy
 from collections import namedtuple
+"""
+DataFrame objects are collections of Series objects.
+Each item in a Series has an index.
+"""
 def numpy_dataframe():
     print(f"=== {numpy_dataframe.__name__} ===")
     d = {'x': range(10), 'y': numpy.arange(1,20, 2), 'z': 100}
@@ -50,16 +54,22 @@ def DataFrameAccess():
     data = pd.DataFrame(data, index = indices)
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     print("\nCities:")
-    print(data['City']) # pandas.core.series.Series data type
+    print(data['City']) # pandas.core.series.Series data type. Each item in the Series has an index.
     print("\nRow 104 accessed by index key / row label:")
-    print(data.loc[104])# pandas.core.series.Series data type
+    print(data.loc[104])# pandas.core.series.Series data type. Each item in the Series has an index.
     print("\nRow 104 accessed by 0-based index counter:")
-    print(data.iloc[3])# pandas.core.series.Series data type
+    print(data.iloc[3])# pandas.core.series.Series data type. Each item in the Series has an index.
     print(f"City at row 103: {data.City[103]}") # Series object permits usage of direct indexing
     print("\nValues:")
     print(data.values)
     print("\nAge and Score accessed by column index key / row label:")
     print(data.loc[:, ['Age', 'Python']])
+    print("\nAge and Score accessed by column index key / row label [103:105]:")
+    print(data.loc[103:105, ['Age', 'Python']])
+    print("\nRow 105 with all columns:")
+    print(data.loc[105, :])
+    print("\nUsing .loc with a filter:")
+    print(data.loc[data.Name == "Robin"])
     print("\nAge and Score accessed by 0-based column index counters:")
     print(data.iloc[:, [2,3]])
     print("Row 104 City accessed using row/column labels:")
@@ -286,6 +296,27 @@ def DataFramePlotting():
     data.insert(loc=3, column="C#",value= [75.0, 83.5, 69.5, 81.5, 73.5, 68.5, 84.5])
     print(data)
     data[['C++', 'C#', 'Python']].plot.hist(bins=3, alpha=0.5).get_figure().savefig('/tmp/job_candidates.png')
+
+def DataFrameGroupBy():
+    print(f"\n=== {DataFrameGroupBy.__name__} ===")
+    dtypes = {
+        "first_name": "category", #Panda category type which looks for commonality
+        "gender": "category",
+        "type": "category",
+        "state": "category",
+        "party": "category"
+    }
+    data = pd.read_csv("data/legislators-historical.csv", dtype=dtypes,usecols=list(dtypes)+["birthday","last_name"],parse_dates=["birthday"])
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}, types: {data.dtypes}")
+    print(data.head())
+    state_count = data.groupby("state",observed=True).count()
+    print("\nstate legislators count:")
+    print(state_count)
+    state_gender_count = data.groupby(["state", "gender"],observed=True).count() # This will return a Series object using MultiIndex
+    print("\nstate/gender legislators count:")
+    print(state_gender_count)
+    print("\nstate_gender_count index:")
+    print(state_gender_count.index[:5])
 #####
 numpy_dataframe()
 DataFrameAttributes()
@@ -298,3 +329,4 @@ DataFrameMissingDataHandling()
 DataFrameIteration()
 DataFrameTimeSeries()
 DataFramePlotting()
+DataFrameGroupBy()
