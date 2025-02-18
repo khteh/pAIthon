@@ -1,6 +1,10 @@
 # pAIthon
 
-Python scripts to practice advanced features of the language in the field of AI
+Python scripts to practice advanced features of the language in the field of AI:
+
+- numpy
+- pandas
+- polars
 
 ## Harvard Extended CS50 course works
 
