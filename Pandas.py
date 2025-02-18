@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy
+import numpy, timeit
 from collections import namedtuple
 """
 DataFrame objects are collections of Series objects.
@@ -297,7 +297,20 @@ def DataFramePlotting():
     print(data)
     data[['C++', 'C#', 'Python']].plot.hist(bins=3, alpha=0.5).get_figure().savefig('/tmp/job_candidates.png')
 
+def groupby_lambda(data):
+    data.groupby("Outlet", sort=False, observed=True)["Title"].apply(
+        lambda series: series.str.contains("Fed").sum() # This is python code which runs on each group. Python is slower
+    ).nlargest(10)
+
+def groupby_vectorization(data):
+    mentions_fed = data['Title'].str.contains("Fed")
+    mentions_fed.groupby(data["Outlet"], sort=False, observed=True).sum().nlargest(10)
+
 def DataFrameGroupBy():
+    """
+    The groupby doesn't care what you group on as long as it works on the same shape and index of the DataFrame.
+    Group on a single column, a combination of columns, or a separate Series with the same shape and index.
+    """
     print(f"\n=== {DataFrameGroupBy.__name__} ===")
     dtypes = {
         "first_name": "category", #Panda category type which looks for commonality
@@ -307,7 +320,8 @@ def DataFrameGroupBy():
         "party": "category"
     }
     data = pd.read_csv("data/legislators-historical.csv", dtype=dtypes,usecols=list(dtypes)+["birthday","last_name"],parse_dates=["birthday"])
-    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}, types: {data.dtypes}")
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    print(data.dtypes)
     print(data.head())
     state_count = data.groupby("state",observed=True).count()
     print("\nstate legislators count:")
@@ -317,6 +331,109 @@ def DataFrameGroupBy():
     print(state_gender_count)
     print("\nstate_gender_count index:")
     print(state_gender_count.index[:5])
+    state_groups = data.groupby("state",observed=True)
+    print(f"states: {state_groups.groups.keys()}")
+    """
+    https://docs.python.org/3/library/string.html#format-string-syntax
+    https://docs.python.org/3/library/functions.html#repr
+    for state, frame in state_groups:
+        print(f"--- First 3 entries for {state!r} ---") # Calls repr() on the 'state' argument first
+        print(frame.head(3), end="\n\n")
+    """
+    print(f"\ngroups['PA']:")
+    print(state_groups.groups["PA"])
+    print(f"\nget_groups('PA'):")
+    print(state_groups.get_group("PA"))
+    print(f"\ndata.loc[data['state'] == 'PA']:")
+    print(data.loc[data["state"] == "PA"])
+    state, frame = next(iter(state_groups))
+    print(f"\nIter state: {state!r}")
+    print(frame.head(3))
+    print(f"\n--- Processing time series data from csv: ---")
+    data = pd.read_csv("data/airqualities.csv", 
+                        na_values=[-200], # The csv uses -200 as placeholder for empty / invalid value
+                        usecols=["Date", "Time", "CO(GT)", "T", "RH", "AH"])
+    data["timestamp"] = pd.to_datetime(data.pop("Date") + " " + data.pop("Time"), format="%m/%d/%y %H:%M:%S")
+    data.rename(columns={
+        "CO(GT)": "co",
+        "T": "temp_c",
+        "RH": "rel_hum",
+        "AH": "abs_hum"
+    }, inplace=True)
+    # Replace the auto-generated auto-increment index during read_csv
+    data.set_index("timestamp", inplace=True)
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    print(data.dtypes)
+    print(f"\nTime series from {data.index.min()} to {data.index.max()}")
+    days = data.index.day_name()
+    print(f"\nDays of week:")
+    print(days)
+    day_groups = data.groupby(days)
+    print(f"\nMean 'co' by days:")
+    print(day_groups["co"].mean())
+    hours = data.index.hour
+    print(f"\nHours:")
+    print(hours)
+    day_hour_groups = data.groupby([days, hours])
+    print(f"\nMean 'co' by days and hours:")
+    print(day_hour_groups["co"].mean().rename_axis(["Days", "Hours"]))
+    print("\n--- Creating a series of bins ---")
+    bins = pd.cut(data["temp_c"], bins=3, labels=("Cold", "Normal", "Hot"))
+    print("Temperature categories:")
+    print(bins)
+    print("\n--- Group a set of columns by categories/bins: ---")
+    humidity_groups = data[["rel_hum", "abs_hum"]].groupby(bins, observed=True).agg(["mean", "median"])
+    print(humidity_groups)
+    print("\n--- Group by years and quarters (derived multi-index): ---")
+    year_quarter_groups = data.groupby([data.index.year, data.index.quarter], observed=True).agg(["min", "max"]).rename_axis(["Year", "Quarter"])
+    print(year_quarter_groups)
+    print("\n--- Group by years and quarters (derived multi-index) using resample: ---")
+    # Resample only works on time-series data. "QE" means end of quarter
+    quarter_groups = data.resample("QE").agg(["min", "max"])
+    print(quarter_groups)
+    print(f"\n--- Processing tab-separated, no-header and epoch time data from csv: ---")
+    data = pd.read_csv("data/news.csv", sep="\t", index_col=0, 
+                       names=["Title","Url", "Outlet", "Category", "Cluster", "Host", "Timestamp"], # This provides the col names since the csv does not have header
+                       dtype={
+                            "Outlet": "category",
+                            "Category":"category",
+                            "Cluster":"category",
+                            "Host": "category"
+                        })
+    data["Timestamp"] = pd.to_datetime(data["Timestamp"], unit="ms")
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    print(data.dtypes)
+    print(data)
+    print("\n--- Group on 'Outlet' column, use 'Title' column on the output and apply lambdas ---")
+    outlet_groups = data.groupby("Outlet", sort=False, observed=True)["Title"].apply(
+        lambda series: series.str.contains("Fed").sum() # This is python code which runs on each group. Python is slower
+    ).nlargest(10)
+    print("Total outlet titles which contains 'Fed':")
+    print(outlet_groups)
+    outlet_groups = data.groupby("Outlet", sort=False,observed=True)
+    #print(f"outlets: {outlet_groups.groups.keys()}")
+    outlet, frame = next(iter(outlet_groups))
+    print(f"\nIter outlet: {outlet!r}")
+    print(frame.head())
+    title, frame = next(iter(outlet_groups["Title"]))
+    print(f"\nIter title: {title!r}")
+    print(frame.head())
+    print("\nOutlet titles which contains 'Fed':")
+    print(frame.str.contains("Fed"))
+    print(f"\nTotal outlet titles which contains 'Fed': {frame.str.contains("Fed").sum()}")# Bool False cast to 0; True cast to 1
+    print("\n--- Doing the same grouping on Panda's land is faster! ---")
+    mentions_fed = data['Title'].str.contains("Fed")
+    result = mentions_fed.groupby(data["Outlet"], sort=False, observed=True).sum().nlargest(10)
+    print("Total outlet titles which contains 'Fed':")
+    print(result)
+    print("\nShrink data type for speed and space efficiency:")
+    # https://numpy.org/doc/stable/user/basics.types.html
+    result = mentions_fed.groupby(data["Outlet"], sort=False, observed=True).sum().nlargest(10).astype(numpy.uintc)
+    print(result)
+    print(f"\nPerformance comparison between using lambda and vectorization:")
+    t1 = timeit.Timer(lambda: groupby_lambda(data))
+    t2 = timeit.Timer(lambda: groupby_vectorization(data))
+    print(f"Lambda: {t1.timeit(number=10)}s, Vectorization: {t2.timeit(number=10)}s")
 #####
 numpy_dataframe()
 DataFrameAttributes()
