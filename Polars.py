@@ -1,4 +1,5 @@
-import numpy,polars,pathlib,magic
+import numpy,polars,pathlib,magic,timeit
+import pandas as pd
 from pathlib import Path
 from downloads import download_file
 # https://realpython.com/polars-python/
@@ -66,41 +67,92 @@ def LazyAPI():
     print("Query result summary:")
     print(result.describe())
 
-def ScanLargeData(url, local):
-    print(f"\n=== {ScanLargeData.__name__} ===")
+def LoadLargeCSV(url, local):
     if not Path(local).exists() or not Path(local).is_file():
         download_file(url, Path(local))
     print(f"file magic: {magic.from_file(local)}")
-    data = polars.scan_csv(Path(local))
+
+def ScanLargeData(path):
+    print(f"\n=== {ScanLargeData.__name__} ===")
+    data = polars.scan_csv(Path(path))
+    print(f"data: {data}")
     query = (
-    data
-     .filter((polars.col("Model Year") >= 2018))
-     .filter(
-         polars.col("Electric Vehicle Type") == "Battery Electric Vehicle (BEV)"
-     )
-     .group_by(["State", "Make"])
-     .agg(
-         polars.mean("Electric Range").alias("Average Electric Range"),
-         polars.min("Model Year").alias("Oldest Model Year"),
-         polars.count().alias("Number of Cars"),
-     )
-     .filter(polars.col("Average Electric Range") > 0)
-     .filter(polars.col("Number of Cars") > 5)
-     .sort(polars.col("Number of Cars"), descending=True)
+        data
+        .filter((polars.col("Model Year") >= 2018))
+        .filter(
+            polars.col("Electric Vehicle Type") == "Battery Electric Vehicle (BEV)"
+        )
+        .group_by(["State", "Make"])
+        .agg(
+            polars.mean("Electric Range").alias("Average Electric Range"),
+            polars.min("Model Year").alias("Oldest Model Year"),
+            polars.len().alias("Number of Cars"),
+        )
+        .filter(polars.col("Average Electric Range") > 0)
+        .filter(polars.col("Number of Cars") > 5)
+        .sort(polars.col("Number of Cars"), descending=True)
     )
     print(f"Lazy query:")
     print(query.explain())
     #print("Lazy query plan:")
     #print(query.show_graph())
-    print("Query result:")
     result = query.collect()
-    print(result)
     print("Query result summary:")
     print(result.describe())
-   
+    print("Query result:")
+    print(result)
+
+def ScanLargeDataPandas(path):
+    print(f"\n=== {ScanLargeDataPandas.__name__} ===")
+    data = pd.read_csv(path)
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    #print(data.dtypes)
+    #print(data.head())
+    filter = (data["Model Year"] >= 2018) & (data["Electric Vehicle Type"] == "Battery Electric Vehicle (BEV)")
+    data = data[filter].groupby(["State", "Make"], sort=False, observed=True, as_index=False).agg( avg_electric_range=pd.NamedAgg(column="Electric Range", aggfunc="mean"), oldest_model_year=pd.NamedAgg(column="Model Year", aggfunc="min"), count=pd.NamedAgg(column="Model Year", aggfunc="count"))
+    filter = (data["avg_electric_range"] > 0) & (data["count"] > 5)
+    data = data[filter].sort_values(by=["count"], ascending=[False]) # Tie-breaks in C++ scores between Jana and Nori
+    print(data.head(5))
+    print(data.tail(5))
+
+def PolarsLargeData(path):
+    data = polars.scan_csv(Path(path))
+    query = (
+        data
+        .filter((polars.col("Model Year") >= 2018))
+        .filter(
+            polars.col("Electric Vehicle Type") == "Battery Electric Vehicle (BEV)"
+        )
+        .group_by(["State", "Make"])
+        .agg(
+            polars.mean("Electric Range").alias("Average Electric Range"),
+            polars.min("Model Year").alias("Oldest Model Year"),
+            polars.len().alias("Number of Cars"),
+        )
+        .filter(polars.col("Average Electric Range") > 0)
+        .filter(polars.col("Number of Cars") > 5)
+        .sort(polars.col("Number of Cars"), descending=True)
+    )
+    query.collect()
+
+def PandasLargeData(path):
+    data = pd.read_csv(path)
+    filter = (data["Model Year"] >= 2018) & (data["Electric Vehicle Type"] == "Battery Electric Vehicle (BEV)")
+    data = data[filter].groupby(["State", "Make"], sort=False, observed=True, as_index=False).agg( avg_electric_range=pd.NamedAgg(column="Electric Range", aggfunc="mean"), oldest_model_year=pd.NamedAgg(column="Model Year", aggfunc="min"), count=pd.NamedAgg(column="Model Year", aggfunc="count"))
+    filter = (data["avg_electric_range"] > 0) & (data["count"] > 5)
+    data = data[filter].sort_values(by=["count"], ascending=[False]) # Tie-breaks in C++ scores between Jana and Nori
+
+def PandasPolarBenchmark(path):
+    print(f"\nPerformance comparison between Pandas and Polars:")
+    t1 = timeit.Timer(lambda: PandasLargeData(path))
+    t2 = timeit.Timer(lambda: PolarsLargeData(path))
+    print(f"Pandas: {t1.timeit(number=10)}s, Polars: {t2.timeit(number=10)}s")
 ###
 SelectContext()
 FilterContext()
 Aggregation()
 LazyAPI()
-ScanLargeData("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")
+LoadLargeCSV("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")
+ScanLargeData("/tmp/electric_cars.csv")
+ScanLargeDataPandas("/tmp/electric_cars.csv")
+PandasPolarBenchmark("/tmp/electric_cars.csv")
