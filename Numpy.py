@@ -1,4 +1,4 @@
-import decimal,numpy, tensorflow as tf
+import numpy, tensorflow as tf
 from pathlib import Path
 import numpy.lib.recfunctions as reconcile
 import matplotlib.pyplot as plt
@@ -8,7 +8,7 @@ def oneDArray(n: int):
     print(f"{one} shape: {one.shape}\n")
 
 def twoDArray(n: int):
-    print(f"\n=== {twoDArray.__name__} ===")
+    print(f"=== {twoDArray.__name__} ===")
     cols = (int)(n / 3)
     two = numpy.array([range(cols), range(cols, 2*cols), range(2*cols, 3*cols)])
     print(f"{two} ndim: {two.ndim}, size: {two.size}, shape: {two.shape}")

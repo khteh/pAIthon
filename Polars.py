@@ -1,4 +1,4 @@
-import numpy,polars,pathlib,magic,timeit
+import numpy,polars,timeit
 import pandas as pd
 from pathlib import Path
 from downloads import download_file
@@ -13,7 +13,7 @@ buildings_data = {
 }
 
 def SelectContext():
-    print(f"\n=== {SelectContext.__name__} ===")
+    print(f"=== {SelectContext.__name__} ===")
     buildings = polars.DataFrame(buildings_data)
     print(f"buildings: {buildings}")
     print("sqft:")
@@ -67,13 +67,9 @@ def LazyAPI():
     print("Query result summary:")
     print(result.describe())
 
-def LoadLargeCSV(url, local):
-    if not Path(local).exists() or not Path(local).is_file():
-        download_file(url, Path(local))
-    print(f"file magic: {magic.from_file(local)}")
-
-def ScanLargeData(path):
+def ScanLargeData(url, path):
     print(f"\n=== {ScanLargeData.__name__} ===")
+    download_file(url, Path(path))
     data = polars.scan_csv(Path(path))
     print(f"data: {data}")
     query = (
@@ -102,8 +98,9 @@ def ScanLargeData(path):
     print("Query result:")
     print(result)
 
-def ScanLargeDataPandas(path):
+def ScanLargeDataPandas(url, path):
     print(f"\n=== {ScanLargeDataPandas.__name__} ===")
+    download_file(url, Path(path))
     data = pd.read_csv(path)
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     print(data.dtypes)
@@ -142,8 +139,9 @@ def PandasLargeData(path):
     filter = (data["avg_electric_range"] > 0) & (data["count"] > 5)
     data = data[filter].sort_values(by=["count"], ascending=[False]) # Tie-breaks in C++ scores between Jana and Nori
 
-def PandasPolarBenchmark(path):
+def PandasPolarBenchmark(url, path):
     print(f"\nPerformance comparison between Pandas and Polars:")
+    download_file(url, Path(path))
     t1 = timeit.Timer(lambda: PandasLargeData(path))
     t2 = timeit.Timer(lambda: PolarsLargeData(path))
     print(f"Pandas: {t1.timeit(number=10)}s, Polars: {t2.timeit(number=10)}s")
@@ -153,7 +151,6 @@ if __name__ == "__main__":
     FilterContext()
     Aggregation()
     LazyAPI()
-    LoadLargeCSV("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")
-    ScanLargeData("/tmp/electric_cars.csv")
-    ScanLargeDataPandas("/tmp/electric_cars.csv")
-    PandasPolarBenchmark("/tmp/electric_cars.csv")
+    ScanLargeData("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")
+    ScanLargeDataPandas("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")
+    PandasPolarBenchmark("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")

@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy, timeit
-from collections import namedtuple
 """
 DataFrame objects are collections of Series objects.
 Each item in a Series has an index.
