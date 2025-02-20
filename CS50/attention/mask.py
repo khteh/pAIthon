@@ -28,6 +28,7 @@ https://stackoverflow.com/questions/34199233/how-to-prevent-tensorflow-from-allo
 gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
   tf.config.experimental.set_memory_growth(gpu, True)
+
 def main():
     text = input("Text: ")
 
@@ -36,7 +37,7 @@ def main():
     inputs = tokenizer(text, return_tensors="tf")
     mask_token_index = get_mask_token_index(tokenizer.mask_token_id, inputs)
     if mask_token_index is None:
-        sys.exit(f"Input must include mask token {tokenizer.mask_token}.")
+        sys.exit(f"Error! Input must include mask token {tokenizer.mask_token}!")
 
     # Use model to process input
     model = TFBertForMaskedLM.from_pretrained(MODEL)
@@ -50,7 +51,6 @@ def main():
 
     # Visualize attentions
     visualize_attentions(inputs.tokens(), result.attentions)
-
 
 def get_mask_token_index(mask_token_id, inputs):
     """

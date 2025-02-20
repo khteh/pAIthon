@@ -1,4 +1,4 @@
-import decimal,numpy
+import decimal,numpy, tensorflow as tf
 from pathlib import Path
 import numpy.lib.recfunctions as reconcile
 import matplotlib.pyplot as plt
@@ -152,6 +152,24 @@ def HierarchicalDataAnalysis(companies, prices):
     plt.ylabel("Friday Prices ($)")
     plt.title("Tech Share Valuation")
     #plt.show() This blocks
+"""
+Tensors in ML are multi-dimensional arrays used to and process data for NN
+Keras is a high-level NN API written in Python. It runs on top of deep-learning frameworks like TF. It wraps TF so that there is less code to write using Keras compared to using TF alone.
+https://www.tensorflow.org/hub - repository of pretrained models.
+https://ai.google.dev/edge/litert - light framework for IOT
+"""
+def Tensors():
+    print(f"\n=== {Tensors.__name__} ===")
+    image_tensors = numpy.array([
+        [255,0,255], # Row 1: white, black, white
+        [0,255,0],  # Row 2: black, white, black
+        [255,0,255] # Row 3: white, black, white
+    ])
+    array1 = numpy.array([[2.,4.,6.]])
+    array2 = numpy.array([[1.],[3.],[5.]])
+    result = tf.multiply(tf.convert_to_tensor(array1), tf.convert_to_tensor(array2))
+    print("\ntf.multiply result: ")
+    print(result)
 
 @numpy.vectorize
 def profit_with_bonus(first, last):
@@ -203,3 +221,4 @@ structuredArray()
 reconcilation("data/issued_checks.csv", "data/cashed_checks.csv", "data/issued_dupe.csv")
 HierarchicalDataAnalysis("data/companies.csv", "data/prices-?.csv")
 VectorOperations("data/full_portfolio.csv")
+Tensors()
