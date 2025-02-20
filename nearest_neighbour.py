@@ -21,5 +21,5 @@ def nearest(x_train, x_test):
             min_distance = distance
             nearest = i
     print(nearest)
-
-nearest(x_train, x_test)
+if __name__ == "__main__":
+    nearest(x_train, x_test)

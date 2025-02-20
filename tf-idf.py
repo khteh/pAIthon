@@ -36,4 +36,5 @@ def main(text):
 
         print(tfidf)
 
-main(text)
+if __name__ == "__main__":
+    main(text)

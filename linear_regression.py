@@ -66,5 +66,6 @@ def train_and_test():
     # this will print out the predicted prics for the two new cabins in the test data set
     print(x_test @ c)
 
-find_best(X, y, c)
-train_and_test()
+if __name__ == "__main__":
+    find_best(X, y, c)
+    train_and_test()

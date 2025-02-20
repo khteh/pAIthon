@@ -147,12 +147,13 @@ def PandasPolarBenchmark(path):
     t1 = timeit.Timer(lambda: PandasLargeData(path))
     t2 = timeit.Timer(lambda: PolarsLargeData(path))
     print(f"Pandas: {t1.timeit(number=10)}s, Polars: {t2.timeit(number=10)}s")
-###
-SelectContext()
-FilterContext()
-Aggregation()
-LazyAPI()
-LoadLargeCSV("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")
-ScanLargeData("/tmp/electric_cars.csv")
-ScanLargeDataPandas("/tmp/electric_cars.csv")
-PandasPolarBenchmark("/tmp/electric_cars.csv")
+
+if __name__ == "__main__":
+    SelectContext()
+    FilterContext()
+    Aggregation()
+    LazyAPI()
+    LoadLargeCSV("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")
+    ScanLargeData("/tmp/electric_cars.csv")
+    ScanLargeDataPandas("/tmp/electric_cars.csv")
+    PandasPolarBenchmark("/tmp/electric_cars.csv")

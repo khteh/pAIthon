@@ -114,5 +114,10 @@ def get_model():
                 loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
                 metrics=['accuracy'])
     return model
+"""
+Only executes when this file is run as a script
+Does NOT execute when this file is imported as a module
+__name__ stores the name of a module when it is loaded. It is set to either the string of "__main__" if it's in the top-level or the module's name if it is being imported.
+"""
 if __name__ == "__main__":
     main()

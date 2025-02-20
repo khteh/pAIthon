@@ -22,4 +22,5 @@ def main(p1):
     seq = generate(p1, 10)
     return count_seq(seq)
 
-print(main(2/3))
+if __name__ == "__main__":
+    print(main(2/3))

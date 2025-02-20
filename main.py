@@ -114,4 +114,6 @@ def main():
     kmin(3)
     testZip()
     matrix_sums()
-main()
+
+if __name__ == "__main__":
+    main()

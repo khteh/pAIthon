@@ -152,13 +152,13 @@ def HierarchicalDataAnalysis(companies, prices):
     plt.ylabel("Friday Prices ($)")
     plt.title("Tech Share Valuation")
     #plt.show() This blocks
-"""
-Tensors in ML are multi-dimensional arrays used to and process data for NN
-Keras is a high-level NN API written in Python. It runs on top of deep-learning frameworks like TF. It wraps TF so that there is less code to write using Keras compared to using TF alone.
-https://www.tensorflow.org/hub - repository of pretrained models.
-https://ai.google.dev/edge/litert - light framework for IOT
-"""
 def Tensors():
+    """
+    Tensors in ML are multi-dimensional arrays used to and process data for NN
+    Keras is a high-level NN API written in Python. It runs on top of deep-learning frameworks like TF. It wraps TF so that there is less code to write using Keras compared to using TF alone.
+    https://www.tensorflow.org/hub - repository of pretrained models.
+    https://ai.google.dev/edge/litert - light framework for IOT
+    """
     print(f"\n=== {Tensors.__name__} ===")
     image_tensors = numpy.array([
         [255,0,255], # Row 1: white, black, white
@@ -199,26 +199,27 @@ def VectorOperations(data):
         portfolio["Fri"] - portfolio["Mon"]
     )
     print(f"Bonuses: {bonuses}")
-############
-oneDArray(10)
-twoDArray(30)
-multiDArray(3,4,5)
-csvArray(3,2,3, "data/file?.csv")
-"""
-https://stackoverflow.com/questions/17079279/how-is-axis-indexed-in-numpys-array
-The axis number of the dimension is the index of that dimension within the array's shape.
-For example, if a 2D array a has shape (5,6), then you can access a[0,0] up to a[4,5]. 
-Axis 0 is thus the first dimension (the "rows"), and axis 1 is the second dimension (the "columns"). 
-In higher dimensions, where "row" and "column" stop really making sense, try to think of the axes in terms of the shapes and indices involved.
 
-https://stackoverflow.com/questions/46855793/understanding-axes-in-numpy
-In numpy, axis ordering follows zyx convention, instead of the usual (and maybe more intuitive) xyz.
+if __name__ == "__main__":
+    oneDArray(10)
+    twoDArray(30)
+    multiDArray(3,4,5)
+    csvArray(3,2,3, "data/file?.csv")
+    """
+    https://stackoverflow.com/questions/17079279/how-is-axis-indexed-in-numpys-array
+    The axis number of the dimension is the index of that dimension within the array's shape.
+    For example, if a 2D array a has shape (5,6), then you can access a[0,0] up to a[4,5]. 
+    Axis 0 is thus the first dimension (the "rows"), and axis 1 is the second dimension (the "columns"). 
+    In higher dimensions, where "row" and "column" stop really making sense, try to think of the axes in terms of the shapes and indices involved.
 
-https://stackoverflow.com/questions/79429728/python-multidimension-array-axis-and-index-to-load-csv-file-into
-"""
-csvArrayInsert(4,2,3,"data/file?.csv",2,0,1,"data/file4_extra_row.csv")
-structuredArray()
-reconcilation("data/issued_checks.csv", "data/cashed_checks.csv", "data/issued_dupe.csv")
-HierarchicalDataAnalysis("data/companies.csv", "data/prices-?.csv")
-VectorOperations("data/full_portfolio.csv")
-Tensors()
+    https://stackoverflow.com/questions/46855793/understanding-axes-in-numpy
+    In numpy, axis ordering follows zyx convention, instead of the usual (and maybe more intuitive) xyz.
+
+    https://stackoverflow.com/questions/79429728/python-multidimension-array-axis-and-index-to-load-csv-file-into
+    """
+    csvArrayInsert(4,2,3,"data/file?.csv",2,0,1,"data/file4_extra_row.csv")
+    structuredArray()
+    reconcilation("data/issued_checks.csv", "data/cashed_checks.csv", "data/issued_dupe.csv")
+    HierarchicalDataAnalysis("data/companies.csv", "data/prices-?.csv")
+    VectorOperations("data/full_portfolio.csv")
+    Tensors()
