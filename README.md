@@ -1,6 +1,6 @@
 # pAIthon
 
-Python language features and AI exploration.
+Exploration of python language features and AI/ML.
 
 Libraries used:
 
