@@ -2,12 +2,13 @@
 
 Python language features and AI exploration.
 
-- Libraries used:
-  - numpy
-  - pandas
-  - polars
-  - scikit-learn
-  - tensorflow
+Libraries used:
+
+- numpy
+- pandas
+- polars
+- scikit-learn
+- tensorflow
 
 ## Harvard Extended CS50 course works
 
