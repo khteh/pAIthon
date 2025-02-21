@@ -1,12 +1,13 @@
 # pAIthon
 
-Python scripts to practice advanced features of the language in the field of AI using the following libraries:
+Python language features and AI exploration.
 
-- numpy
-- pandas
-- polars
-- scikit-learn
-- tensorflow
+- Libraries used:
+  - numpy
+  - pandas
+  - polars
+  - scikit-learn
+  - tensorflow
 
 ## Harvard Extended CS50 course works
 
