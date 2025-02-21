@@ -1,5 +1,4 @@
-import pandas as pd
-import numpy, timeit
+import numpy, timeit, pandas as pd
 """
 DataFrame objects are collections of Series objects.
 Each item in a Series has an index.

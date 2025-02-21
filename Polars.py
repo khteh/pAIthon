@@ -1,5 +1,4 @@
-import numpy,polars,timeit
-import pandas as pd
+import numpy,polars,timeit, pandas as pd
 from pathlib import Path
 from downloads import download_file
 # https://realpython.com/polars-python/
