@@ -105,7 +105,7 @@ def ScanLargeDataPandas(url, path):
     print("\ndata.describe():")
     print(data.describe())
     print("\ndata.info():")
-    print(data.info())   
+    data.info()
     print(data.dtypes)
     print(data.head())
     filter = (data["Model Year"] >= 2018) & (data["Electric Vehicle Type"] == "Battery Electric Vehicle (BEV)")

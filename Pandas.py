@@ -27,9 +27,11 @@ def DataFrameAttributes():
     indices = range(101,108)
     data = pd.DataFrame(data, index = indices)
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    print("\ndata.describe():")
+    print(data.describe())
     print("\ndata.info():")
-    print(data.info())
-    print("Memory usage:")
+    data.info()
+    print("\nMemory usage:")
     print(data.memory_usage())
     print("\nData types:")
     print(data.dtypes)
@@ -53,8 +55,10 @@ def DataFrameAccess():
     indices = range(101,108)
     data = pd.DataFrame(data, index = indices)
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    print("\ndata.describe():")
+    print(data.describe())
     print("\ndata.info():")
-    print(data.info())
+    data.info()
     print("\nCities:")
     print(data['City']) # pandas.core.series.Series data type. Each item in the Series has an index.
     print("\nRow 104 accessed by index key / row label:")
@@ -125,7 +129,7 @@ def DataFrameModifications():
     print("\ndata.describe():")
     print(data.describe())
     print("\ndata.info():")
-    print(data.info())
+    data.info()
 
 def DataFrameArithmetic():
     print(f"\n=== {DataFrameArithmetic.__name__} ===")
@@ -138,10 +142,12 @@ def DataFrameArithmetic():
     indices = range(101,108)
     data = pd.DataFrame(data, index = indices)
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
-    print("\ndata.info():")
-    print(data.info())
     data["C++"] = [78.5, 69.0, 85.5, 83.0, 72.5, 68.0, 85.5]
     data.insert(loc=3, column="C#",value= [75.0, 83.5, 69.5, 81.5, 73.5, 68.5, 84.5])
+    print("\ndata.describe():")
+    print(data.describe())
+    print("\ndata.info():")
+    data.info()
     print(data)
     weights = pd.Series(data=[0.3,0.4,0.3],index=['C#','Python','C++'])
     print("\nWeights:")
@@ -151,7 +157,7 @@ def DataFrameArithmetic():
     print("\nWeighted Scores:")
     print(data[weights.index] * weights)
     print("\nWeighted Scores sum:")
-    print(numpy.sum(data[weights.index] * weights))
+    print(numpy.sum(data[weights.index] * weights, axis=1))
     print("\nTotal score of each individual:")
     data['Total'] = numpy.sum(data[weights.index] * weights, axis=1)
     print(data)
@@ -165,7 +171,7 @@ def DataFrameArithmetic():
     print("\ndata.describe():")
     print(data.describe())
     print("\ndata.info():")
-    print(data.info())
+    data.info()
 
 def DataFrameFiltering():
     print(f"\n=== {DataFrameFiltering.__name__} ===")
@@ -191,7 +197,7 @@ def DataFrameFiltering():
     data = data.filter(regex=r"^C(?:\+\+|#)?$")
     print(data)
     print("\ndata.info():")
-    print(data.info())
+    data.info()
 
 def DataFrameStatistics():
     print(f"\n=== {DataFrameStatistics.__name__} ===")
@@ -210,7 +216,7 @@ def DataFrameStatistics():
     print("\ndata.describe():")
     print(data.describe())
     print("\ndata.info():")
-    print(data.info())
+    data.info()
 
 def DataFrameMissingDataHandling():
     print(f"\n=== {DataFrameMissingDataHandling.__name__} ===")
@@ -220,45 +226,53 @@ def DataFrameMissingDataHandling():
     print("\ndata.describe():")
     print(data.describe())
     print("\ndata.info():")
-    print(data.info())
-    print(f"DataFrame with a missing value in a row dropped:")
+    data.info()
+
+    print(f"\nDataFrame with a missing value in a row dropped:")
     data1 = data.dropna()
     print(data1)
     print("\ndata1.describe():")
     print(data1.describe())
     print("\ndata1.info():")
-    print(data1.info())
-    print(f"DataFrame with a missing value in a column dropped:")
+    data1.info()
+
+    print(f"\nDataFrame with a missing value in a column dropped:")
     data1 = data.dropna(axis=1)
     print(data1)
-    print(f"DataFrame with a missing value replaced with 0:")
+    print("\ndata1.info():")
+    data1.info()
+
+    print(f"\nDataFrame with a missing value replaced with 0:")
     data1 = data.fillna(value=0)
     print(data1)
     print("\ndata1.describe():")
     print(data1.describe())
     print("\ndata1.info():")
-    print(data1.info())
-    print(f"DataFrame with a missing value replaced with previous value:")
+    data1.info()
+
+    print(f"\nDataFrame with a missing value replaced with previous value:")
     data1 = data.ffill() # forward-fill
     print(data1)
     print("\ndata1.describe():")
     print(data1.describe())
     print("\ndata1.info():")
-    print(data1.info())
-    print(f"DataFrame with a missing value replaced with next value:")
+    data1.info()
+
+    print(f"\nDataFrame with a missing value replaced with next value:")
     data1 = data.bfill() # backward-fill
     print(data1)
     print("\ndata1.describe():")
     print(data1.describe())
     print("\ndata1.info():")
-    print(data1.info())
-    print(f"DataFrame with a missing value replaced with linear interpolation:")
+    data1.info()
+
+    print(f"\nDataFrame with a missing value replaced with linear interpolation:")
     data1 = data.interpolate()
     print(data1)
     print("\ndata1.describe():")
     print(data1.describe())
     print("\ndata1.info():")
-    print(data1.info())
+    data1.info()
 
 def DataFrameIteration():
     print(f"\n=== {DataFrameIteration.__name__} ===")
@@ -277,16 +291,16 @@ def DataFrameIteration():
     print("\ndata.describe():")
     print(data.describe())
     print("\ndata.info():")
-    print(data.info())
-    print("Iterating columns...")
+    data.info()
+    print("\nIterating columns...")
     for col_label, col in data.items():
         print(col_label, col, sep="\n", end="\n\n")
-    print("Iterating rows...")
+    print("\nIterating rows...")
     for row_label, row in data.iterrows():
         print(row_label, row, sep="\n", end="\n\n")
     #nt = namedtuple("C++", [123, 456])
     #print(nt)
-    print("Iterating rows using named tuples...")
+    print("\nIterating rows using named tuples...")
     for row in data.itertuples():
         #print(row)
         print(f"Name: {row.Name}, City: {row.City}, Age: {row.Age}, C++: {row._4}, C#: {row._6}, Python: {row.Python}")
@@ -332,12 +346,12 @@ def DataFramePlotting():
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     data["C++"] = [78.5, 69.0, 85.5, 83.0, 72.5, 68.0, 85.5]
     data.insert(loc=3, column="C#",value= [75.0, 83.5, 69.5, 81.5, 73.5, 68.5, 84.5])
-    print(data)
     data[['C++', 'C#', 'Python']].plot.hist(bins=3, alpha=0.5).get_figure().savefig('/tmp/job_candidates.png')
     print("\ndata.describe():")
     print(data.describe())
     print("\ndata.info():")
-    print(data.info())
+    data.info()
+    print(data)
 
 def groupby_lambda(data):
     data.groupby("Outlet", sort=False, observed=True)["Title"].apply(
@@ -449,7 +463,7 @@ def DataFrameGroupBy():
     print("\ndata.describe():")
     print(data.describe())
     print("\ndata.info():")
-    print(data.info())
+    data.info()
     print("\n--- Group on 'Outlet' column, use 'Title' column on the output and apply lambdas ---")
     outlet_groups = data.groupby("Outlet", sort=False, observed=True)["Title"].apply(
         lambda series: series.str.contains("Fed").sum() # This is python code which runs on each group. Python is slower

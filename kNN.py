@@ -130,7 +130,7 @@ def AbaloneAge(url, path):
     data.drop(labels=['Sex'], axis=1, inplace=True)
     print(data.head())
     print("\ndata.info():")
-    print(data.info())
+    data.info()
     # Label to predict: "Rings"
     print("\nLabel(Rings) info:")
     print(data["Rings"].describe())
