@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 from io import StringIO
 
 """
@@ -89,11 +90,11 @@ def SimpleLinearRegression():
     x = np.array([5,15,25,35,45,55]).reshape((-1, 1)) # One shape dimension can be -1. In this case, the value is inferred from the length of the array and remaining dimensions.
     y = np.array([5,20,14,32,22,38])
     print(f"x.shape: {x.shape}, y.shape: {y.shape}")
-    model = LinearRegression()
+    model = LinearRegression(n_jobs=-1) # Use all available processors
     model.fit(x, y)
     print(f"b0: {model.intercept_}, b1: {model.coef_}")
-    r_squared = model.score(x, y)
-    print(f"r_squared: {r_squared}") # 1 means perfect fit
+    r_squared = model.score(x, y) # 'r' = residual. Sum of squared residuals
+    print(f"r_squared: {r_squared}") # 1 means perfect fit/overfitting. Low value = underfitting => Linear regression model is not right for the problem in this case.
     predictions = model.predict(x)
     print(f"Predictions: {predictions}")
     # Do it manually according to the mathematical model of simple linear regression:
@@ -109,7 +110,7 @@ def MultipleLinearRegression():
     Input is at least 2-dimensional
     f(x) = b0 + b1x0 + ... + bnxn
     n obvservations: (x1,y1), (x2,y2),(x3,y3),...,(xn,yn)
-    Each observation for the input variable is an n-dimensional array: xi = (xi,1 xi,2 xi,3 ... xi,n). i = ith observation
+    Each observation for the input variable is an n-dimensional array: xi = (xi,1 xi,2 xi,3 ... xi,n). i = ith observation, the # after i is the component of the input.
     """
     """
     8 observations
@@ -121,19 +122,73 @@ def MultipleLinearRegression():
     x = np.array(x)
     y = np.array(y)
     print(f"x: {x.shape}, y: {y.shape}")
-    model = LinearRegression().fit(x,y)
-    r_squared = model.score(x,y)
-    print(f"r_squared: {r_squared}") # 1 means perfect fit
+    model = LinearRegression(n_jobs=-1).fit(x,y)
+    r_squared = model.score(x,y) # 'r' = residual. Sum of squared residuals
+    print(f"r_squared: {r_squared}") # 1 means perfect fit/overfitting. Low value = underfitting => Linear regression model is not right for the problem in this case.
     print(f"b0: {model.intercept_}, coefficients: {model.coef_}")
     predictions = model.predict(x)
+    residuals = y - predictions
     print(f"y:           {y}")
     print(f"predictions: {predictions}")
+    print(f"residuals:   {residuals}")
     x = np.arange(10).reshape((-1, 2)) # One shape dimension can be -1. In this case, the value is inferred from the length of the array and remaining dimensions.
     predictions = model.predict(x)
     print(f"predictions: {predictions}")
+
+def SimplePolynomialRegression():
+    """
+    f(x) = b0 + b1x1 + b2x^2 + ... + bnx^n
+    With only 1 independent variable x, we seek a regression model of the form f(x) = b0 + b1x + b2x^2 + ... + bnx^n
+    Involves 1 extra step of calculating the higher degrees of the input variable value.
+    Preprocessing of the input observations in order to satisfy the polynomial equation, i.e., to derive the high-degree values
+    For example, quadratic model will have 2 features of the input, Qubic is 3, etc.
+    """
+    print(f"\n=== {SimplePolynomialRegression.__name__} ===")
+    x = np.array([5, 15, 25, 35, 45, 55]).reshape((-1, 1)) # 1 input with 6 observations
+    y = np.array([15, 11, 2, 8, 25, 32])
+    transformer = PolynomialFeatures(degree = 2, include_bias=False) # Quadratic. include_bias=False generates X without the column with all '1's
+    print("x:")
+    print(x)
+    x_transformed = transformer.fit_transform(x)
+    print("\nx_transformed:")
+    print(x_transformed)
+    model = LinearRegression(n_jobs=-1).fit(x_transformed, y)
+    r_squared = model.score(x_transformed,y) # 'r' = residual. Sum of squared residuals
+    print(f"r_squared: {r_squared}") # 1 means perfect fit/overfitting. Low value = underfitting => Linear regression model is not right for the problem in this case.
+    print(f"b0: {model.intercept_}, coefficients: {model.coef_}")
+    predictions = model.predict(x_transformed)
+    residuals = y - predictions
+    print(f"y:           {y}")
+    print(f"predictions: {predictions}")
+    print(f"residuals:   {residuals}")
+
+def MultiplePolynomialRegression():
+    """
+    f(x) = b0 + b1x1 + b2x2 + b3x1^2 + b4x1x2 + b5x2^2
+    """
+    print(f"\n=== {MultiplePolynomialRegression.__name__} ===")
+    x = [[0, 1], [5, 1], [15, 2], [25, 5], [35, 11], [45, 15], [55, 34], [60, 35]]
+    y = [4, 5, 20, 14, 32, 22, 38, 43]
+    x = np.array(x)
+    y = np.array(y)
+    transformer = PolynomialFeatures(degree = 2, include_bias=False) # Quadratic. include_bias=False generates X without the column with all '1's
+    x_transformed = transformer.fit_transform(x)
+    print("\nx_transformed:")
+    print(x_transformed)
+    model = LinearRegression(n_jobs=-1).fit(x_transformed, y)
+    r_squared = model.score(x_transformed,y) # 'r' = residual. Sum of squared residuals
+    print(f"r_squared: {r_squared}") # 1 means perfect fit/overfitting. Low value = underfitting => Linear regression model is not right for the problem in this case.
+    print(f"b0: {model.intercept_}, coefficients: {model.coef_}")
+    predictions = model.predict(x_transformed)
+    residuals = y - predictions
+    print(f"y:           {y}")
+    print(f"predictions: {predictions}")
+    print(f"residuals:   {residuals}")
 
 if __name__ == "__main__":
     find_best(X, y, c)
     train_and_test()
     SimpleLinearRegression()
     MultipleLinearRegression()
+    SimplePolynomialRegression()
+    MultiplePolynomialRegression()
