@@ -39,15 +39,18 @@ def main():
         # Get a compiled neural network
         model = get_model()
         # Fit model on training data
-        model.fit(x_train, y_train, epochs=EPOCHS)
+        history = model.fit(x_train, y_train, epochs=EPOCHS)
         saveModel = True
 
     # Display the model's architecture
+    print("Model Summary:")
     model.summary()
 
     # Evaluate neural network performance
-    model.evaluate(x_test,  y_test, verbose=2)
-
+    _, train_accuracy = model.evaluate(x_train,  y_train, verbose=2)
+    _, test_accuracy = model.evaluate(x_test,  y_test, verbose=2)
+    print(f'Training accuracy: {train_accuracy:.4f}')
+    print(f'Testing accuracy: {test_accuracy:.4f}')
     # Save model to file
     if saveModel and len(sys.argv) == 3:
         filename = sys.argv[2]
