@@ -99,8 +99,7 @@ def CustomEmbeddingLayer(url, path):
     model.add(
         layers.Embedding(
             input_dim=len(tokenizer.word_index) + 1, 
-            output_dim=50, 
-            input_length=100
+            output_dim=100, 
         )
     )
     """
@@ -108,10 +107,13 @@ def CustomEmbeddingLayer(url, path):
     consider the order of the values in the vectors. Inside the pooling layer, the max values in each dimension
     will be selected. There are also average pooling layers. The max pooling layer will highlight large values.
     """
+    model.add(layers.Conv1D(128, 5, activation='relu'))
     model.add(layers.GlobalMaxPool1D())
-    model.add(layers.Flatten())
+    #model.add(layers.Flatten())
     model.add(layers.Dense(10, activation='relu'))
     model.add(layers.Dense(1, activation='sigmoid'))
+    print("Model Summary:")
+    model.summary()
     model.compile(optimizer='adam',
                 loss=tf.keras.losses.BinaryCrossentropy(from_logits=False), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
                 metrics=['accuracy'])
@@ -121,12 +123,15 @@ def CustomEmbeddingLayer(url, path):
         epochs=25,
         validation_data=(x_test, y_test)
     )
-    _, train_accuracy = model.evaluate(x_train, y_train, verbose=2)
-    _, test_accuracy = model.evaluate(x_test, y_test, verbose=2)
-    print(f'Training accuracy: {train_accuracy:.4f}')
-    print(f'Testing accuracy : {test_accuracy:.4f}')
-    plot_history(history)
-    # Training a real-world embedded layer takes a lot more time and attention. Better use pre-trained word embedding
+    train_loss, train_accuracy = model.evaluate(x_train, y_train, verbose=2)
+    test_loss, test_accuracy = model.evaluate(x_test, y_test, verbose=2)
+    print(f'Training accuracy: {train_accuracy:.4f}, loss: {train_loss:.4f}')
+    print(f'Testing accuracy: {test_accuracy:.4f}, loss: {test_loss:.4f}')
+    plot_history("CNN", history)
+    """
+    Training a real-world embedded layer takes a lot more time and attention. Better use pre-trained word embedding
+    Some popular pretrained embeddings include Word2Vec from Google and GloVe from the NLP team at Standord Uni.
+    """
 
 def SentimentAnalysis(url, path):
     """
@@ -179,14 +184,14 @@ def SentimentAnalysis(url, path):
         epochs=25,
         validation_data=(x_test, y_test)
     )
-    _, train_accuracy = model.evaluate(x_train, y_train, verbose=2)
-    _, test_accuracy = model.evaluate(x_test, y_test, verbose=2)
-    print(f'Training accuracy: {train_accuracy:.4f}')
-    print(f'Testing accuracy : {test_accuracy:.4f}')    
-    plot_history(history)
+    train_loss, train_accuracy = model.evaluate(x_train, y_train, verbose=2)
+    test_loss, test_accuracy = model.evaluate(x_test, y_test, verbose=2)
+    print(f'Training accuracy: {train_accuracy:.4f}, loss: {train_loss:.4f}')
+    print(f'Testing accuracy: {test_accuracy:.4f}, loss: {test_loss:.4f}')
+    plot_history("CountVectorizer", history)
 
 if __name__ == "__main__":
     BagOfWords()
     OneHotEncoding()
-    CustomEmbeddingLayer("https://archive.ics.uci.edu/ml/machine-learning-databases/00331/sentiment%20labelled%20sentences.zip", "/tmp/sentiment_data.zip")
     SentimentAnalysis("https://archive.ics.uci.edu/ml/machine-learning-databases/00331/sentiment%20labelled%20sentences.zip", "/tmp/sentiment_data.zip")
+    CustomEmbeddingLayer("https://archive.ics.uci.edu/ml/machine-learning-databases/00331/sentiment%20labelled%20sentences.zip", "/tmp/sentiment_data.zip")

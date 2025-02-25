@@ -47,10 +47,10 @@ def main():
     model.summary()
 
     # Evaluate neural network performance
-    _, train_accuracy = model.evaluate(x_train,  y_train, verbose=2)
-    _, test_accuracy = model.evaluate(x_test,  y_test, verbose=2)
-    print(f'Training accuracy: {train_accuracy:.4f}')
-    print(f'Testing accuracy: {test_accuracy:.4f}')
+    train_loss, train_accuracy = model.evaluate(x_train,  y_train, verbose=2)
+    test_loss, test_accuracy = model.evaluate(x_test,  y_test, verbose=2)
+    print(f'Training accuracy: {train_accuracy:.4f}, loss: {train_loss:.4f}')
+    print(f'Testing accuracy: {test_accuracy:.4f}, loss: {test_loss:.4f}')
     # Save model to file
     if saveModel and len(sys.argv) == 3:
         filename = sys.argv[2]
