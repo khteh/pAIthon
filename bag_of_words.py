@@ -62,4 +62,5 @@ and here's its documentation. https://numpy.org/doc/stable/reference/generated/n
     '''
     print(np.unravel_index(np.argmin(dist), dist.shape))
 
-find_nearest_pair(data)
+if __name__ == "__main__":
+    find_nearest_pair(data)

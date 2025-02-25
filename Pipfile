@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 pygame = "*"
 scikit-learn = "*"
-tensorflow = "*"
 opencv-python = "*"
 nltk = "*"
 numpy = "*"
@@ -15,6 +14,10 @@ natsort = "*"
 pandas = "*"
 polars = {extras = ["pandas", "numpy"], version = "*"}
 requests = "*"
+pillow = "*"
+tensorflow = "*"
+transformers = "*"
+keras-preprocessing = "*"
 
 [dev-packages]
 
