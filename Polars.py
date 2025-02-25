@@ -1,6 +1,6 @@
 import numpy,polars,timeit, pandas as pd
 from pathlib import Path
-from downloads import download_file
+from utils.FileUtil import Download
 # https://realpython.com/polars-python/
 size = 5000
 rng = numpy.random.default_rng(seed=19)
@@ -68,7 +68,7 @@ def LazyAPI():
 
 def ScanLargeData(url, path):
     print(f"\n=== {ScanLargeData.__name__} ===")
-    download_file(url, Path(path))
+    Download(url, Path(path))
     data = polars.scan_csv(Path(path))
     print(f"data: {data}")
     query = (
@@ -99,7 +99,7 @@ def ScanLargeData(url, path):
 
 def ScanLargeDataPandas(url, path):
     print(f"\n=== {ScanLargeDataPandas.__name__} ===")
-    download_file(url, Path(path))
+    Download(url, Path(path))
     data = pd.read_csv(path)
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     print("\ndata.describe():")
@@ -144,7 +144,7 @@ def PandasLargeData(path):
 
 def PandasPolarBenchmark(url, path):
     print(f"\nPerformance comparison between Pandas and Polars:")
-    download_file(url, Path(path))
+    Download(url, Path(path))
     t1 = timeit.Timer(lambda: PandasLargeData(path))
     t2 = timeit.Timer(lambda: PolarsLargeData(path))
     print(f"Pandas: {t1.timeit(number=10)}s, Polars: {t2.timeit(number=10)}s")

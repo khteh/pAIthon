@@ -1,6 +1,6 @@
 import requests,magic,zipfile
 from pathlib import Path
-def download_file(file_url: str, local_file_path: Path) -> None:
+def Download(file_url: str, local_file_path: Path) -> None:
     """Download a file and save it with the specified file name."""
     if not local_file_path.exists() or not local_file_path.is_file():
         response = requests.get(file_url)
@@ -14,8 +14,9 @@ def download_file(file_url: str, local_file_path: Path) -> None:
     print(f"file magic: {magic.from_file(local_file_path)}")
 
 def Unzip(local_file_path: Path, destination) -> None:
-    with zipfile.ZipFile(local_file_path, 'r') as zf:
-        zf.extractall(destination)
+    if local_file_path.exists() and local_file_path.is_file():
+        with zipfile.ZipFile(local_file_path, 'r') as zf:
+            zf.extractall(destination)
 
 def Rename(local_file_path: Path, newname) -> None:
     if local_file_path.exists() and not Path(newname).exists():

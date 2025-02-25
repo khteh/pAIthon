@@ -1,13 +1,13 @@
 import numpy,polars,timeit, pandas as pd
 from pathlib import Path
-from downloads import download_file, Unzip, Rename
+from utils.FileUtil import Download, Unzip, Rename
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 import tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
-from TensorModelPlot import plot_history
+from utils.TensorModelPlot import plot_history
 def BagOfWords():
     """
     Text sentence vectorization
@@ -36,7 +36,7 @@ def SentimentAnalysis(url, path):
     Each sentence is converted into a list of numbers using the indices mapped in the vocabulary. This produces a feature vector for each sentence, a numerical representation of a sentence.
     """
     print(f"\n=== {SentimentAnalysis.__name__} ===")
-    download_file(url, Path(path))
+    Download(url, Path(path))
     Unzip(Path(path), "/tmp")
     Rename(Path("/tmp/sentiment labelled sentences"), "/tmp/sentiment_data")
     filepath_dict = {

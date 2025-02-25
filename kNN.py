@@ -2,7 +2,7 @@ import numpy, pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 from collections import Counter
-from downloads import download_file
+from utils.FileUtil import Download
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.metrics import mean_squared_error
@@ -121,7 +121,7 @@ def AbaloneAge(url, path):
     Goal: Predict age (rings) from abalone's physical measurement using numpy and scikit-learn
     """
     print(f"\n=== {AbaloneAge.__name__} ===")
-    download_file(url, Path(path))
+    Download(url, Path(path))
     data = pd.read_csv(path, header=None)
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     data.columns = ["Sex", "Length", "Diameter", "Height", "Whole Weight", "Shucked Weight", "Viscera Weight", "Shell Weight", "Rings"]
