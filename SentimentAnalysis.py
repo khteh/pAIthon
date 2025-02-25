@@ -55,9 +55,6 @@ def SentimentAnalysis(url, path):
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     data.info()
     print(data)
-    #for source in data['source'].unique():
-    #    print(f"\nsource: {source}")
-    #    data_source = data[data['source'] == source]
     sentences = data["sentence"]
     labels = data["label"]
     sentences_train, sentences_test, y_train, y_test = train_test_split(sentences, labels, test_size=0.25, random_state=5678)
@@ -83,8 +80,8 @@ def SentimentAnalysis(url, path):
         epochs=25,
         validation_data=(x_test, y_test)
     )
-    _, train_accuracy = model.evaluate(x_train, y_train)
-    _, test_accuracy = model.evaluate(x_test, y_test)
+    _, train_accuracy = model.evaluate(x_train, y_train, verbose=2)
+    _, test_accuracy = model.evaluate(x_test, y_test, verbose=2)
     print(f'Training accuracy: {train_accuracy:.4f}')
     print(f'Testing accuracy : {test_accuracy:.4f}')    
     plot_history(history)
