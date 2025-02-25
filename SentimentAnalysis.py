@@ -112,8 +112,6 @@ def CustomEmbeddingLayer(url, path):
     #model.add(layers.Flatten())
     model.add(layers.Dense(10, activation='relu'))
     model.add(layers.Dense(1, activation='sigmoid'))
-    print("Model Summary:")
-    model.summary()
     model.compile(optimizer='adam',
                 loss=tf.keras.losses.BinaryCrossentropy(from_logits=False), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
                 metrics=['accuracy'])
@@ -123,6 +121,8 @@ def CustomEmbeddingLayer(url, path):
         epochs=25,
         validation_data=(x_test, y_test)
     )
+    print("Model Summary:") # This has to be done AFTER fit as there is no explicit Input layer added
+    model.summary()
     train_loss, train_accuracy = model.evaluate(x_train, y_train, verbose=2)
     test_loss, test_accuracy = model.evaluate(x_test, y_test, verbose=2)
     print(f'Training accuracy: {train_accuracy:.4f}, loss: {train_loss:.4f}')
@@ -154,7 +154,7 @@ def SentimentAnalysis(url, path):
         df["source"] = source
         dataframes.append(df)
     # Combine data from all sources into a single DF
-    data = pd.concat(dataframes)
+    data = pd.concat(dataframes).reset_index(drop=True)
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     data.info()
     print(data)

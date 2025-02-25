@@ -18,7 +18,6 @@ NUM_CATEGORIES = 43
 TEST_SIZE = 0.4
 
 def main():
-
     # Check command-line arguments
     if len(sys.argv) not in [2, 3]:
         sys.exit("Usage: python traffic.py data_directory [model.keras]")
