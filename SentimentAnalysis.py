@@ -55,35 +55,39 @@ def SentimentAnalysis(url, path):
     print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
     data.info()
     print(data)
-    for source in data['source'].unique():
-        print(f"\nsource: {source}")
-        data_source = data[data['source'] == source]
-        sentences = data_source["sentence"]
-        labels = data_source["label"]
-        sentences_train, sentences_test, y_train, y_test = train_test_split(sentences, labels, test_size=0.25, random_state=5678)
-        vectorizer = CountVectorizer()
-        vectorizer.fit(sentences_train)
-        x_train = vectorizer.transform(sentences_train).toarray()
-        x_test = vectorizer.transform(sentences_test).toarray()
-        classifier = LogisticRegression()
-        classifier.fit(x_train, y_train)
-        score = classifier.score(x_test, y_test)
-        print(f"{len(sentences)} sentences, train shape: {x_train.shape}, score: {score}")
-        model = models.Sequential()
-        model.add(layers.Dense(10, input_dim=x_train.shape[1], activation='relu'))
-        model.add(layers.Dense(1, activation='sigmoid'))
-        print("Model Summary:")
-        model.summary()
-        model.compile(optimizer='adam',
-                    loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
-                    metrics=['accuracy'])
-        history = model.fit(
-            x_train, 
-            y_train, 
-            epochs=25, 
-            validation_data=(x_test, y_test)
-        )
-        plot_history(history)
+    #for source in data['source'].unique():
+    #    print(f"\nsource: {source}")
+    #    data_source = data[data['source'] == source]
+    sentences = data["sentence"]
+    labels = data["label"]
+    sentences_train, sentences_test, y_train, y_test = train_test_split(sentences, labels, test_size=0.25, random_state=5678)
+    vectorizer = CountVectorizer()
+    vectorizer.fit(sentences_train)
+    x_train = vectorizer.transform(sentences_train).toarray()
+    x_test = vectorizer.transform(sentences_test).toarray()
+    classifier = LogisticRegression()
+    classifier.fit(x_train, y_train)
+    score = classifier.score(x_test, y_test)
+    print(f"{len(sentences)} sentences, train shape: {x_train.shape}, score: {score}")
+    model = models.Sequential()
+    model.add(layers.Dense(10, input_dim=x_train.shape[1], activation='relu'))
+    model.add(layers.Dense(1, activation='sigmoid'))
+    print("Model Summary:")
+    model.summary()
+    model.compile(optimizer='adam',
+                loss=tf.keras.losses.BinaryCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
+                metrics=['accuracy'])
+    history = model.fit(
+        x_train, 
+        y_train, 
+        epochs=25,
+        validation_data=(x_test, y_test)
+    )
+    _, train_accuracy = model.evaluate(x_train, y_train)
+    _, test_accuracy = model.evaluate(x_test, y_test)
+    print(f'Training accuracy: {train_accuracy:.4f}')
+    print(f'Testing accuracy: {test_accuracy:.4f}')    
+    plot_history(history)
 
 if __name__ == "__main__":
     BagOfWords()

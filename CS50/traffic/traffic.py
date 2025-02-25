@@ -114,7 +114,7 @@ def get_model():
     model.add(layers.Dropout(0.5))
     model.add(layers.Dense(NUM_CATEGORIES))
     model.compile(optimizer='adam',
-                loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+                loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/CategoricalCrossentropy
                 metrics=['accuracy'])
     return model
 """
