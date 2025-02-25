@@ -86,7 +86,7 @@ def SentimentAnalysis(url, path):
     _, train_accuracy = model.evaluate(x_train, y_train)
     _, test_accuracy = model.evaluate(x_test, y_test)
     print(f'Training accuracy: {train_accuracy:.4f}')
-    print(f'Testing accuracy: {test_accuracy:.4f}')    
+    print(f'Testing accuracy : {test_accuracy:.4f}')    
     plot_history(history)
 
 if __name__ == "__main__":
