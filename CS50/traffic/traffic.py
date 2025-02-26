@@ -24,9 +24,12 @@ def InitializeGPU():
     https://stackoverflow.com/questions/39465503/cuda-error-out-of-memory-in-tensorflow
     https://stackoverflow.com/questions/34199233/how-to-prevent-tensorflow-from-allocating-the-totality-of-a-gpu-memory
     https://www.tensorflow.org/api_docs/python/tf/config/experimental/set_memory_growth
+    https://www.tensorflow.org/guide/gpu
     """
     #tf.config.set_visible_devices([], 'GPU')
-    gpus = tf.config.experimental.list_physical_devices('GPU')
+    #tf.debugging.set_log_device_placement(True)
+    gpus = tf.config.list_physical_devices('GPU')
+    print(f"{len(gpus)} GPUs available")
     for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
