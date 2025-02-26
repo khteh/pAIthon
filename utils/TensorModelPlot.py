@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
-def plot_history(title, history):
-    print(f"\n=== {plot_history.__name__} ===")
+def PlotModelHistory(title, history):
+    print(f"\n=== {PlotModelHistory.__name__} ===")
     acc = history.history['accuracy']
     val_acc = history.history['val_accuracy']
     loss = history.history['loss']

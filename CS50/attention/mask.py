@@ -19,15 +19,17 @@ GRID_SIZE = 40
 PIXELS_PER_WORD = 200
 
 # Hide GPU from visible devices
-"""
-2024-12-17 12:39:33.030218: I external/local_xla/xla/stream_executor/cuda/cuda_driver.cc:1193] failed to allocate 2.2KiB (2304 bytes) from device: RESOURCE_EXHAUSTED: : CUDA_ERROR_OUT_OF_MEMORY: out of memory
-https://stackoverflow.com/questions/39465503/cuda-error-out-of-memory-in-tensorflow
-https://stackoverflow.com/questions/34199233/how-to-prevent-tensorflow-from-allocating-the-totality-of-a-gpu-memory
-"""
-#tf.config.set_visible_devices([], 'GPU')
-gpus = tf.config.experimental.list_physical_devices('GPU')
-for gpu in gpus:
-  tf.config.experimental.set_memory_growth(gpu, True)
+def InitializeGPU():
+    """
+    2024-12-17 12:39:33.030218: I external/local_xla/xla/stream_executor/cuda/cuda_driver.cc:1193] failed to allocate 2.2KiB (2304 bytes) from device: RESOURCE_EXHAUSTED: : CUDA_ERROR_OUT_OF_MEMORY: out of memory
+    https://stackoverflow.com/questions/39465503/cuda-error-out-of-memory-in-tensorflow
+    https://stackoverflow.com/questions/34199233/how-to-prevent-tensorflow-from-allocating-the-totality-of-a-gpu-memory
+    https://www.tensorflow.org/api_docs/python/tf/config/experimental/set_memory_growth
+    """
+    #tf.config.set_visible_devices([], 'GPU')
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
 
 def main():
     text = input("Text: ")
@@ -171,4 +173,5 @@ Does NOT execute when this file is imported as a module
 __name__ stores the name of a module when it is loaded. It is set to either the string of "__main__" if it's in the top-level or the module's name if it is being imported.
 """
 if __name__ == "__main__":
+    InitializeGPU()
     main()
