@@ -17,6 +17,7 @@ i had a country walk on thursday -> N V NP P N
 and <- Conj
 came home in a dreadful mess -> V N P NP
 
+https://realpython.com/python-nltk-sentiment-analysis/
 """
 TERMINALS = """
 Adj -> "country" | "dreadful" | "enigmatical" | "little" | "moist" | "red"
