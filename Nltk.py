@@ -2,6 +2,13 @@ import nltk
 from random import shuffle
 from statistics import mean
 from nltk.sentiment import SentimentIntensityAnalyzer
+from sklearn.naive_bayes import BernoulliNB,ComplementNB,MultinomialNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier,AdaBoostClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 nltk.download([
      "names",
      "stopwords",
@@ -9,11 +16,13 @@ nltk.download([
      "twitter_samples",
      "movie_reviews",
      "averaged_perceptron_tagger",
+     "averaged_perceptron_tagger_eng",
      "vader_lexicon",
      "punkt",
 ])
-words = [w for w in nltk.corpus.state_union.words() if w.isalpha()]
 stopwords = nltk.corpus.stopwords.words("english")
+unwanted = stopwords
+unwanted.extend([w.lower() for w in nltk.corpus.names.words()])
 
 def FrequencyDistributions(corpus: str):
     """
@@ -43,7 +52,7 @@ def ConcordanceCollocations():
     """
     In the context of NLP, a concordance is a collection of word locations along with their context. 
     """
-    print(f"=== {ConcordanceCollocations.__name__} ===")
+    print(f"\n=== {ConcordanceCollocations.__name__} ===")
     state_union_words: list[str] = nltk.corpus.state_union.words()
     state_union_text: str = nltk.corpus.state_union.raw()
     text = nltk.Text(state_union_words)
@@ -73,7 +82,7 @@ def Vader():
     NLTK already has a built-in, pretrained sentiment analyzer called VADER (Valence Aware Dictionary and sEntiment Reasoner).
     Since VADER is pretrained, you can get results more quickly than with many other analyzers. However, VADER is best suited for language used in social media, like short sentences with some slang and abbreviations. It’s less accurate when rating longer, structured sentences, but it’s often a good launching point.
     """
-    print(f"=== {Vader.__name__} ===")
+    print(f"\n=== {Vader.__name__} ===")
     analyzer = SentimentIntensityAnalyzer()
     score = analyzer.polarity_scores("Wow, NLTK is cool!")
     print(f"Score: {score}")
@@ -102,9 +111,127 @@ def Vader():
         else:
             if id in negative_review_ids:
                 correct += 1
-    print(f"Movie review VADER evaluation: {correct / len(movie_review_ids): .2%} correct")
+    print(f"Movie reviews VADER evaluation: {correct / len(movie_review_ids): .2%} correct")
+
+def SkipUnwanted(tuple) -> bool:
+    word, tag = tuple
+    return word.isalpha() and word not in unwanted and not tag.startswith("NN")
+
+def ExtractCustomFeatures(text:str, top_100_positive):
+    analyzer = SentimentIntensityAnalyzer()
+    features = dict()
+    positives = 0
+    compound_scores = list()
+    positive_scores = list()
+    # nltk.sent_tokenize() to obtain a list of sentences from the review text
+    for sentence in nltk.sent_tokenize(text):
+        for word in nltk.word_tokenize(sentence):
+            if word.lower() in top_100_positive:
+                positives += 1
+        compound_scores.append(analyzer.polarity_scores(sentence)["compound"])
+        positive_scores.append(analyzer.polarity_scores(sentence)["pos"])
+    # Add 1 to the final compound score so as to always have positive numbers
+    # Some of the classifiers used later in the process do not work with negative numbers
+    features["mean_compound"] = mean(compound_scores) + 1
+    features["mean_positive"] = mean(positive_scores)
+    features["positives"] = positives
+    return features
+
+def CustomizeSentimentAnalysis():
+    print(f"\n=== {CustomizeSentimentAnalysis.__name__} ===")
+    positive_words = nltk.corpus.movie_reviews.words(categories=["pos"])
+    negative_words = nltk.corpus.movie_reviews.words(categories=["neg"])
+    positive = [word for word, tag in filter(
+        SkipUnwanted, 
+        nltk.pos_tag(positive_words))]
+    negative = [word for word, tag in filter(
+        SkipUnwanted, 
+        nltk.pos_tag(negative_words))]
+    print(f"positive words: {positive[:10]}")
+    print(f"negatives words: {negative[:10]}")
+    positive_freq = nltk.FreqDist(positive)
+    negative_freq = nltk.FreqDist(negative)
+    print(f"10 positives: {positive_freq.most_common(10)}")
+    print("Tabulated (10) positives:")
+    positive_freq.tabulate(10)
+    print(f"10 negatives: {negative_freq.most_common(10)}")
+    print("Tabulated (10) negatives:")
+    negative_freq.tabulate(10)
+    common = set(positive_freq).intersection(negative_freq)
+    for w in common:
+        del positive_freq[w]
+        del negative_freq[w]
+    top_100_positive = {w for w, count in positive_freq.most_common(100)}
+    top_100_negative = {w for w, count in negative_freq.most_common(100)}
+    positive_bigrams = nltk.collocations.BigramCollocationFinder.from_words([
+        w for w in positive_words if w.isalpha() and w not in unwanted])
+    negative_bigrams = nltk.collocations.BigramCollocationFinder.from_words([
+        w for w in negative_words if w.isalpha() and w not in unwanted])
+    features = [(ExtractCustomFeatures(nltk.corpus.movie_reviews.raw(review), top_100_positive), "pos")
+                for review in nltk.corpus.movie_reviews.fileids(categories=["pos"])]
+    features.extend([(ExtractCustomFeatures(nltk.corpus.movie_reviews.raw(review), top_100_positive), "neg")
+                for review in nltk.corpus.movie_reviews.fileids(categories=["neg"])])
+    # Use 1/4 of the set for training
+    train_count = len(features) // 4 # Integer division
+    shuffle(features)
+    print(f"Training the NaiveBayesClassifier with {train_count} features...")
+    classifier = nltk.NaiveBayesClassifier.train(features[:train_count])
+    classifier.show_most_informative_features(10)
+    print(f"Custom sentiment analysis accuracy: {nltk.classify.accuracy(classifier, features[train_count:])}")
+    review = "To be or not to be"
+    result = classifier.classify(dict(review, True))
+    print(f"{review} classification result: {result}")
+    print(ExtractCustomFeatures(review, top_100_positive))
+
+def SentimentAnalysisUsingScikitLearnClassifiers():
+    print(f"\n=== {SentimentAnalysisUsingScikitLearnClassifiers.__name__} ===")
+    classifiers = {
+        "BernoulliNB": BernoulliNB(),
+        "ComplementNB": ComplementNB(),
+        "MultinomialNB": MultinomialNB(),
+        "KNeighborsClassifier": KNeighborsClassifier(),
+        "DecisionTreeClassifier": DecisionTreeClassifier(),
+        "RandomForestClassifier": RandomForestClassifier(),
+        "LogisticRegression": LogisticRegression(),
+        "MLPClassifier": MLPClassifier(max_iter=1000),
+        "AdaBoostClassifier": AdaBoostClassifier(),
+    }
+    positive_words = nltk.corpus.movie_reviews.words(categories=["pos"])
+    negative_words = nltk.corpus.movie_reviews.words(categories=["neg"])
+    positive = [word for word, tag in filter(
+        SkipUnwanted, 
+        nltk.pos_tag(positive_words))]
+    negative = [word for word, tag in filter(
+        SkipUnwanted, 
+        nltk.pos_tag(negative_words))]
+    print(f"positive words: {positive[:10]}")
+    print(f"negatives words: {negative[:10]}")
+    positive_freq = nltk.FreqDist(positive)
+    negative_freq = nltk.FreqDist(negative)
+    print(f"10 positives: {positive_freq.most_common(10)}")
+    print("Tabulated (10) positives:")
+    positive_freq.tabulate(10)
+    print(f"10 negatives: {negative_freq.most_common(10)}")
+    print("Tabulated (10) negatives:")
+    negative_freq.tabulate(10)
+    common = set(positive_freq).intersection(negative_freq)
+    for w in common:
+        del positive_freq[w]
+        del negative_freq[w]
+    top_100_positive = {w for w, count in positive_freq.most_common(100)}
+    top_100_negative = {w for w, count in negative_freq.most_common(100)}
+    positive_bigrams = nltk.collocations.BigramCollocationFinder.from_words([
+        w for w in positive_words if w.isalpha() and w not in unwanted])
+    negative_bigrams = nltk.collocations.BigramCollocationFinder.from_words([
+        w for w in negative_words if w.isalpha() and w not in unwanted])
+    features = [(ExtractCustomFeatures(nltk.corpus.movie_reviews.raw(review), top_100_positive), "pos")
+                for review in nltk.corpus.movie_reviews.fileids(categories=["pos"])]
+    features.extend([(ExtractCustomFeatures(nltk.corpus.movie_reviews.raw(review), top_100_positive), "neg")
+                for review in nltk.corpus.movie_reviews.fileids(categories=["neg"])])
 
 if __name__ == "__main__":
     FrequencyDistributions(nltk.corpus.state_union.raw())
     ConcordanceCollocations()
     Vader()
+    CustomizeSentimentAnalysis()
+    SentimentAnalysisUsingScikitLearnClassifiers()
