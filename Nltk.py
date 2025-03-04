@@ -1,5 +1,7 @@
 import nltk
-from pprint import pprint
+from random import shuffle
+from statistics import mean
+from nltk.sentiment import SentimentIntensityAnalyzer
 nltk.download([
      "names",
      "stopwords",
@@ -66,6 +68,43 @@ def ConcordanceCollocations():
     print("Tabulated (10 Quadgrams):")
     quadgrams.ngram_fd.tabulate(10)
 
+def Vader():
+    """
+    NLTK already has a built-in, pretrained sentiment analyzer called VADER (Valence Aware Dictionary and sEntiment Reasoner).
+    Since VADER is pretrained, you can get results more quickly than with many other analyzers. However, VADER is best suited for language used in social media, like short sentences with some slang and abbreviations. It’s less accurate when rating longer, structured sentences, but it’s often a good launching point.
+    """
+    print(f"=== {Vader.__name__} ===")
+    analyzer = SentimentIntensityAnalyzer()
+    score = analyzer.polarity_scores("Wow, NLTK is cool!")
+    print(f"Score: {score}")
+    tweets = [t.replace("://", "//") for t in nltk.corpus.twitter_samples.strings()]
+    shuffle(tweets)
+    print(f"\nTweets sentiment analysis:")
+    for t in tweets[:10]:
+        sentiment = analyzer.polarity_scores(t)["compound"] > 0
+        print(f"{t} => {'Positive' if sentiment else 'Negative'}")
+    print(f"\nMovie reviews sentiment analysis:")
+    positive_review_ids = nltk.corpus.movie_reviews.fileids(categories="pos")
+    negative_review_ids = nltk.corpus.movie_reviews.fileids(categories="neg")
+    movie_review_ids = positive_review_ids + negative_review_ids
+    shuffle(movie_review_ids)
+    correct = 0
+    for id in movie_review_ids:
+        review = nltk.corpus.movie_reviews.raw(id)
+        # nltk.sent_tokenize() to obtain a list of sentences from the review text
+        scores = [
+            analyzer.polarity_scores(sentence)["compound"] for sentence in nltk.sent_tokenize(review)
+        ]
+        score = mean(scores)
+        if score > 0:
+            if id in positive_review_ids:
+                correct += 1
+        else:
+            if id in negative_review_ids:
+                correct += 1
+    print(f"Movie review VADER evaluation: {correct / len(movie_review_ids): .2%} correct")
+
 if __name__ == "__main__":
     FrequencyDistributions(nltk.corpus.state_union.raw())
     ConcordanceCollocations()
+    Vader()
