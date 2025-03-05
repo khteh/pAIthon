@@ -9,6 +9,7 @@ from sklearn.ensemble import RandomForestClassifier,AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+# https://realpython.com/python-nltk-sentiment-analysis/
 nltk.download([
      "names",
      "stopwords",
@@ -137,8 +138,8 @@ def ExtractCustomFeatures(text:str, top_100_positive):
     features["positives"] = positives
     return features
 
-def CustomizeSentimentAnalysis():
-    print(f"\n=== {CustomizeSentimentAnalysis.__name__} ===")
+def BuildFeatures():
+    print(f"\n=== {BuildFeatures.__name__} ===")
     positive_words = nltk.corpus.movie_reviews.words(categories=["pos"])
     negative_words = nltk.corpus.movie_reviews.words(categories=["neg"])
     positive = [word for word, tag in filter(
@@ -171,19 +172,27 @@ def CustomizeSentimentAnalysis():
                 for review in nltk.corpus.movie_reviews.fileids(categories=["pos"])]
     features.extend([(ExtractCustomFeatures(nltk.corpus.movie_reviews.raw(review), top_100_positive), "neg")
                 for review in nltk.corpus.movie_reviews.fileids(categories=["neg"])])
+    shuffle(features)   
+    return (features, top_100_positive)
+
+def CustomizeSentimentAnalysis(features, top_100_positive):
+    print(f"\n=== {CustomizeSentimentAnalysis.__name__} ===")
     # Use 1/4 of the set for training
     train_count = len(features) // 4 # Integer division
-    shuffle(features)
-    print(f"Training the NaiveBayesClassifier with {train_count} features...")
+    print("\nfeatures:")
+    print(features[:10])
+    print(f"\nTraining the NaiveBayesClassifier with {train_count} features...")
     classifier = nltk.NaiveBayesClassifier.train(features[:train_count])
     classifier.show_most_informative_features(10)
-    print(f"Custom sentiment analysis accuracy: {nltk.classify.accuracy(classifier, features[train_count:])}")
-    review = "To be or not to be"
-    result = classifier.classify(dict(review, True))
-    print(f"{review} classification result: {result}")
-    print(ExtractCustomFeatures(review, top_100_positive))
+    print(f"\nCustom sentiment analysis accuracy: {nltk.classify.accuracy(classifier, features[train_count:])}")
+    feature = (ExtractCustomFeatures("To be or not to be", top_100_positive), "")
+    print("\nfeature:")
+    print(feature)
+    #result = classifier.classify(feature)
+    #print(f"\nClassification result: {result}")
+    #classifier.show_most_informative_features()
 
-def SentimentAnalysisUsingScikitLearnClassifiers():
+def SentimentAnalysisUsingScikitLearnClassifiers(features):
     print(f"\n=== {SentimentAnalysisUsingScikitLearnClassifiers.__name__} ===")
     classifiers = {
         "BernoulliNB": BernoulliNB(),
@@ -196,42 +205,17 @@ def SentimentAnalysisUsingScikitLearnClassifiers():
         "MLPClassifier": MLPClassifier(max_iter=1000),
         "AdaBoostClassifier": AdaBoostClassifier(),
     }
-    positive_words = nltk.corpus.movie_reviews.words(categories=["pos"])
-    negative_words = nltk.corpus.movie_reviews.words(categories=["neg"])
-    positive = [word for word, tag in filter(
-        SkipUnwanted, 
-        nltk.pos_tag(positive_words))]
-    negative = [word for word, tag in filter(
-        SkipUnwanted, 
-        nltk.pos_tag(negative_words))]
-    print(f"positive words: {positive[:10]}")
-    print(f"negatives words: {negative[:10]}")
-    positive_freq = nltk.FreqDist(positive)
-    negative_freq = nltk.FreqDist(negative)
-    print(f"10 positives: {positive_freq.most_common(10)}")
-    print("Tabulated (10) positives:")
-    positive_freq.tabulate(10)
-    print(f"10 negatives: {negative_freq.most_common(10)}")
-    print("Tabulated (10) negatives:")
-    negative_freq.tabulate(10)
-    common = set(positive_freq).intersection(negative_freq)
-    for w in common:
-        del positive_freq[w]
-        del negative_freq[w]
-    top_100_positive = {w for w, count in positive_freq.most_common(100)}
-    top_100_negative = {w for w, count in negative_freq.most_common(100)}
-    positive_bigrams = nltk.collocations.BigramCollocationFinder.from_words([
-        w for w in positive_words if w.isalpha() and w not in unwanted])
-    negative_bigrams = nltk.collocations.BigramCollocationFinder.from_words([
-        w for w in negative_words if w.isalpha() and w not in unwanted])
-    features = [(ExtractCustomFeatures(nltk.corpus.movie_reviews.raw(review), top_100_positive), "pos")
-                for review in nltk.corpus.movie_reviews.fileids(categories=["pos"])]
-    features.extend([(ExtractCustomFeatures(nltk.corpus.movie_reviews.raw(review), top_100_positive), "neg")
-                for review in nltk.corpus.movie_reviews.fileids(categories=["neg"])])
+    train_count = len(features) // 4 # Integer division
+    for name, classifier in classifiers.items():
+        c = nltk.classify.SklearnClassifier(classifier)
+        c.train(features[:train_count])
+        accuracy = nltk.classify.accuracy(c, features[train_count:])
+        print(f"{name}: {accuracy:.2%}")
 
 if __name__ == "__main__":
     FrequencyDistributions(nltk.corpus.state_union.raw())
     ConcordanceCollocations()
     Vader()
-    CustomizeSentimentAnalysis()
-    SentimentAnalysisUsingScikitLearnClassifiers()
+    features, top_100_positive = BuildFeatures()
+    CustomizeSentimentAnalysis(features, top_100_positive)
+    SentimentAnalysisUsingScikitLearnClassifiers(features)
