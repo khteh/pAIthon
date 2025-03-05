@@ -185,12 +185,12 @@ def CustomizeSentimentAnalysis(features, top_100_positive):
     classifier = nltk.NaiveBayesClassifier.train(features[:train_count])
     classifier.show_most_informative_features(10)
     print(f"\nCustom sentiment analysis accuracy: {nltk.classify.accuracy(classifier, features[train_count:])}")
-    feature = (ExtractCustomFeatures("To be or not to be", top_100_positive), "")
+    feature = ExtractCustomFeatures("To be or not to be", top_100_positive)
     print("\nfeature:")
     print(feature)
-    #result = classifier.classify(feature)
-    #print(f"\nClassification result: {result}")
-    #classifier.show_most_informative_features()
+    result = classifier.classify(feature)
+    print(f"\nClassification result: {result}")
+    classifier.show_most_informative_features()
 
 def SentimentAnalysisUsingScikitLearnClassifiers(features):
     print(f"\n=== {SentimentAnalysisUsingScikitLearnClassifiers.__name__} ===")
