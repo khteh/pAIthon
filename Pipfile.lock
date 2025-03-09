@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "fa99c4d7462cf61a8d7bc49298b15bc05596414344275e800d2d32f41a57354b"
+            "sha256": "b981d29def5788f9db2c3c2db0d463acdf4ae6c99da2062cde7ecb4860f014d1"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1536,6 +1536,14 @@
             "index": "pypi",
             "markers": "python_version >= '3.9'",
             "version": "==1.6.1"
+        },
+        "scikit-surprise": {
+            "hashes": [
+                "sha256:130c45feaee9de4b8cba0aff413ad9b51b2d5c5c90d41aee4759e00059913752"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.8'",
+            "version": "==1.1.4"
         },
         "scipy": {
             "hashes": [

@@ -18,6 +18,7 @@ pillow = "*"
 transformers = "*"
 keras-preprocessing = "*"
 tensorflow = {extras = ["and-cuda"], version = "*"}
+scikit-surprise = "*"
 
 [dev-packages]
 
