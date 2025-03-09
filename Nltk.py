@@ -1,7 +1,9 @@
 import nltk
 from random import shuffle
 from statistics import mean
+from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.sentiment import SentimentIntensityAnalyzer
+from nltk.stem import PorterStemmer, WordNetLemmatizer
 from sklearn.naive_bayes import BernoulliNB,ComplementNB,MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -11,19 +13,158 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 # https://realpython.com/python-nltk-sentiment-analysis/
 nltk.download([
-     "names",
-     "stopwords",
-     "state_union",
-     "twitter_samples",
-     "movie_reviews",
-     "averaged_perceptron_tagger",
-     "averaged_perceptron_tagger_eng",
-     "vader_lexicon",
-     "punkt",
+    "averaged_perceptron_tagger",
+    "names",
+    "maxent_ne_chunker",
+    "maxent_ne_chunker_tab",
+    "stopwords",
+    "state_union",
+    "twitter_samples",
+    "movie_reviews",
+    "averaged_perceptron_tagger",
+    "averaged_perceptron_tagger_eng",
+    "vader_lexicon",
+    "punkt",
+    "wordnet",
+    "words"
 ])
-stopwords = nltk.corpus.stopwords.words("english")
+stopwords = set(nltk.corpus.stopwords.words("english")) # includes only lowercase versions of stop words.
 unwanted = stopwords
-unwanted.extend([w.lower() for w in nltk.corpus.names.words()])
+unwanted.update(set(nltk.corpus.names.words()))
+
+def Tokenization():
+    """
+    (1) Tokenizing by word
+    (2) Tokenizing by sentence
+    """
+    print(f"=== {Tokenization.__name__} ===")
+    text = """
+            Muad'Dib learned rapidly because his first training was in how to learn.
+            And the first lesson of all was the basic trust that he could learn.
+            It's shocking to find how many people do not believe they can learn,
+            and how many more believe learning to be difficult."""
+    words = word_tokenize(text)
+    words_no_stop = [w for w in words if w.casefold() not in stopwords]
+    sentences = sent_tokenize(text)
+    print(f"Tokenize by word: {words[:10]}, {words_no_stop[:10]}")
+    print(f"Tokenize by sentence: {sentences}")
+
+def Stemming():
+    """
+    Stemming is a text processing task in which you reduce words to their root, which is the core part of a word. 
+    For example, the words “helping” and “helper” share the root “help.” Stemming allows you to zero in on the basic 
+    meaning of a word rather than all the details of how it’s being used.
+    """
+    print(f"\n=== {Stemming.__name__} ===")
+    stemmer = PorterStemmer()
+    text = """
+            The crew of the USS Discovery discovered many discoveries.
+            Discovering is what explorers do."""
+    words = word_tokenize(text)
+    stemmed_words = [stemmer.stem(w) for w in words]
+    print(f"words: {words}")
+    print(f"stemmed words: {stemmed_words}")
+
+def PartsOfSpeechTagging():
+    print(f"\n=== {PartsOfSpeechTagging.__name__} ===")
+    text = """
+            If you wish to make an apple pie from scratch,
+            you must first invent the universe."""
+    words = word_tokenize(text)
+    pos_tags = nltk.pos_tag(words)
+    print(f"pos_tags: {pos_tags}")
+
+def Lemmatizing():
+    """
+    Like stemming, lemmatizing reduces words to their core meaning, but it will give you a complete English word that makes 
+    sense on its own instead of just a fragment of a word like 'discoveri'.
+    """
+    print(f"\n=== {Lemmatizing.__name__} ===")
+    text = """
+            The crew of the USS Discovery discovered many discoveries.
+            Discovering is what explorers do."""
+    words = word_tokenize(text)
+    lemmatizer = WordNetLemmatizer()
+    lemmas = [lemmatizer.lemmatize(w) for w in words]
+    print(f"words: {words}")
+    print(f"lemmas: {lemmas}")
+    text = "The friends of DeSoto love scarves."
+    words = word_tokenize(text)
+    lemmatizer = WordNetLemmatizer()
+    lemmas = [lemmatizer.lemmatize(w) for w in words]
+    print(f"words: {words}")
+    print(f"lemmas: {lemmas}")
+    print(f"Lemmatize 'worst': {lemmatizer.lemmatize('worst')}, as adjective: {lemmatizer.lemmatize('worst', pos='a')}")
+
+def Chunking():
+    """
+    While tokenizing allows you to identify words and sentences, chunking allows you to identify phrases.
+    """
+    print(f"\n=== {Chunking.__name__} ===")
+    text = "It's a dangerous business, Frodo, going out your door."
+    words = word_tokenize(text)
+    pos_tags = nltk.pos_tag(words)
+    """
+    Create a chunk grammar with one regular expression rule:
+    Start with an optional (?) determiner ('DT')
+    Can have any number (*) of adjectives (JJ)
+    End with a noun (<NN>)    
+    """
+    grammar = "NP: {<DT>?<JJ>*<NN>}"
+    parser = nltk.RegexpParser(grammar)
+    chunks = parser.parse(pos_tags)
+    print(f"chunks: {chunks}")
+    #chunks.draw() #Blocks
+
+def Chinking():
+    """
+    Chinking is used together with chunking, but while chunking is used to include a pattern, chinking is used to exclude a pattern.
+    """
+    print(f"\n=== {Chinking.__name__} ===")
+    text = "It's a dangerous business, Frodo, going out your door."
+    words = word_tokenize(text)
+    pos_tags = nltk.pos_tag(words)
+    """
+    The next step is to create a grammar to determine what you want to include and exclude in your chunks. 
+    This time, you’re going to use more than one line because you’re going to have more than one rule.
+    The first rule of your grammar is {<.*>+}. This rule has curly braces that face inward ({}) because it’s used to determine what patterns you want to include in you chunks. In this case, you want to include everything: <.*>+.
+    The second rule of your grammar is }<JJ>{. This rule has curly braces that face outward (}{) because it’s used to determine what patterns you want to exclude in your chunks. In this case, you want to exclude adjectives: <JJ>.    
+    """
+    grammar = """
+            Chunk: {<.*>+}
+                    }<JJ>{
+            """
+    parser = nltk.RegexpParser(grammar)
+    chunks = parser.parse(pos_tags)
+    print(f"chunks: {chunks}")
+    #chunks.draw() #Blocks
+
+def NamedEntityRecognition():
+    """
+    Named entities are noun phrases that refer to specific locations, people, organizations, and so on. 
+    With named entity recognition, you can find the named entities in your texts and also determine what kind of named entity they are.
+    """
+    print(f"\n=== {NamedEntityRecognition.__name__} ===")
+    text = "It's a dangerous business, Frodo, going out your door."
+    words = word_tokenize(text)
+    pos_tags = nltk.pos_tag(words)
+    chunks = nltk.ne_chunk(pos_tags)
+    #chunks.draw() #Blocks
+    text = """
+        Men like Schiaparelli watched the red planet—it is odd, by-the-bye, that
+        for countless centuries Mars has been the star of war—but failed to
+        interpret the fluctuating appearances of the markings they mapped so well.
+        All that time the Martians must have been getting ready.
+
+        During the opposition of 1894 a great light was seen on the illuminated
+        part of the disk, first at the Lick Observatory, then by Perrotin of Nice,
+        and then by other observers. English readers heard of it first in the
+        issue of Nature dated August 2."""
+    words = word_tokenize(text)
+    pos_tags = nltk.pos_tag(words)
+    chunks = nltk.ne_chunk(pos_tags, binary=True) # Just need to know what the names entities are but NOT their types
+    named_entities = set(" ".join(i[0] for i in t) for t in chunks if hasattr(t, "label") and t.label() == "NE")
+    print(f"Named entities: {named_entities}")
 
 def FrequencyDistributions(corpus: str):
     """
@@ -43,6 +184,7 @@ def FrequencyDistributions(corpus: str):
     print(f"\n10 Most common (lower-cased): {frequencies_lower.most_common(10)}")
     print("\nTabulated (10 lower-cased):")
     frequencies_lower.tabulate(10)
+    frequencies_lower.plot(20, cumulative=True)
     text = nltk.Text(words)
     frequencies_text = text.vocab() # Equivalent to fd = nltk.FreqDist(words)
     print(f"\n10 Most common (nltk.Text): {frequencies_text.most_common(10)}")
@@ -59,7 +201,7 @@ def ConcordanceCollocations():
     text = nltk.Text(state_union_words)
     text.concordance("america", lines=10)
     concordances = text.concordance_list("america", lines=10)
-    print("\nconcordance list:")
+    print("\nconcordance list for 'america':")
     for c in concordances:
         print(c.line)
     words: list[str] = [w for w in nltk.word_tokenize(state_union_text) if w.isalpha() and w not in stopwords]
@@ -69,12 +211,38 @@ def ConcordanceCollocations():
     bigrams.ngram_fd.tabulate(10)
 
     trigrams = nltk.collocations.TrigramCollocationFinder.from_words(words)
-    print(f"10 Most common Trigrams: {trigrams.ngram_fd.most_common(10)}")
+    print(f"\n10 Most common Trigrams: {trigrams.ngram_fd.most_common(10)}")
     print("Tabulated (10 Trigrams):")
     trigrams.ngram_fd.tabulate(10)
 
     quadgrams = nltk.collocations.QuadgramCollocationFinder.from_words(words)
-    print(f"10 Most common Quadgrams: {quadgrams.ngram_fd.most_common(10)}")
+    print(f"\n10 Most common Quadgrams: {quadgrams.ngram_fd.most_common(10)}")
+    print("Tabulated (10 Quadgrams):")
+    quadgrams.ngram_fd.tabulate(10)
+
+    lemmatizer = WordNetLemmatizer()
+    lemmas = [lemmatizer.lemmatize(w) for w in words]
+    print("\n--- After lemmatizing the words... ---")
+    text = nltk.Text(lemmas)
+    text.concordance("america", lines=10)
+    concordances = text.concordance_list("america", lines=10)
+    print("\nconcordance list for 'america':")
+    for c in concordances:
+        print(c.line)
+    words: list[str] = [w for w in nltk.word_tokenize(state_union_text) if w.isalpha() and w not in stopwords]
+
+    bigrams = nltk.collocations.BigramCollocationFinder.from_words(words)
+    print(f"\n10 Most common Bigrams: {bigrams.ngram_fd.most_common(10)}")
+    print("Tabulated (10 Bigrams):")
+    bigrams.ngram_fd.tabulate(10)
+
+    trigrams = nltk.collocations.TrigramCollocationFinder.from_words(words)
+    print(f"\n10 Most common Trigrams: {trigrams.ngram_fd.most_common(10)}")
+    print("Tabulated (10 Trigrams):")
+    trigrams.ngram_fd.tabulate(10)
+
+    quadgrams = nltk.collocations.QuadgramCollocationFinder.from_words(words)
+    print(f"\n10 Most common Quadgrams: {quadgrams.ngram_fd.most_common(10)}")
     print("Tabulated (10 Quadgrams):")
     quadgrams.ngram_fd.tabulate(10)
 
@@ -213,9 +381,16 @@ def SentimentAnalysisUsingScikitLearnClassifiers(features):
         print(f"{name}: {accuracy:.2%}")
 
 if __name__ == "__main__":
+    Tokenization()
+    Stemming()
+    PartsOfSpeechTagging()
+    Lemmatizing()
+    Chunking()
+    Chinking()
+    NamedEntityRecognition()
     FrequencyDistributions(nltk.corpus.state_union.raw())
     ConcordanceCollocations()
     Vader()
     features, top_100_positive = BuildFeatures()
     CustomizeSentimentAnalysis(features, top_100_positive)
-    SentimentAnalysisUsingScikitLearnClassifiers(features)
+    SentimentAnalysisUsingScikitLearnClassifiers(features)"
