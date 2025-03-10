@@ -464,6 +464,7 @@ def DataFrameGroupBy():
     print(data.describe())
     print("\ndata.info():")
     data.info()
+    print(data.head())
     print("\n--- Group on 'Outlet' column, use 'Title' column on the output and apply lambdas ---")
     outlet_groups = data.groupby("Outlet", sort=False, observed=True)["Title"].apply(
         lambda series: series.str.contains("Fed").sum() # This is python code which runs on each group. Python is slower
@@ -471,7 +472,7 @@ def DataFrameGroupBy():
     print("Total outlet titles which contains 'Fed':")
     print(outlet_groups)
     outlet_groups = data.groupby("Outlet", sort=False,observed=True)
-    #print(f"outlets: {outlet_groups.groups.keys()}")
+    #print(f"\noutlet_groups: {outlet_groups.groups.keys()}")
     outlet, frame = next(iter(outlet_groups))
     print(f"\nIter outlet: {outlet!r}")
     print(frame.head())
