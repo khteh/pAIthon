@@ -130,6 +130,10 @@ def DataFrameModifications():
     print(data.describe())
     print("\ndata.info():")
     data.info()
+    data = pd.DataFrame({'values': [numpy.nan, '123 - 456', '789 - 987']})
+    data[['min','max']] = data["values"].str.extract(r'(\d+)\s*-\s*(\d+)').astype('Int64')
+    print("\nExtract object with range values and add min/max columns:")
+    print(data)
 
 def DataFrameArithmetic():
     print(f"\n=== {DataFrameArithmetic.__name__} ===")
