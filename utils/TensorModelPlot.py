@@ -8,7 +8,7 @@ def PlotModelHistory(title, history):
     loss = history.history['loss']
     val_loss = history.history['val_loss']
     x = range(1, len(acc) + 1)
-    fig, axs = plt.subplots(1, 2)
+    fig, axs = plt.subplots(1, 2) # 1 row with 2 columns
     fig.suptitle(title)
     fig.set_size_inches(12, 5) # (w, h) inches
     fig.set_layout_engine('constrained')
