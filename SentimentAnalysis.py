@@ -7,6 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
@@ -180,10 +181,22 @@ def SentimentAnalysis(url, path):
     vectorizer.fit(sentences_train)
     x_train = vectorizer.transform(sentences_train).toarray()
     x_test = vectorizer.transform(sentences_test).toarray()
-    classifier = LogisticRegression()
+    # Define the model hyperparameters
+    params = {
+        "solver": "lbfgs",
+        "max_iter": 1000,
+        "multinomial": "auto",
+        "random_state": 8888,
+    }
+    classifier = LogisticRegression(**params)
     classifier.fit(x_train, y_train)
     score = classifier.score(x_test, y_test)
-    print(f"{len(sentences)} sentences, train shape: {x_train.shape}, score: {score}")
+    # Predict on the test set
+    y_pred = classifier.predict(x_test)
+    # Calculate metrics
+    accuracy = accuracy_score(y_test, y_pred)
+    print(f"LogisticRegression: {len(sentences)} sentences, train shape: {x_train.shape}, score: {score}, accuracy: {accuracy}")
+
     model = models.Sequential()
     model.add(layers.Input(shape=(x_train.shape[1],)))  # Specify the input shape. https://keras.io/guides/sequential_model/#specifying-the-input-shape-in-advance
     model.add(layers.Dense(10, activation='relu'))
