@@ -1,6 +1,7 @@
-import pandas
+import numpy, pandas
 from surprise import Dataset, Reader, KNNWithMeans, SVD
 from surprise.model_selection import GridSearchCV
+numpy._import_array()
 """
 https://realpython.com/build-recommendation-engine-collaborative-filtering/
 Mock up user-based similarity with one new user "E" who has rated only movie 1"

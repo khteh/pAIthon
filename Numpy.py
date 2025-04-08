@@ -223,6 +223,39 @@ def VectorOperations(data):
     )
     print(f"Bonuses: {bonuses}")
 
+def VectorProperties():
+    """
+    https://realpython.com/chromadb-vector-database/
+    """
+    print(f"\n=== {VectorProperties.__name__} ===")
+    v1 = numpy.array([1, 0])
+    v2 = numpy.array([0, 1])
+    v3 = numpy.array([numpy.sqrt(2), numpy.sqrt(2)])
+    """
+    Dimension: The dimension of a vector is the number of elements that it contains. In the example above, vector1 and vector2 are both two-dimensional since they each have two elements. 
+    You can only visualize vectors with three dimensions or less, but generally, vectors can have any number of dimensions. 
+    Vectors that encode words and text tend to have hundreds or thousands of dimensions.
+    Using numpy, .shape gives the dimension
+    """
+    print(f"Dimension: {v1.shape}")
+    """
+    Magnitude: The magnitude of a vector is a non-negative number that represents the vector’s size or length. You can also refer to the magnitude of a vector as the norm, and you can denote it with ||v|| or |v|. 
+    There are many different definitions of magnitude or norm, but the most common is the Euclidean norm or 2-norm. 2 ways to compute:
+    (1) Euclidean norm
+    (2) np.linalg.norm(), a NumPy function that computes the Euclidean norm
+    """
+    print(f"Euclidean norm: {numpy.sqrt(numpy.sum(v1**2))}, {numpy.linalg.norm(v1)}")
+    assert numpy.sqrt(numpy.sum(v3**2)) == numpy.linalg.norm(v3)
+    """
+    Dot product (scalar product): The dot product of two vectors, u and v, is a number given by u ⋅ v = ||u|| ||v|| cos(θ), where θ is the angle between the two vectors. 
+    Another way to compute the dot product is to do an element-wise multiplication of u and v and sum the results. 
+    The dot product is one of the most important and widely used vector operations because it measures the similarity between two vectors. 2 ways to compute:
+    """
+    print(f"Dot product (v1.v3): {numpy.sum(v1 * v3)}, {v1 @ v3}")
+    assert numpy.sum(v1 * v3) == v1 @ v3 > 0
+    assert numpy.sum(v2 * v3) == v2 @ v3 > 0
+    assert 0 == v1 @ v2 # Orthogonal OR Unrelated
+
 if __name__ == "__main__":
     InitializeGPU()
     oneDArray(10)
@@ -247,3 +280,4 @@ if __name__ == "__main__":
     HierarchicalDataAnalysis("data/companies.csv", "data/prices-?.csv")
     VectorOperations("data/full_portfolio.csv")
     Tensors()
+    VectorProperties()

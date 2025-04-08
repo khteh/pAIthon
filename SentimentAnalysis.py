@@ -185,7 +185,7 @@ def SentimentAnalysis(url, path):
     params = {
         "solver": "lbfgs",
         "max_iter": 1000,
-        "multinomial": "auto",
+        #"multinomial": "auto",
         "random_state": 8888,
     }
     classifier = LogisticRegression(**params)
