@@ -149,6 +149,56 @@ def PandasPolarBenchmark(url, path):
     t2 = timeit.Timer(lambda: PolarsLargeData(path))
     print(f"Pandas: {t1.timeit(number=10)}s, Polars: {t2.timeit(number=10)}s")
 
+def PrepareDataForChromaDB(path, vehicle_years: list[int] = [2017]):
+    """Prepare the car reviews dataset for ChromaDB"""
+    print(f"\n=== {PrepareDataForChromaDB.__name__} ===")
+    # Define the schema to ensure proper data types are enforced
+    dtypes = {
+        "": polars.Int64,
+        "Review_Date": polars.Utf8,
+        "Author_Name": polars.Utf8,
+        "Vehicle_Title": polars.Utf8,
+        "Review_Title": polars.Utf8,
+        "Review": polars.Utf8,
+        "Rating": polars.Float64,
+    }
+
+    # Scan the car reviews dataset(s)
+    car_reviews = polars.scan_csv(Path(path), schema_overrides = dtypes)
+
+    # Extract the vehicle title and year as new columns
+    # Filter on selected years
+    car_review_db_data = (
+        car_reviews.with_columns(
+            [
+                (
+                    polars.col("Vehicle_Title").str.split(
+                        by=" ").list.get(0).cast(polars.Int64)
+                ).alias("Vehicle_Year"),
+                (polars.col("Vehicle_Title").str.split(by=" ").list.get(1)).alias(
+                    "Vehicle_Model"
+                ),
+            ]
+        )
+        .filter(polars.col("Vehicle_Year").is_in(vehicle_years))
+        .select(["Review_Title", "Review", "Rating", "Vehicle_Year", "Vehicle_Model"])
+        .sort(["Vehicle_Model", "Rating"])
+        .collect()
+    )
+
+    # Create ids, documents, and metadatas data in the format chromadb expects
+    ids = [f"review{i}" for i in range(car_review_db_data.shape[0])]
+    documents = car_review_db_data["Review"].to_list()
+    metadatas = car_review_db_data.drop("Review").to_dicts()
+    return {"ids": ids, "documents": documents, "metadatas": metadatas}
+
+def ChromaDBCarReviews():
+    print(f"\n=== {ChromaDBCarReviews.__name__} ===")
+    reviews = PrepareDataForChromaDB("data/Scraped_Car_Review_dodge.csv")
+    print(f"keys: {reviews.keys()}")
+    print(f"reviews[-10] ids: {reviews['ids'][-10]}, metadata: {reviews['metadatas'][-10]}")
+    print(f"reviews[-10] documents: {reviews['documents'][-10]}")
+
 if __name__ == "__main__":
     SelectContext()
     FilterContext()
@@ -157,3 +207,4 @@ if __name__ == "__main__":
     ScanLargeData("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")
     ScanLargeDataPandas("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")
     PandasPolarBenchmark("https://data.wa.gov/api/views/f6w7-q2d2/rows.csv?accessType=DOWNLOAD", "/tmp/electric_cars.csv")
+    ChromaDBCarReviews()
