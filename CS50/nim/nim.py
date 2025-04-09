@@ -4,7 +4,7 @@ import time
 import operator
 from math import inf
 """
-$ check50 --local ai50/projects/2024/x/nim
+$ pipenv run check50 --local ai50/projects/2024/x/nim
 """
 
 class Nim():

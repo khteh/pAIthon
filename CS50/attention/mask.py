@@ -4,8 +4,8 @@ from PIL import Image, ImageDraw, ImageFont
 from transformers import AutoTokenizer, TFBertForMaskedLM
 
 """
-$ python mask.py
-$ check50 --local ai50/projects/2024/x/attention
+$ pipenv run python -m mask
+$ pipenv run check50 --local ai50/projects/2024/x/attention
 """
 # Pre-trained masked language model
 MODEL = "bert-base-uncased"

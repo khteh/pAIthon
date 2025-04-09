@@ -62,7 +62,7 @@ def Nearest():
     print("x_test: ")
     print(x_test)
     nearest_index = -1
-    min_distance = numpy.Inf
+    min_distance = numpy.inf
     # add a loop here that goes through all the vectors in x_train and finds the one that
     # is nearest to x_test. return the index (between 0, ..., len(x_train)-1) of the nearest
     # neighbor

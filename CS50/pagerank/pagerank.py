@@ -8,7 +8,7 @@ from collections import defaultdict
 DAMPING = 0.85
 SAMPLES = 10000
 """
-$ check50 --local ai50/projects/2024/x/pagerank
+$ pipenv run check50 --local ai50/projects/2024/x/pagerank
 """
 def main():
     if len(sys.argv) != 2:

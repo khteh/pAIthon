@@ -1,7 +1,7 @@
 """
 Tic Tac Toe Player
-$ python runner.py
-$ check50 --local ai50/projects/2024/x/tictactoe
+$ pipenv run python -m runner
+$ pipenv run check50 --local ai50/projects/2024/x/tictactoe
 """
 import math
 from math import inf

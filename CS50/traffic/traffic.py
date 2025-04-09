@@ -8,8 +8,8 @@ from tensorflow.keras import datasets, layers, models
 from sklearn.model_selection import train_test_split
 """
 https://www.tensorflow.org/install/pip
-$ python traffic.py gtsrb/
-$ check50 --local ai50/projects/2024/x/traffic
+$ pipenv run python -m traffic gtsrb/
+$ pipenv run check50 --local ai50/projects/2024/x/traffic
 """
 EPOCHS = 10
 IMG_WIDTH = 30

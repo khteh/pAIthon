@@ -2,8 +2,8 @@ import itertools
 import random
 
 """
-$ python runner.py
-$ check50 --local ai50/projects/2024/x/minesweeper
+$ pipenv run python -m runner
+$ pipenv run check50 --local ai50/projects/2024/x/minesweeper
 """
 class Minesweeper():
     """
@@ -213,7 +213,7 @@ class MinesweeperAI():
             5) add any new sentences to the AI's knowledge base
                if they can be inferred from existing knowledge
         """
-        print(f"MinesweeperAI add_knowledge {cell} {count}")
+        print(f"MinesweeperAI add_knowledge cell: {cell}, count: {count}")
         # 1) mark the cell as a move that has been made
         self.moves_made.add(cell)
         # 2) mark the cell as safe
@@ -255,7 +255,7 @@ class MinesweeperAI():
                 if s1 != s2:
                     cells = s2.cells - s1.cells if s1.cells.issubset(s2.cells) else s1.cells - s2.cells
                     count = s2.count - s1.count if s1.cells.issubset(s2.cells) else s1.count - s2.count
-                if len(cells) > 0:
+                if len(cells) > 0 and count > 0:
                     s = Sentence(cells, count)
                     if s not in knowledge and s not in self.knowledge:
                         knowledge.append(s)

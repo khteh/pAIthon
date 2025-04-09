@@ -53,8 +53,8 @@ Does (A v B) ^ (Not(B) v C) ^ (Not(C)) entail A? Start by assuming the Not(A)
 (A v B) (Not(A)) (Not(B)) generates (A)
 (A) (Not(A)) generates () = FALSE
 
-$ python puzzle.py
-$ check50 --local ai50/projects/2024/x/knights
+$ pipenv run python -m puzzle
+$ pipenv run check50 --local ai50/projects/2024/x/knights
 """
 AKnight = Symbol("A is a Knight")
 AKnave = Symbol("A is a Knave")

@@ -4,7 +4,7 @@ import sys
 from functools import reduce
 from operator import mul
 """
-$ check50 --local ai50/projects/2024/x/heredity
+$ pipenv run check50 --local ai50/projects/2024/x/heredity
 """
 PROBS = {
     # Unconditional probabilities for having gene

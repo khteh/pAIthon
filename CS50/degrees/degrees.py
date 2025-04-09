@@ -2,8 +2,8 @@ import csv
 import sys
 from util import Person, StackFrontier, QueueFrontier
 """
-$ python degrees.py
-$ check50 --local ai50/projects/2024/x/degrees
+$ pipenv run python -m degrees
+$ pipenv run check50 --local ai50/projects/2024/x/degrees
 """
 # Maps names to a set of corresponding person_ids
 names = {}

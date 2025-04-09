@@ -21,8 +21,10 @@ tensorflow = {extras = ["and-cuda"], version = "*"}
 scikit-surprise = "*"
 spacy = "*"
 python-magic = "*"
+tf-keras = "*"
 
 [dev-packages]
+check50 = "*"
 
 [requires]
 python_version = "3.12"

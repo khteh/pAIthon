@@ -3,7 +3,7 @@ import sys
 import re
 from nltk import Tree
 """
-$ check50 --local ai50/projects/2024/x/parser
+$ pipenv run check50 --local ai50/projects/2024/x/parser
 She never said a word <- N VP NP
 until <- Conj
 we were at the door here. <- N VP NP Adv

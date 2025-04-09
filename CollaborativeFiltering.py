@@ -1,4 +1,5 @@
 import numpy, pandas
+# https://github.com/NicolasHug/Surprise/issues/485#issuecomment-2787770326
 from surprise import Dataset, Reader, KNNWithMeans, SVD
 from surprise.model_selection import GridSearchCV
 numpy._import_array()

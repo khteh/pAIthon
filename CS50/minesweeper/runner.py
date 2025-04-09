@@ -1,8 +1,9 @@
-import pygame
-import sys
-import time
-
+import pygame, sys, time
+from enum import Enum
 from minesweeper import Minesweeper, MinesweeperAI
+class Turn(Enum):
+    AI = 1
+    USER = 2
 
 HEIGHT = 8
 WIDTH = 8
@@ -45,7 +46,7 @@ ai = MinesweeperAI(height=HEIGHT, width=WIDTH)
 revealed = set()
 flags = set()
 lost = False
-
+turn = Turn.USER
 # Show instructions initially
 instructions = True
 
@@ -153,7 +154,8 @@ while True:
     screen.blit(buttonText, buttonRect)
 
     # Display text
-    text = "Lost" if lost else "Won" if game.mines == flags else ""
+    who = "AI" if turn.USER else "USER"
+    text = f"{who} Lost" if lost else f"{who} Won" if game.mines == flags else ""
     text = mediumFont.render(text, True, WHITE)
     textRect = text.get_rect()
     textRect.center = ((5 / 6) * width, (2 / 3) * height)
@@ -177,7 +179,6 @@ while True:
 
     elif left == 1:
         mouse = pygame.mouse.get_pos()
-
         # If AI button clicked, make an AI move
         if aiButton.collidepoint(mouse) and not lost:
             move = ai.make_safe_move()
@@ -188,8 +189,10 @@ while True:
                     print("No moves left to make.")
                 else:
                     print("No known safe moves, AI making random move.")
+                    turn = Turn.USER
             else:
                 print("AI making safe move.")
+                turn = Turn.USER
             time.sleep(0.2)
 
         # Reset game state
@@ -209,6 +212,7 @@ while True:
                             and (i, j) not in flags
                             and (i, j) not in revealed):
                         move = (i, j)
+            turn = Turn.AI
 
     # Make move and update AI knowledge
     if move:
