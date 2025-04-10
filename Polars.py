@@ -150,7 +150,11 @@ def PandasPolarBenchmark(url, path):
     print(f"Pandas: {t1.timeit(number=10)}s, Polars: {t2.timeit(number=10)}s")
 
 def PrepareDataForChromaDB(path, vehicle_years: list[int] = [2017]):
-    """Prepare the car reviews dataset for ChromaDB"""
+    """
+    Prepare the car reviews dataset for ChromaDB
+    https://realpython.com/chromadb-vector-database/
+    https://www.kaggle.com/datasets/ankkur13/edmundsconsumer-car-ratings-and-reviews?resource=download
+    """
     print(f"\n=== {PrepareDataForChromaDB.__name__} ===")
     # Define the schema to ensure proper data types are enforced
     dtypes = {
