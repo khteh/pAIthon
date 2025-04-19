@@ -87,7 +87,11 @@ def SimpleLinearRegression():
     f(x) = b0 + b1x0
     """
     print(f"\n=== {SimpleLinearRegression.__name__} ===")
-    x = numpy.array([5,15,25,35,45,55]).reshape((-1, 1)) # One shape dimension can be -1. In this case, the value is inferred from the length of the array and remaining dimensions.
+    """
+    .reshape() on x because this array must be two-dimensional, or more precisely, it must have one column and as many rows as necessary.
+    One shape dimension can be -1. In this case, the value is inferred from the length of the array and remaining dimensions.
+    """
+    x = numpy.array([5,15,25,35,45,55]).reshape((-1, 1))
     y = numpy.array([5,20,14,32,22,38])
     print(f"x.shape: {x.shape}, y.shape: {y.shape}")
     model = LinearRegression(n_jobs=-1) # Use all available processors
