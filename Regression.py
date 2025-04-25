@@ -205,9 +205,9 @@ def MultiplePolynomialRegression():
 def MultiplePolynomialRegressionStatsModels():
     """
     f(x) = b0 + b1x1 + b2x2 + b3x1^2 + b4x1x2 + b5x2^2
-    statsmodels if you need the advanced statistical parameters of a model prediction result
+    statsmodels provides advanced statistical parameters of a model prediction result. Otherwise it is almost the same as scikit-learn.
     """
-    print(f"\n=== {MultiplePolynomialRegression.__name__} ===")
+    print(f"\n=== {MultiplePolynomialRegressionStatsModels.__name__} ===")
     x = [[0, 1], [5, 1], [15, 2], [25, 5], [35, 11], [45, 15], [55, 34], [60, 35]]
     y = [4, 5, 20, 14, 32, 22, 38, 43]
     x = numpy.array(x)
