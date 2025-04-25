@@ -1,8 +1,8 @@
 import numpy
+import statsmodels.api as sm
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from io import StringIO
-
 """
 Goal: Build a mathematical model describing the effect of a set of input variables x1,x2,...,xn on another variable y.
 x1,x2,...,xn are called predictors, independent variables, features.
@@ -141,7 +141,7 @@ def MultipleLinearRegression():
 
 def SimplePolynomialRegression():
     """
-    f(x) = b0 + b1x1 + b2x^2 + ... + bnx^n
+    f(x) = b0 + b1x + b2x^2 + ... + bnx^n
     With only 1 independent variable x, we seek a regression model of the form f(x) = b0 + b1x + b2x^2 + ... + bnx^n
     Involves 1 extra step of calculating the higher degrees of the input variable value.
     Preprocessing of the input observations in order to satisfy the polynomial equation, i.e., to derive the high-degree values
@@ -188,6 +188,43 @@ def MultiplePolynomialRegression():
     print(f"y:           {y}")
     print(f"predictions: {predictions}")
     print(f"residuals:   {residuals}")
+    x_new = numpy.range(10).reshape((-1, 2))
+    print("\x_new:")
+    print(x_new)
+    predictions = model.predict(x_new)
+    print(f"predictions: {predictions}")
+
+def MultiplePolynomialRegressionStatsModels():
+    """
+    f(x) = b0 + b1x1 + b2x2 + b3x1^2 + b4x1x2 + b5x2^2
+    statsmodels if you need the advanced statistical parameters of a model prediction result
+    """
+    print(f"\n=== {MultiplePolynomialRegression.__name__} ===")
+    x = [[0, 1], [5, 1], [15, 2], [25, 5], [35, 11], [45, 15], [55, 34], [60, 35]]
+    y = [4, 5, 20, 14, 32, 22, 38, 43]
+    x = numpy.array(x)
+    y = numpy.array(y)
+    """
+    Add the column of ones to the inputs if you want statsmodels to calculate the intercept 𝑏₀. It doesn’t take 𝑏₀ into account by default.
+    returns a new array with the column of ones inserted at the beginning.
+    """
+    x = sm.add_constant(x)
+    print("x:")
+    print(x)
+    model = sm.OLS(y, x)
+    result: statsmodels.regression.linear_model.RegressionResultsWrapper = model.fit()
+    print("results: ")
+    print(result.summary())
+    predictions = model.predict(x)
+    residuals = y - predictions
+    print(f"y:           {y}")
+    print(f"predictions: {predictions}")
+    print(f"residuals:   {residuals}")
+    x_new = numpy.range(10).reshape((-1, 2))
+    print("\x_new:")
+    print(x_new)
+    predictions = model.predict(x_new)
+    print(f"predictions: {predictions}")
 
 if __name__ == "__main__":
     find_best(X, y, c)
@@ -196,3 +233,4 @@ if __name__ == "__main__":
     MultipleLinearRegression()
     SimplePolynomialRegression()
     MultiplePolynomialRegression()
+    MultiplePolynomialRegressionStatsModels()
