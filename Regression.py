@@ -15,6 +15,14 @@ Types of regression: Linear, polynomial, nonlinear, decision tree, support vecto
 2 main use cases of regression are:
 (1) Prediction: Forecast the outcome of an event/state/object from previous knowledge. This use case has substantial overlap with ML.
 (2) Inference: Determine how an event/state/object affects the production of another event/state/object
+
+https://realpython.com/linear-regression-in-python/
+To get the best weights, you usually minimize the sum of squared residuals (SSR) for all observations 𝑖 = 1, …, 𝑛: SSR = Σᵢ(𝑦ᵢ - 𝑓(𝐱ᵢ))². This approach is called the method of ordinary least squares.
+
+Regression Performance
+The variation of actual responses 𝑦ᵢ, 𝑖 = 1, …, 𝑛, occurs partly due to the dependence on the predictors 𝐱ᵢ. However, there’s also an additional inherent variance of the output.
+The coefficient of determination, denoted as 𝑅², tells you which amount of variation in 𝑦 can be explained by the dependence on 𝐱, using the particular regression model. A larger 𝑅² indicates a better fit and means that the model can better explain the variation of the output with different inputs.
+The value 𝑅² = 1 corresponds to SSR = 0. That’s the perfect fit, since the values of predicted and actual responses fit completely to each other.
 """
 train_string = '''
 25 2 50 1 500 127900
@@ -211,7 +219,7 @@ def MultiplePolynomialRegressionStatsModels():
     x = sm.add_constant(x)
     print("x:")
     print(x)
-    model = sm.OLS(y, x)
+    model = sm.OLS(y, x)   
     result: statsmodels.regression.linear_model.RegressionResultsWrapper = model.fit()
     print("results: ")
     print(result.summary())
