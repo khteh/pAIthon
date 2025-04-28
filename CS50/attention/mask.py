@@ -2,10 +2,37 @@ import sys
 import tensorflow as tf
 from PIL import Image, ImageDraw, ImageFont
 from transformers import AutoTokenizer, TFBertForMaskedLM
-
 """
 $ pipenv run python -m mask
 $ pipenv run check50 --local ai50/projects/2024/x/attention
+"""
+"""
+https://www.cloudskillsboost.google/course_templates/538
+Bidirectional Encoder Representations from Transformers (BERT)
+BERT is a transformer model that was developed by Google in 2018
+It is an Encoder-only model
+It is used to solve many natural language processing tasks, such as question answering, text classification, and natural language inference.
+Today, BERT powers Google Search.
+
+Overview:
+(1) Trained in 2 variations (see the following)
+(2) Able to handle long input context
+(3) Trained on entire Wikipedia and BookCorpus
+(4) Trained for 1 million steps
+(5) Targete at multi-task objective
+(6) Trained on TPU
+(7) Works on both token- and sentence-level tasks
+(8) Fined tuned for many different tasks
+
+Trained on 2 different tasks:
+(1) Masked Language Modeling (MLM)
+    - Mask out k% of input words, and then predict the masked words.
+    - Recommendation use k = 15%
+    - Too little masking => Too expansive to train
+    - Too much masking => Not enough context
+(2) Next sentence Prediction (NSP)
+    - Binary classification task
+    - Learn the relationships between sentences and predict the next sentence given the previous one.
 """
 # Pre-trained masked language model
 MODEL = "bert-base-uncased"
