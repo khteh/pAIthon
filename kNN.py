@@ -6,7 +6,9 @@ from utils.FileUtil import Download
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.metrics import mean_squared_error
-rng = numpy.random.default_rng(seed=19)
+from numpy.random import Generator, PCG64DXSM
+#rng = numpy.random.default_rng(seed=19)
+rng = Generator(PCG64DXSM())
 """
 https://realpython.com/videos/knn-python-overview/
 Unlike other supervised learning algos, kNN perform calculations during prediction.

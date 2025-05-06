@@ -1,10 +1,12 @@
 import numpy as np
-import math
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
+
 # Monte Carlo method: simulating random data and estimating probabilities by counting occurrences. 
 def generate(p1, size):
     # change this so that it generates 10000 random zeros and ones
     # where the probability of one is p1
-    return np.random.choice([0,1], p=[1-p1, p1], size=size)
+    return rng.choice([0,1], p=[1-p1, p1], size=size)
 
 def count_seq(seq):
     # pad a with 0 at both sides for edge cases when a starts or ends with 1
