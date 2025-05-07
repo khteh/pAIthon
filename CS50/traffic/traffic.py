@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import sys
 import tensorflow as tf
+from utils.GPU import InitializeGPU
 from tensorflow.keras import datasets, layers, models
 from sklearn.model_selection import train_test_split
 """
@@ -16,22 +17,6 @@ IMG_WIDTH = 30
 IMG_HEIGHT = 30
 NUM_CATEGORIES = 43
 TEST_SIZE = 0.4
-
-# Hide GPU from visible devices
-def InitializeGPU():
-    """
-    2024-12-17 12:39:33.030218: I external/local_xla/xla/stream_executor/cuda/cuda_driver.cc:1193] failed to allocate 2.2KiB (2304 bytes) from device: RESOURCE_EXHAUSTED: : CUDA_ERROR_OUT_OF_MEMORY: out of memory
-    https://stackoverflow.com/questions/39465503/cuda-error-out-of-memory-in-tensorflow
-    https://stackoverflow.com/questions/34199233/how-to-prevent-tensorflow-from-allocating-the-totality-of-a-gpu-memory
-    https://www.tensorflow.org/api_docs/python/tf/config/experimental/set_memory_growth
-    https://www.tensorflow.org/guide/gpu
-    """
-    #tf.config.set_visible_devices([], 'GPU')
-    #tf.debugging.set_log_device_placement(True)
-    gpus = tf.config.list_physical_devices('GPU')
-    print(f"{len(gpus)} GPUs available")
-    for gpu in gpus:
-        tf.config.experimental.set_memory_growth(gpu, True)
 
 def main():
     # Check command-line arguments

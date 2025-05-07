@@ -10,8 +10,8 @@ class NeuralNetwork():
     _rate = None
     def __init__(self, learning_rate):
         self._rate = learning_rate
-        self._weights = [rng.randn(), rng.randn()]
-        self._bias = rng.randn()
+        self._weights = [rng.random(), rng.random()]
+        self._bias = rng.random()
 
     def sigmoid(self, x):
         return 1 / (1 + numpy.exp(-x))

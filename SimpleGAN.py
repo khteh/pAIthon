@@ -2,6 +2,7 @@ from pathlib import Path
 import numpy, math, tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
+import tensorflow_datasets as tfds
 import numpy.lib.recfunctions as reconcile
 import matplotlib.pyplot as plt
 from utils.TensorModelPlot import PlotModelHistory
@@ -43,6 +44,30 @@ class Discriminator():
         self._model.compile(optimizer='adam',
                 loss=tf.keras.losses.BinaryCrossentropy(from_logits=False), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
                 metrics=['accuracy'])
+        
+    def Train(self, data, batch_size):
+        """
+        WIP. Need to adapt to tensorflow
+        """
+        # Data for training the discriminator
+        real_samples_labels = numpy.ones((batch_size, 1))
+        latent_space_samples = rng.random((batch_size, 2))
+        generated_samples = generator(latent_space_samples) # This is crap. Generator constructor does not take any input!
+        generated_samples_labels = numpy.zeros((batch_size, 1))
+        all_samples = numpy.concatenate((real_samples, generated_samples))
+        all_samples_labels = torch.cat(
+            (real_samples_labels, generated_samples_labels)
+        )
+        # Training the discriminator
+        discriminator.zero_grad()
+        output_discriminator = discriminator(all_samples)
+        loss_discriminator = loss_function(
+            output_discriminator, all_samples_labels)
+        loss_discriminator.backward()
+        optimizer_discriminator.step()
+
+        # Data for training the generator
+        latent_space_samples = torch.randn((batch_size, 2))        
         history = self._model.fit(
             x_train, 
             y_train, 
@@ -92,6 +117,23 @@ class Generator():
         print(f'Training accuracy: {train_accuracy:.4f}, loss: {train_loss:.4f}')
         print(f'Testing accuracy: {test_accuracy:.4f}, loss: {test_loss:.4f}')
         PlotModelHistory("Generator", history)
+
+    def Train(self, data, batch_size):
+        """
+        WIP. Need to adapt to tensorflow
+        """
+        # Data for training the generator
+        latent_space_samples = rng.random((batch_size, 2))
+
+        # Training the generator
+        generator.zero_grad()
+        generated_samples = generator(latent_space_samples) # This is crap. Generator constructor does not take any input!
+        output_discriminator_generated = discriminator(generated_samples)  # This is crap. Generator constructor does not take any input!
+        loss_generator = loss_function(
+            output_discriminator_generated, real_samples_labels
+        )
+        loss_generator.backward()
+        optimizer_generator.step()
 
     def forward(self, input):
         return self._model(input)
