@@ -24,7 +24,6 @@ class NeuralNetwork():
         return tmp * (1 - tmp)
 
     def Predict(self, input):
-        assert input.shape == self._weights.shape
         l1 = numpy.dot(input, self._weights) + self._bias
         l2 = self.sigmoid(l1)
         return l2
@@ -33,7 +32,6 @@ class NeuralNetwork():
         """
         The power rule states that the derivative of xⁿ is nx⁽ⁿ⁻¹⁾. So the derivative of np.square(x) is 2 * x, and the derivative of x is 1.
         """
-        assert input.shape == self._weights.shape
         l1 = numpy.dot(input, self._weights) + self._bias
         l2 = self.sigmoid(l1)
         prediction = l2
@@ -51,7 +49,6 @@ class NeuralNetwork():
         self._weights -= derror_dweights * self._rate
 
     def Train(self, input_vectors, targets, iterations):
-        assert input_vectors.shape == self._weights.shape == targets.shape
         cummulative_errors = []
         for i in range(iterations):
             # Randomly pick a data point
@@ -73,7 +70,7 @@ class NeuralNetwork():
                 cummulative_errors.append(cummulative_error)
         return cummulative_errors
 
-def TargetZeroPrediction():
+def Predict():
     input_vectors = numpy.array(
          [
              [3, 1.5],
@@ -88,11 +85,11 @@ def TargetZeroPrediction():
      )
     targets = numpy.array([0, 1, 0, 1, 0, 1, 1, 0])
     neural_network = NeuralNetwork(0.1)
-    training_error = neural_network.train(input_vectors, targets, 10000)
+    training_error = neural_network.Train(input_vectors, targets, 10000)
     plt.plot(training_error)
     plt.xlabel("Iterations")
     plt.ylabel("Error for all training instances")
     plt.savefig("/tmp/cumulative_error.png")
 
 if __name__ == "__main__":
-    TargetZeroPrediction()
+    Predict()
