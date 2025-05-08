@@ -114,6 +114,12 @@ def CustomEmbeddingLayer(url, path):
     #model.add(layers.Flatten())
     model.add(layers.Dense(10, activation='relu'))
     model.add(layers.Dense(1, activation='sigmoid'))
+    """
+    In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
+    These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
+    Using from_logits=True can offer numerical stability and potentially improve training, as it avoids the repeated application of the sigmoid or softmax function, which can lead to precision errors. 
+    It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.    
+    """
     model.compile(optimizer='adam',
                 loss=tf.keras.losses.BinaryCrossentropy(from_logits=False), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
                 metrics=['accuracy'])
@@ -189,6 +195,12 @@ def SentimentAnalysis(url, path):
     model.add(layers.Dense(1, activation='sigmoid'))
     print("Model Summary:")
     model.summary()
+    """
+    In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
+    These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
+    Using from_logits=True can offer numerical stability and potentially improve training, as it avoids the repeated application of the sigmoid or softmax function, which can lead to precision errors. 
+    It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.    
+    """
     model.compile(optimizer='adam',
                 loss=tf.keras.losses.BinaryCrossentropy(from_logits=False), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
                 metrics=['accuracy'])

@@ -140,11 +140,13 @@ class Generator():
     
 def PrepareTrainingData(size: int):
     data = numpy.zeroes((size, 2))
-    data[:,0] = 2 * math.pi * rng(size)
+    data[:,0] = 2 * math.pi * rng.random(size)
     data[:,1] = math.sin(data[:,0])
     labels = numpy.zeroes(size)
     train = [(data[i], labels[i]) for i in range(size)]
     # result = tf.multiply(tf.convert_to_tensor(array1), tf.convert_to_tensor(array2))
-    tf.data.Dataset.from_tensors(train, )
+    BUFFER_SIZE = 1000
+    BATCH_SIZE = 32
+    tf.data.Dataset.from_tensor_slices(train).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 
 if __name__ == "__main__":
