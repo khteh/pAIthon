@@ -8,7 +8,17 @@ import matplotlib.pyplot as plt
 from utils.TensorModelPlot import PlotModelHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
-# https://realpython.com/generative-adversarial-networks/
+"""
+https://realpython.com/generative-adversarial-networks/
+What Are Generative Adversarial Networks?
+Generative adversarial networks are machine learning systems that can learn to mimic a given distribution of data. They were first proposed in a 2014 NeurIPS paper by deep learning expert Ian Goodfellow and his colleagues.
+
+GANs consist of two neural networks, one trained to generate data and the other trained to distinguish fake data from real data (hence the “adversarial” nature of the model). Although the idea of a structure to generate data isn’t new, when it comes to image and video generation, GANs have provided impressive results such as:
+
+Style transfer using CycleGAN, which can perform a number of convincing style transformations on images
+Generation of human faces with StyleGAN, as demonstrated on the website This Person Does Not Exist
+Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative models.
+"""
 class Discriminator():
     _model = None
     def __init__(self):
