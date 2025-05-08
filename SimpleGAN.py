@@ -1,10 +1,13 @@
 from pathlib import Path
+import glob, imageio, matplotlib.pyplot as plt, os, PIL, time
 import numpy, math, tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
 import tensorflow_datasets as tfds
 import numpy.lib.recfunctions as reconcile
 import matplotlib.pyplot as plt
+from utiuls.GAN import restore_latest_checkpoint, TrainStep, Train, save_images, show_image, CreateGIF
+from tensorflow.keras import layers, losses, optimizers
 from utils.TensorModelPlot import PlotModelHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
@@ -21,6 +24,8 @@ Structures that generate data, including GANs, are considered generative models 
 """
 class Discriminator():
     _model = None
+    _cross_entropy = None
+    optimizer = None
     def __init__(self):
         """
         Multilayer Perceptron NN defined in a sequential way using models.Sequential()
@@ -51,52 +56,35 @@ class Discriminator():
         self._model.add(layers.Dense(64, input_shape=(128,), activation='relu'))
         self._model.add(layers.Dropout(0.3))
         self._model.add(layers.Dense(1, input_shape=(64,), activation='sigmoid'))
-        self._model.compile(optimizer='adam',
-                loss=tf.keras.losses.BinaryCrossentropy(from_logits=False), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
-                metrics=['accuracy'])
-        
-    def Train(self, data, batch_size):
         """
-        WIP. Need to adapt to tensorflow
+        In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
+        These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
+        Using from_logits=True can offer numerical stability and potentially improve training, as it avoids the repeated application of the sigmoid or softmax function, which can lead to precision errors. 
+        It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.    
         """
-        # Data for training the discriminator
-        real_samples_labels = numpy.ones((batch_size, 1))
-        latent_space_samples = rng.random((batch_size, 2))
-        generated_samples = generator(latent_space_samples) # This is crap. Generator constructor does not take any input!
-        generated_samples_labels = numpy.zeros((batch_size, 1))
-        all_samples = numpy.concatenate((real_samples, generated_samples))
-        all_samples_labels = torch.cat(
-            (real_samples_labels, generated_samples_labels)
-        )
-        # Training the discriminator
-        discriminator.zero_grad()
-        output_discriminator = discriminator(all_samples)
-        loss_discriminator = loss_function(
-            output_discriminator, all_samples_labels)
-        loss_discriminator.backward()
-        optimizer_discriminator.step()
+        self._cross_entropy = losses.BinaryCrossentropy(from_logits=True)
+        self.optimizer = optimizers.Adam(1e-4)
 
-        # Data for training the generator
-        latent_space_samples = torch.randn((batch_size, 2))        
-        history = self._model.fit(
-            x_train, 
-            y_train, 
-            epochs=25,
-            validation_data=(x_test, y_test)
-        )
-        print("Model Summary:") # This has to be done AFTER fit as there is no explicit Input layer added
-        self._model.summary()
-        train_loss, train_accuracy = self._model.evaluate(x_train, y_train, verbose=2)
-        test_loss, test_accuracy = self._model.evaluate(x_test, y_test, verbose=2)
-        print(f'Training accuracy: {train_accuracy:.4f}, loss: {train_loss:.4f}')
-        print(f'Testing accuracy: {test_accuracy:.4f}, loss: {test_loss:.4f}')
-        PlotModelHistory("Discriminator", history)
+    def run(self, input, training: bool):
+        return self._model(input, training)
 
-    def forward(self, input):
-        return self._model(input)
+    def loss(self, real, fake):
+        """
+        This method quantifies how well the discriminator is able to distinguish real images from fakes. It compares the discriminator's predictions on real images to an array of 1s, and the discriminator's predictions on fake (generated) images to an array of 0s.
+        """
+        real_loss = self._cross_entropy(tf.ones_like(real), real)
+        fake_loss = self._cross_entropy(tf.zeros_like(fake), fake)
+        return real_loss + fake_loss
     
+    def UpdateParameters(self, tape, loss):
+        gradients = tape.gradient(loss, self._model.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self._model.trainable_variables))
+   
 class Generator():
     _model = None
+    _cross_entropy = None
+    optimizer = None
+
     def __init__(self):
         """
         self.model = nn.Sequential(
@@ -111,52 +99,48 @@ class Generator():
         self._model.add(layers.Dense(16, input_shape=(2,), activation='relu'))
         self._model.add(layers.Dense(32, input_shape=(16,), activation='relu'))
         self._model.add(layers.Dense(2, input_shape=(32,)))
-        self._model.compile(optimizer='adam',
-                loss=tf.keras.losses.BinaryCrossentropy(from_logits=False), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
-                metrics=['accuracy'])
-        history = self._model.fit(
-            x_train, 
-            y_train, 
-            epochs=25,
-            validation_data=(x_test, y_test)
-        )
-        print("Model Summary:") # This has to be done AFTER fit as there is no explicit Input layer added
-        self._model.summary()
-        train_loss, train_accuracy = self._model.evaluate(x_train, y_train, verbose=2)
-        test_loss, test_accuracy = self._model.evaluate(x_test, y_test, verbose=2)
-        print(f'Training accuracy: {train_accuracy:.4f}, loss: {train_loss:.4f}')
-        print(f'Testing accuracy: {test_accuracy:.4f}, loss: {test_loss:.4f}')
-        PlotModelHistory("Generator", history)
-
-    def Train(self, data, batch_size):
         """
-        WIP. Need to adapt to tensorflow
+        In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
+        These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
+        Using from_logits=True can offer numerical stability and potentially improve training, as it avoids the repeated application of the sigmoid or softmax function, which can lead to precision errors. 
+        It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.    
         """
-        # Data for training the generator
-        latent_space_samples = rng.random((batch_size, 2))
+        self._cross_entropy = losses.BinaryCrossentropy(from_logits=True)
+        self.optimizer = optimizers.Adam(1e-4)
 
-        # Training the generator
-        generator.zero_grad()
-        generated_samples = generator(latent_space_samples) # This is crap. Generator constructor does not take any input!
-        output_discriminator_generated = discriminator(generated_samples)  # This is crap. Generator constructor does not take any input!
-        loss_generator = loss_function(
-            output_discriminator_generated, real_samples_labels
-        )
-        loss_generator.backward()
-        optimizer_generator.step()
+    def run(self, input, training: bool):
+        return self._model(input, training)
 
-    def forward(self, input):
-        return self._model(input)
+    def loss(self, real, fake):
+        """
+        This method quantifies how well the discriminator is able to distinguish real images from fakes. It compares the discriminator's predictions on real images to an array of 1s, and the discriminator's predictions on fake (generated) images to an array of 0s.
+        """
+        real_loss = self._cross_entropy(tf.ones_like(real), real)
+        fake_loss = self._cross_entropy(tf.zeros_like(fake), fake)
+        return real_loss + fake_loss
     
-def PrepareTrainingData(size: int):
+    def UpdateParameters(self, tape, loss):
+        gradients = tape.gradient(loss, self._model.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self._model.trainable_variables))
+    
+def PrepareTrainingData(size: int, buffer_size: int, batch_size: int):
     data = numpy.zeroes((size, 2))
     data[:,0] = 2 * math.pi * rng.random(size)
     data[:,1] = math.sin(data[:,0])
     labels = numpy.zeroes(size)
     train = [(data[i], labels[i]) for i in range(size)]
-    # result = tf.multiply(tf.convert_to_tensor(array1), tf.convert_to_tensor(array2))
-    BUFFER_SIZE = 1000
-    BATCH_SIZE = 32
-    tf.data.Dataset.from_tensor_slices(train).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+    return tf.data.Dataset.from_tensor_slices(train).shuffle(buffer_size).batch(batch_size)
 
 if __name__ == "__main__":
+    BUFFER_SIZE = 1000
+    BATCH_SIZE = 32
+    EPOCHS = 300
+    discriminator = Discriminator()
+    generator = Generator()
+    checkpoint_dir = './training_checkpoints'
+    checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
+    train_dataset = PrepareTrainingData(BUFFER_SIZE, BATCH_SIZE)
+    checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 1)
+    show_image(EPOCHS)
+    gif = os.path.join(checkpoint_dir, "mnist_gan.gif")
+    CreateGIF(gif)

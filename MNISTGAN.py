@@ -1,13 +1,14 @@
 from pathlib import Path
 import glob, imageio, matplotlib.pyplot as plt, os, PIL, time
-from tensorflow.keras import layers, losses, optimizers
 import numpy, math, tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
 import tensorflow_datasets as tfds
 import numpy.lib.recfunctions as reconcile
 import matplotlib.pyplot as plt
+from tensorflow.keras import layers, losses, optimizers
 from utils.TensorModelPlot import PlotModelHistory
+from utiuls.GAN import restore_latest_checkpoint, TrainStep, Train, save_images, show_image, CreateGIF
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 """
@@ -49,7 +50,7 @@ class Discriminator():
         It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.    
         """
         self._cross_entropy = losses.BinaryCrossentropy(from_logits=True)
-        self._optimizer = optimizers.Adam(1e-4)
+        self.optimizer = optimizers.Adam(1e-4)
 
     def run(self, input, training: bool):
         return self._model(input, training)
@@ -102,7 +103,7 @@ class Generator():
         It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.    
         """
         self._cross_entropy = losses.BinaryCrossentropy(from_logits=True)
-        self._optimizer = optimizers.Adam(1e-4)
+        self.optimizer = optimizers.Adam(1e-4)
 
     def run(self, input, training: bool):
         return self._model(input, training)
@@ -140,104 +141,18 @@ def PrepareMNISTData(buffer_size: int, batch_size: int):
     """
     train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
     # Batch and shuffle the data
-    train_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(buffer_size).batch(batch_size)
-    return train_dataset
-
-def restore_latest_checkpoint(checkpoint, checkpoint_dir):
-    checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
-
-# Notice the use of `tf.function`
-# This annotation causes the function to be "compiled".
-@tf.function
-def TrainStep(images, discriminator, generator, batch_size: int):
-    noise_dim = 100
-    """
-    The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
-    The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
-    """
-    noise = tf.random.normal([batch_size, noise_dim])
-    with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-      generated_images = generator.run(noise, training=True)
-
-      real_output = discriminator.run(images, training=True)
-      fake_output = discriminator.run(generated_images, training=True)
-
-      gen_loss = generator.loss(fake_output)
-      disc_loss = discriminator.loss(real_output, fake_output)
-
-    generator.UpdateParameters(gen_tape, gen_loss)
-    discriminator.UpdateParameters(disc_tape, disc_loss)
-
-def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch_size: int):
-    checkpoint = tf.train.Checkpoint(generator_optimizer = generator.optimizer,
-                                    discriminator_optimizer = discriminator.optimizer,
-                                    generator = generator,
-                                    discriminator = discriminator)
-    noise_dim = 100
-    num_examples_to_generate = 16
-    # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
-    seed = tf.random.normal([num_examples_to_generate, noise_dim])
-    """
-    The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
-    The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
-    """
-    for epoch in range(epochs):
-        start = time.time()
-
-        for image_batch in dataset:
-            TrainStep(image_batch, discriminator, generator, batch_size)
-
-        # Produce images for the GIF as you go
-        save_images(generator.run(seed, training=False), epoch + 1)
-
-        # Save the model every 15 epochs
-        if (epoch + 1) % 15 == 0:
-            checkpoint.save(file_prefix = checkpoint_path)
-
-        print(f"Time for epoch {epoch + 1} is {time.time()-start}s")
-
-    # Generate after the final epoch
-    save_images(generator.run(seed, training=False), epochs)
-    return checkpoint
-
-def save_images(data, epoch: int):
-    # Notice `training` is set to False.
-    # This is so all layers run in inference mode (batchnorm).
-    fig = plt.figure(figsize=(4, 4))
-    for i in range(data.shape[0]):
-        plt.subplot(4, 4, i+1)
-        plt.imshow(data[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
-        plt.axis('off')
-    plt.savefig(f'image_at_epoch_{epoch:04d}.png')
-    plt.show()
-
-def show_image(epoch: int):
-    # Display a single image using the epoch number
-  return PIL.Image.open(f'image_at_epoch_{epoch:04d}.png')
-
-def CreateGIF(filename: str):
-    """
-    Use imageio to create an animated gif using the images saved during training.
-    """
-    with imageio.get_writer(filename, mode='I') as writer:
-        filenames = glob.glob('image*.png')
-        filenames = sorted(filenames)
-        for f in filenames:
-            image = imageio.imread(f)
-            writer.append_data(image)
-        image = imageio.imread(f)
-        writer.append_data(image)
+    return tf.data.Dataset.from_tensor_slices(train_images).shuffle(buffer_size).batch(batch_size)
 
 if __name__ == "__main__":
     BUFFER_SIZE = 60000
     BATCH_SIZE = 256
     EPOCHS = 50
     discriminator = Discriminator()
-    generator = Generator()   
+    generator = Generator()
     checkpoint_dir = './training_checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "mnist_gan")
     train_dataset = PrepareMNISTData(BUFFER_SIZE, BATCH_SIZE)
-    checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE)
+    checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 16)
     show_image(EPOCHS)
     gif = os.path.join(checkpoint_dir, "mnist_gan.gif")
     CreateGIF(gif)
