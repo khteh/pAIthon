@@ -9,7 +9,7 @@ def oneDArray(n: int):
     print(f"=== {oneDArray.__name__} ===")
     one = numpy.array(range(n))
     print(f"{one} shape: {one.shape}\n")
-    one = numpy.arange(n)
+    one = numpy.arange(n) # numpy.arange() creates an array of consecutive, equally-spaced values within a given range
     print(f"{one} shape: {one.shape}\n")
     print(f"index-0 of shape: {one.shape[0]}, index--1 of shape: {one.shape[-1]}")
     one = numpy.arange(n).reshape((-1, 1)) # One shape dimension can be -1. In this case, the value is inferred from the length of the array and remaining dimensions.
