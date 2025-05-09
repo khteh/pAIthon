@@ -140,7 +140,7 @@ if __name__ == "__main__":
     checkpoint_dir = './training_checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
     train_dataset = PrepareTrainingData(BUFFER_SIZE, BATCH_SIZE)
-    checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 1)
+    checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 1, 1, 1)
     show_image(EPOCHS)
     gif = os.path.join(checkpoint_dir, "mnist_gan.gif")
     CreateGIF(gif)

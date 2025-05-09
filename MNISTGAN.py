@@ -152,7 +152,7 @@ if __name__ == "__main__":
     checkpoint_dir = './training_checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "mnist_gan")
     train_dataset = PrepareMNISTData(BUFFER_SIZE, BATCH_SIZE)
-    checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 16)
+    checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 16, 4, 4)
     show_image(EPOCHS)
     gif = os.path.join(checkpoint_dir, "mnist_gan.gif")
     CreateGIF(gif)

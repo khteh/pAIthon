@@ -26,7 +26,7 @@ def TrainStep(images, discriminator, generator, batch_size: int):
     generator.UpdateParameters(gen_tape, gen_loss)
     discriminator.UpdateParameters(disc_tape, disc_loss)
 
-def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch_size: int, num_examples_to_generate: int):
+def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch_size: int, num_examples_to_generate: int, image_rows: int, image_cols: int):
     checkpoint = tf.train.Checkpoint(generator_optimizer = generator.optimizer,
                                     discriminator_optimizer = discriminator.optimizer,
                                     generator = generator,
@@ -39,8 +39,6 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
     The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
     The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
     """
-    dimension = numpy.floor(numpy.sqrt(num_examples_to_generate))
-    dimension += 1 if num_examples_to_generate % dimension else 0
     for epoch in range(epochs):
         start = time.time()
 
@@ -48,7 +46,7 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
             TrainStep(image_batch, discriminator, generator, batch_size)
 
         # Produce images for the GIF as you go
-        save_images(generator.run(seed, training=False), f'image_at_epoch_{epoch+1:04d}.png', (dimension, dimension))
+        save_images(generator.run(seed, training=False), f'image_at_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
 
         # Save the model every 15 epochs
         if (epoch + 1) % 15 == 0:
@@ -57,7 +55,7 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
         print(f"Time for epoch {epoch + 1} is {time.time()-start}s")
 
     # Generate after the final epoch
-    save_images(generator.run(seed, training=False), f'image_at_epoch_{epoch:04d}.png', (dimension, dimension))
+    save_images(generator.run(seed, training=False), f'image_at_epoch_{epoch:04d}.png', (image_rows, image_cols))
     return checkpoint
 
 def save_images(data, filename: str, dimension):
