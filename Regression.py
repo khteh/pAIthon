@@ -90,7 +90,7 @@ def train_and_test():
     # this will print out the predicted prics for the two new cabins in the test data set
     print(x_test @ c)
 
-def SquaredErrorCostFunction(x, y, w, b):
+def SquaredErrorCostFunction(x, y, w: float, b:float):
     """
     Computes the cost function for linear regression.
     
@@ -111,15 +111,43 @@ def SquaredErrorCostFunction(x, y, w, b):
     """
     # number of training examples
     m = x.shape[0] 
-    cost_sum = 0 
+    cost = 0 
     for i in range(m): 
         f_wb = w * x[i] + b   
-        cost = (f_wb - y[i]) ** 2  
-        cost_sum = cost_sum + cost  
-    total_cost = (1 / (2 * m)) * cost_sum  
-    return total_cost
+        cost = cost + (f_wb - y[i]) ** 2  
+    cost = cost / (2 * m)
+    return cost
 
-def compute_gradient(x, y, w, b): 
+def MultipleLinearRegressionSquaredErrorCostFunction(x, y, w, b: float):
+    """
+    Computes the cost function for multiple linear regression.
+    
+    Args:
+      X (ndarray (m,n)): Data, m examples with n features
+      y (ndarray (m,)) : target values
+      w (ndarray (n,)) : model parameters  
+      b (scalar)       : model parameter
+
+    Returns
+        total_cost (float): The cost of using w,b as the parameters for linear regression
+               to fit the data points in x and y
+
+    sum((predictons[i] - targets[i]) ** 2) / 2n
+    n: number of observations
+    2: Further division by 2 is just to make the error number neat without affecting the modal performance measurement.
+
+    Squared error cost will never have multiple local minimums. Only ONE single global minimum. In 3D plot, it is a bowl shape. It is a convex function.
+    """
+    # number of training examples
+    m = x.shape[0] 
+    cost_sum = 0 
+    for i in range(m): 
+        f_wb_i = numpy.dot(x[i], w) + b   
+        cost = cost + (f_wb_i - y[i]) ** 2  
+    cost = cost / (2 * m)
+    return cost
+
+def UniVariateLinearRegressionGradient(x, y, w: float, b: float): 
     """
     Computes the gradient for linear regression 
     Args:
@@ -144,7 +172,32 @@ def compute_gradient(x, y, w, b):
     dj_db = dj_db / m 
     return dj_dw, dj_db
 
-def gradient_descent(x, y, w_in, b_in, alpha, num_iters, cost_function, gradient_function): 
+def MultipleLinearRegressionGradient(X, y, w, b: float): 
+    """
+    Computes the gradient for linear regression 
+    Args:
+      X (ndarray (m,n)): Data, m examples with n features
+      y (ndarray (m,)) : target values
+      w (ndarray (n,)) : model parameters  
+      b (scalar)       : model parameter
+      
+    Returns:
+      dj_dw (ndarray (n,)): The gradient of the cost w.r.t. the parameters w. 
+      dj_db (scalar):       The gradient of the cost w.r.t. the parameter b. 
+    """
+    m,n = X.shape           #(number of examples, number of features)
+    dj_dw = numpy.zeros((n,))
+    dj_db = 0.
+    for i in range(m):                             
+        err = (numpy.dot(X[i], w) + b) - y[i]   
+        for j in range(n):                         
+            dj_dw[j] = dj_dw[j] + err * X[i, j]    
+        dj_db = dj_db + err                        
+    dj_dw = dj_dw / m                                
+    dj_db = dj_db / m                                
+    return dj_db, dj_dw
+
+def UniVariateLinearRegressionDescent(x, y, w_in: float, b_in: float, alpha, num_iters, cost_function, gradient_function): 
     """
     Performs gradient descent to fit w,b. Updates w,b by taking 
     num_iters gradient steps with learning rate alpha
@@ -171,7 +224,7 @@ def gradient_descent(x, y, w_in, b_in, alpha, num_iters, cost_function, gradient
     w = w_in
     for i in range(num_iters):
         # Calculate the gradient and update the parameters using gradient_function
-        dj_dw, dj_db = gradient_function(x, y, w , b)     
+        dj_dw, dj_db = gradient_function(x, y, w , b)
 
         # Update Parameters using equation (3) above
         b = b - alpha * dj_db                            
@@ -188,9 +241,48 @@ def gradient_descent(x, y, w_in, b_in, alpha, num_iters, cost_function, gradient
                   f"w: {w: 0.3e}, b:{b: 0.5e}")
     return w, b, J_history, p_history #return w and J,w history for graphing
 
+def MultipleLinearRegressionGradientDescent(X, y, w_in, b_in, cost_function, gradient_function, alpha, num_iters): 
+    """
+    Performs batch gradient descent to learn w and b. Updates w and b by taking 
+    num_iters gradient steps with learning rate alpha
+    
+    Args:
+      X (ndarray (m,n))   : Data, m examples with n features
+      y (ndarray (m,))    : target values
+      w_in (ndarray (n,)) : initial model parameters  
+      b_in (scalar)       : initial model parameter
+      cost_function       : function to compute cost
+      gradient_function   : function to compute the gradient
+      alpha (float)       : Learning rate
+      num_iters (int)     : number of iterations to run gradient descent
+      
+    Returns:
+      w (ndarray (n,)) : Updated values of parameters 
+      b (scalar)       : Updated value of parameter 
+    """
+    # An array to store cost J and w's at each iteration primarily for graphing later
+    J_history = []
+    w = copy.deepcopy(w_in)  #avoid modifying global w within function
+    b = b_in
+    for i in range(num_iters):
+        # Calculate the gradient and update the parameters
+        dj_db,dj_dw = gradient_function(X, y, w, b)   ##None
+
+        # Update Parameters using w, b, alpha and gradient
+        w = w - alpha * dj_dw               ##None
+        b = b - alpha * dj_db               ##None
+      
+        # Save cost J at each iteration
+        if i<100000:      # prevent resource exhaustion 
+            J_history.append( cost_function(X, y, w, b))
+        # Print cost every at intervals 10 times or as many iterations if < 10
+        if i% math.ceil(num_iters / 10) == 0:
+            print(f"Iteration {i:4d}: Cost {J_history[-1]:8.2f}   ")
+    return w, b, J_history #return final w,b and J history for graphing
+
 def UniVariateLinearRegressionTraining():
     """
-    Linear regression training using local implementation of Cost and gradient descent.
+    UniVariate Linear regression training using local implementation of Cost and gradient descent.
     """
     # Load our data set
     x_train = numpy.array([1.0, 2.0])   #features
@@ -202,9 +294,33 @@ def UniVariateLinearRegressionTraining():
     iterations = 10000
     tmp_alpha = 1.0e-2
     # run gradient descent
-    w_final, b_final, J_hist, p_hist = gradient_descent(x_train ,y_train, w_init, b_init, tmp_alpha, 
-                                                        iterations, SquaredErrorCostFunction, compute_gradient)
+    w_final, b_final, J_hist, p_hist = UniVariateLinearRegressionDescent(x_train ,y_train, w_init, b_init, tmp_alpha, 
+                                                        iterations, SquaredErrorCostFunction, UniVariateLinearRegressionGradient)
     print(f"(w,b) found by gradient descent: ({w_final:8.4f},{b_final:8.4f})")
+    CostIterationPlot(J_hist)
+
+def MultipleLinearRegressionTraining():
+    """
+    Multiple Linear regression training using local implementation of Cost and gradient descent.
+    """
+    X_train = numpy.array([[2104, 5, 1, 45], [1416, 3, 2, 40], [852, 2, 1, 35]])
+    y_train = numpy.array([460, 232, 178])
+    # initialize parameters
+    b_init = 785.1811367994083
+    w_init = numpy.array([ 0.39133535, 18.75376741, -53.36032453, -26.42131618])
+    initial_w = numpy.zeros_like(w_init)
+    initial_b = 0.
+    # some gradient descent settings
+    iterations = 1000
+    alpha = 5.0e-7
+    # run gradient descent 
+    w_final, b_final, J_hist = MultipleLinearRegressionGradientDescent(X_train, y_train, initial_w, initial_b,
+                                                        MultipleLinearRegressionSquaredErrorCostFunction, MultipleLinearRegressionGradient, 
+                                                        alpha, iterations)
+    print(f"b,w found by gradient descent: {b_final:0.2f},{w_final} ")
+    m,_ = X_train.shape
+    for i in range(m):
+        print(f"prediction: {numpy.dot(X_train[i], w_final) + b_final:0.2f}, target value: {y_train[i]}")
     CostIterationPlot(J_hist)
 
 def SimpleLinearRegression():
@@ -357,6 +473,7 @@ if __name__ == "__main__":
     find_best(X, y, c)
     train_and_test()
     UniVariateLinearRegressionTraining()
+    MultipleLinearRegressionTraining()
     SimpleLinearRegression()
     MultipleLinearRegression()
     SimplePolynomialRegression()
