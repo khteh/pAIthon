@@ -1,4 +1,5 @@
-import numpy as np
+import numpy
+from utils.UniVariatePlot import UniVariatePlot
 portnames = ["PAN", "AMS", "CAS", "NYC", "HEL"]
 D = [
         [0,8943,8019,3652,10545],
@@ -43,16 +44,16 @@ def permutations(route, ports):
     # Print the port names in route when the recursion terminates
 
 def polynomial():
-    x = np.array([66, 5, 15, 2, 500])
-    c = np.array([3000, 200 , -50, 5000, 100])
-    print(f"x @ c: {x @ c}, np.dot(x, c): {np.dot(x, c)}")
-    x = np.array([[66, 5, 15, 2, 500], 
+    x = numpy.array([66, 5, 15, 2, 500])
+    c = numpy.array([3000, 200 , -50, 5000, 100])
+    print(f"x @ c: {x @ c}, numpy.dot(x, c): {numpy.dot(x, c)}")
+    x = numpy.array([[66, 5, 15, 2, 500], 
               [21, 3, 50, 1, 100]])
-    print(f"x @ c: {x @ c}, np.dot(x, c): {np.dot(x, c)}")
+    print(f"x @ c: {x @ c}, numpy.dot(x, c): {numpy.dot(x, c)}")
 
 def kmin(n): #N minimum (index) values in a numpy array
     # https://stackoverflow.com/questions/16817948/i-have-need-the-n-minimum-index-values-in-a-numpy-array
-    arr = np.array([1, 4, 2, 5, 3])
+    arr = numpy.array([1, 4, 2, 5, 3])
     indices = arr.argsort()[:n] # Sort the array
     print(f"arr: {arr}, tmp: {indices}")
 
@@ -65,6 +66,55 @@ def testZip():
     print(f"Manhattan distance: {c}")
     d = sum([abs(i- j) for i, j in zip(a, b)])
     print(f"Manhattan distance: {d}")
+
+def VectorSlicing():
+    #vector slicing operations
+    a = numpy.arange(10)
+    print(f"a         = {a}")
+
+    #access 5 consecutive elements (start:stop:step)
+    c = a[2:7:1];     print("a[2:7:1] = ", c)
+
+    # access 3 elements separated by two 
+    c = a[2:7:2];     print("a[2:7:2] = ", c)
+
+    # access all elements index 3 and above
+    c = a[3:];        print("a[3:]    = ", c)
+
+    # access all elements below index 3
+    c = a[:3];        print("a[:3]    = ", c)
+
+    # access all elements
+    c = a[:];         print("a[:]     = ", c)
+
+def Matrix():
+    #vector indexing operations on matrices
+    a = numpy.arange(6).reshape(-1, 2)   #reshape is a convenient way to create matrices
+    print(f"a.shape: {a.shape}, \na= {a}")
+
+    #access an element
+    print(f"\na[2,0].shape:   {a[2, 0].shape}, a[2,0] = {a[2, 0]},     type(a[2,0]) = {type(a[2, 0])} Accessing an element returns a scalar\n")
+
+    #access a row
+    print(f"a[2].shape:   {a[2].shape}, a[2]   = {a[2]}, type(a[2])   = {type(a[2])}")
+
+    #vector 2-D slicing operations
+    a = numpy.arange(20).reshape(-1, 10)
+    print(f"a = \n{a}")
+
+    #access 5 consecutive elements (start:stop:step)
+    print("a[0, 2:7:1] = ", a[0, 2:7:1], ",  a[0, 2:7:1].shape =", a[0, 2:7:1].shape, "a 1-D array")
+
+    #access 5 consecutive elements (start:stop:step) in two rows
+    print("a[:, 2:7:1] = \n", a[:, 2:7:1], ",  a[:, 2:7:1].shape =", a[:, 2:7:1].shape, "a 2-D array")
+
+    # access all elements
+    print("a[:,:] = \n", a[:,:], ",  a[:,:].shape =", a[:,:].shape)
+
+    # access all elements in one row (very common usage)
+    print("a[1,:] = ", a[1,:], ",  a[1,:].shape =", a[1,:].shape, "a 1-D array")
+    # same as
+    print("a[1]   = ", a[1],   ",  a[1].shape   =", a[1].shape, "a 1-D array")
 
 def primary_diagonal(matrix):
     sum = 0
@@ -105,6 +155,11 @@ def sort_dict_by_tuple_values():
     for k,v in result.items():
         print(f"{k}: {v}")
 
+def univariate_plot():
+    x_train = numpy.array([1.0, 2.0])
+    y_train = numpy.array([300.0, 500.0])
+    UniVariatePlot(x_train, y_train, [], 0.0, "Housing Prices", 'Price (in 1000s of dollars)', 'Size (1000 sqft)')
+
 def main():
     sort_dict_by_tuple_values()
     permutations([0], list(range(1, len(portnames)))) # This will start the recursion with 0 ("PAN") as the first stop
@@ -112,7 +167,10 @@ def main():
     polynomial()
     kmin(3)
     testZip()
+    VectorSlicing()
+    Matrix()
     matrix_sums()
+    #univariate_plot() This blocks
 
 if __name__ == "__main__":
     main()
