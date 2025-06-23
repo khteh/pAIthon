@@ -308,7 +308,7 @@ def MultipleLinearRegressionTraining():
     # initialize parameters
     b_init = 785.1811367994083
     w_init = numpy.array([ 0.39133535, 18.75376741, -53.36032453, -26.42131618])
-    initial_w = numpy.zeros_like(w_init)
+    initial_w = numpy.zeros_like(w_init) # Return an array of zeros with the same shape and type as a given array.
     initial_b = 0.
     # some gradient descent settings
     iterations = 1000
