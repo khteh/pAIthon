@@ -127,15 +127,14 @@ Function Approximation:
 Approximating Q(s,a), often by a function combining various features, rathen than storing one value for every state-action pair.
 Similar to depth-limiting approach in MiniMax. Used when it is not feasible to explore all the posible values of Q(s,a) in a bigger state space.
 
-Unsupervised Learning: Given input data without any additional feedback, learn patterns.
-k-means clustering: Algorithm for clustering data based on repeatedly assigning points to clusters and updating those clusters' centers.
-
 Unsupervised Learning:
-Given input data without any additional feedback (label), learn patterns.
+Given input data without any additional feedback (label), learn patterns, find structure in the data.
 Tasks:
 (1) Clustering: Organize a set of objects into groups in such a way that similar objects tend to be in the same group. Example: Genetic research, Image segmentation, Market research, Medical imaging, Social network analysis.
     One technique is k-means clustering: Algorithm for clustering data based on repeatedly assigning points to clusters (k number of clusters) and updating those clusters' centers
-
+(2) Anomaly Detection: Find unusual events in the data.
+    Use case: Fraud detection.
+(3) Dimensionality Reduction: Compress large corpuses of data to a much smaller dataset without losing key / important information.
 Neural Network:
 Activation functions:
 (1) Step function: g(x) = 1 if x >=0, else 0
