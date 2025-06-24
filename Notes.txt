@@ -111,6 +111,18 @@ Adding the term w*Complexity(h) is called "Regularization": Penalizing hypothese
 Hold-out cross validation splits data into training and testing data sets. How to split?
 k-fold corss-validation: Splitting data into k sets, and experimenting k times, using each set as a test set once, and using remaining data as training set.
 
+Feature Scaling: When a feature has a large range of values, the weight/parameter calculated by the model will have small range. In this case, a small change in weight will have big change in the cost value.
+This causes the gradient descent to take longer time to find it's global minimum. To oversome this, scale the input data. 2 ways:
+(1) Divide by the maximum value of the data range. This will produce scaled input data of [0, 1]
+(2) Mean normalization: Find the average value (ave). (x - ave) / (Xmax - Xmin). This will produce scaled input data of [-1, 1] which centers around 0.
+(3) Z-score normalization: Find the standard deviation (d) and the mean. (x - ave) / d.
+    Mean: sum(data) / len(data)
+    standard deviation: sum((data[i] - mean) ** 2) / len(data)
+Rules of thumb: Aim for [-1, 1] input data range. These need to rescale:
+(1) [-100 , 100] : Too large
+(2) [-0.001, 0.001] : Too small
+(3) [98.6, 105]: Too large. Example, Fahrenheight body temperature.
+
 Reinforcement Learning:
 Given a set of rewards or penalties, learn what actions to take in the future.
 Markov Decision Process:

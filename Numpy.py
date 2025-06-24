@@ -22,6 +22,7 @@ def twoDArray(n: int):
     print(f"{two} ndim: {two.ndim}, size: {two.size}, shape: {two.shape}")
     numbers = numpy.array([[1,3,5], [7,9,11]])
     print(f"ndim: {numbers.ndim}, size: {numbers.size}, shape: {numbers.shape}")
+    # The axis=0 argument specifies that the accumulation should occur along the rows, effectively accumulating values down each column.
     aggregate0 = numpy.sum(numbers, axis=0) # Each column collapsed into a single row
     aggregate1 = numpy.sum(numbers, axis=1) # Each row collapsed into a single column
     print(f"Aggregates axis-0: {aggregate0}, axis-1: {aggregate1}")
@@ -50,6 +51,15 @@ def multiDArray(i:int, j: int, k:int):
     print(f"axis-0 element-1, axis-1 0:1 => {multi[1, :1]}")
     print(f"axis-0 element-1, axis-1 1:2 => {multi[1, 1:2]}")
     print(f"axis-0 element-1, axis-1 0:2 => {multi[1, :2]}")
+
+def ConcatenateSliceObjects():
+    """
+    https://numpy.org/doc/stable/reference/generated/numpy.c_.html
+    """
+    x = numpy.arange(0, 20, 1)
+    print(f"ndim: {x.ndim}, size: {x.size}, shape: {x.shape}")
+    X = numpy.c_[x, x**2, x**3]   #<-- added engineered feature
+    print(f"ndim: {X.ndim}, size: {X.size}, shape: {X.shape}")
 
 def csvArray(i:int, j: int, k: int, path):
     print(f"\n=== {csvArray.__name__} ===")
@@ -159,6 +169,7 @@ def HierarchicalDataAnalysis(companies, prices):
     plt.xlabel("Tech Companies")
     plt.ylabel("Friday Prices ($)")
     plt.title("Tech Share Valuation")
+    plt.legend()
     #plt.show() This blocks
 def Tensors():
     """
@@ -246,6 +257,7 @@ if __name__ == "__main__":
     oneDArray(10)
     twoDArray(30)
     multiDArray(3,4,5)
+    ConcatenateSliceObjects()
     csvArray(3,2,3, "data/file?.csv")
     """
     https://stackoverflow.com/questions/17079279/how-is-axis-indexed-in-numpys-array

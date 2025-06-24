@@ -66,6 +66,7 @@ def save_images(data, filename: str, dimension):
         plt.subplot(4, 4, i+1)
         plt.imshow(data[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
         plt.axis('off')
+    plt.legend()
     plt.savefig(filename)
     plt.show()
 

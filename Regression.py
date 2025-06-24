@@ -88,7 +88,32 @@ def train_and_test():
     print(c)
 
     # this will print out the predicted prics for the two new cabins in the test data set
-    print(x_test @ c)
+    print(x_test @ c) # Matrix multiplication
+
+def ZScoreNormalization(x):
+    """
+    computes  X, zcore normalized by column
+    
+    Args:
+      X (ndarray (m,n))     : input data, m examples, n features
+      
+    Returns:
+      X_norm (ndarray (m,n)): input normalized by column
+      mu (ndarray (n,))     : mean of each feature
+      sigma (ndarray (n,))  : standard deviation of each feature
+
+    Z-score normalization: Find the standard deviation (d) and the mean. (x - ave) / d.
+    Mean: sum(data) / len(data)
+    standard deviation: sum((data[i] - mean) ** 2) / len(data)
+    """
+    # Find the mean of each feature (column)
+    # The axis=0 argument specifies that the accumulation should occur along the rows, effectively accumulating values down each column.
+    mu = numpy.mean(x, axis=0) # mu will have shape (n,)
+    # Find the standard deviation of each feature (column)
+    sigma = numpy.std(X, axis=0) # sigma will have shape (n,)
+    # Subtract every element of mu, divide by sigma
+    x_normalized = (x - mu)  / sigma
+    return x_normalized, mu, sigma
 
 def SquaredErrorCostFunction(x, y, w: float, b:float):
     """
@@ -114,8 +139,8 @@ def SquaredErrorCostFunction(x, y, w: float, b:float):
     cost = 0 
     for i in range(m): 
         f_wb = w * x[i] + b   
-        cost = cost + (f_wb - y[i]) ** 2  
-    cost = cost / (2 * m)
+        cost += (f_wb - y[i]) ** 2  
+    cost /= (2 * m)
     return cost
 
 def MultipleLinearRegressionSquaredErrorCostFunction(x, y, w, b: float):
@@ -143,8 +168,8 @@ def MultipleLinearRegressionSquaredErrorCostFunction(x, y, w, b: float):
     cost_sum = 0 
     for i in range(m): 
         f_wb_i = numpy.dot(x[i], w) + b   
-        cost = cost + (f_wb_i - y[i]) ** 2  
-    cost = cost / (2 * m)
+        cost += (f_wb_i - y[i]) ** 2  
+    cost /= (2 * m)
     return cost
 
 def UniVariateLinearRegressionGradient(x, y, w: float, b: float): 
@@ -156,18 +181,20 @@ def UniVariateLinearRegressionGradient(x, y, w: float, b: float):
       w,b (scalar)    : model parameters  
     Returns
       dj_dw (scalar): The gradient of the cost w.r.t. the parameters w
-      dj_db (scalar): The gradient of the cost w.r.t. the parameter b     
-     """
+      dj_db (scalar): The gradient of the cost w.r.t. the parameter b
+    
+    Gradient descent is picking the 'correct' features for us by emphasizing its associated parameter.
+    Less weight value implies less important/correct feature, and in extreme, when the weight becomes zero or very close to zero, the associated feature is not useful in fitting the model to the data.
+    """
     # Number of training examples
     m = x.shape[0]    
     dj_dw = 0
     dj_db = 0
     for i in range(m):  
-        f_wb = w * x[i] + b 
-        dj_dw_i = (f_wb - y[i]) * x[i] 
-        dj_db_i = f_wb - y[i] 
-        dj_db += dj_db_i
-        dj_dw += dj_dw_i 
+        f_wb = w * x[i] + b
+        err = f_wb - y[i]
+        dj_dw += err * x[i] 
+        dj_db += err 
     dj_dw = dj_dw / m 
     dj_db = dj_db / m 
     return dj_dw, dj_db
@@ -183,7 +210,10 @@ def MultipleLinearRegressionGradient(X, y, w, b: float):
       
     Returns:
       dj_dw (ndarray (n,)): The gradient of the cost w.r.t. the parameters w. 
-      dj_db (scalar):       The gradient of the cost w.r.t. the parameter b. 
+      dj_db (scalar):       The gradient of the cost w.r.t. the parameter b.
+    
+    Gradient descent is picking the 'correct' features for us by emphasizing its associated parameter.
+    Less weight value implies less important/correct feature, and in extreme, when the weight becomes zero or very close to zero, the associated feature is not useful in fitting the model to the data.
     """
     m,n = X.shape           #(number of examples, number of features)
     dj_dw = numpy.zeros((n,))
@@ -197,7 +227,7 @@ def MultipleLinearRegressionGradient(X, y, w, b: float):
     dj_db = dj_db / m                                
     return dj_db, dj_dw
 
-def UniVariateLinearRegressionDescent(x, y, w_in: float, b_in: float, alpha, num_iters, cost_function, gradient_function): 
+def UniVariateLinearRegressionGradientDescent(x, y, w_in: float, b_in: float, alpha, num_iters, cost_function, gradient_function): 
     """
     Performs gradient descent to fit w,b. Updates w,b by taking 
     num_iters gradient steps with learning rate alpha
@@ -292,9 +322,13 @@ def UniVariateLinearRegressionTraining():
     b_init = 0
     # some gradient descent settings
     iterations = 10000
-    tmp_alpha = 1.0e-2
+    """
+    One way to debug if gradient descent works is setting learning rate to a very small value and check if cost decreases after every iteration.
+    Example: start from 0.001, 0.003 (x3), 0.01 (x3), 0.03 (x3), 0.1 (x3), 1.0 (x3) ...
+    """
+    alpha = 1.0e-2
     # run gradient descent
-    w_final, b_final, J_hist, p_hist = UniVariateLinearRegressionDescent(x_train ,y_train, w_init, b_init, tmp_alpha, 
+    w_final, b_final, J_hist, p_hist = UniVariateLinearRegressionGradientDescent(x_train ,y_train, w_init, b_init, alpha, 
                                                         iterations, SquaredErrorCostFunction, UniVariateLinearRegressionGradient)
     print(f"(w,b) found by gradient descent: ({w_final:8.4f},{b_final:8.4f})")
     CostIterationPlot(J_hist)
@@ -312,6 +346,10 @@ def MultipleLinearRegressionTraining():
     initial_b = 0.
     # some gradient descent settings
     iterations = 1000
+    """
+    One way to debug if gradient descent works is setting learning rate to a very small value and check if cost decreases after every iteration.
+    Example: start from 0.001, 0.003 (x3), 0.01 (x3), 0.03 (x3), 0.1 (x3), 1.0 (x3) ...
+    """
     alpha = 5.0e-7
     # run gradient descent 
     w_final, b_final, J_hist = MultipleLinearRegressionGradientDescent(X_train, y_train, initial_w, initial_b,
@@ -389,6 +427,8 @@ def SimplePolynomialRegression():
     Involves 1 extra step of calculating the higher degrees of the input variable value.
     Preprocessing of the input observations in order to satisfy the polynomial equation, i.e., to derive the high-degree values
     For example, quadratic model will have 2 features of the input, Qubic is 3, etc.
+
+    Polynomial features were chosen based on how well they matched the target data. Another way to think about this is to note that we are still using linear regression once we have created new features. Given that, the best features will be linear relative to the target.
     """
     print(f"\n=== {SimplePolynomialRegression.__name__} ===")
     x = numpy.array([5, 15, 25, 35, 45, 55]).reshape((-1, 1)) # 1 input with 6 observations
@@ -412,6 +452,7 @@ def SimplePolynomialRegression():
 def MultiplePolynomialRegression():
     """
     f(x) = b0 + b1x1 + b2x2 + b3x1^2 + b4x1x2 + b5x2^2
+    Polynomial features were chosen based on how well they matched the target data. Another way to think about this is to note that we are still using linear regression once we have created new features. Given that, the best features will be linear relative to the target.
     """
     print(f"\n=== {MultiplePolynomialRegression.__name__} ===")
     x = [[0, 1], [5, 1], [15, 2], [25, 5], [35, 11], [45, 15], [55, 34], [60, 35]]

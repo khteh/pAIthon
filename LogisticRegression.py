@@ -122,7 +122,7 @@ def HandwritingClassification():
     It’s a good practice to standardize the input data that you use for logistic regression, although in many cases it’s not necessary. Standardization might improve the performance of your algorithm. It helps if you need to compare and interpret the weights. 
     It’s important when you apply penalization because the algorithm is actually penalizing against the large values of the weights.
     """
-    scaler = StandardScaler()
+    scaler = StandardScaler() # perform z-score normalization
     x_train = scaler.fit_transform(x_train)
     x_test = scaler.transform(x_test) # only transforms the argument, without fitting the scaler.
     model = LogisticRegression(solver='liblinear', C=0.05, multi_class='ovr', random_state=0).fit(x_train, y_train)
@@ -150,6 +150,7 @@ def ShowMulticlassConfusionMatrix(confusion, font_size: int):
     for i in range(10):
         for j in range(10):
             ax.text(j, i, confusion[i, j], ha='center', va='center', color='white')
+    plt.legend()
     plt.show()
 
 def ShowConfusionMatrix(confusion):
@@ -166,6 +167,7 @@ def ShowConfusionMatrix(confusion):
     for i in range(2):
         for j in range(2):
             ax.text(j, i, confusion[i, j], ha='center', va='center', color='red')
+    plt.legend()
     plt.show()
 
 if __name__ == "__main__":

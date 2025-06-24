@@ -6,4 +6,5 @@ def UniVariatePlot(x: list[float], y: list[float], w: list[float], b: float, tit
     plt.ylabel(yLabel)
     plt.xlabel(xLabel)
     plt.scatter(x, y, marker='x', c='r')
+    plt.legend()
     plt.show()

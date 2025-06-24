@@ -2,7 +2,7 @@ import numpy, matplotlib.pyplot as plt
 
 def CostIterationPlot(costs: list[float]):
     """
-    Cost versus iterations of gradient descent
+    Cost versus iterations of gradient descent, a.k.a, Learning Curve
     A plot of cost versus iterations is a useful measure of progress in gradient descent. Cost should always decrease in successful runs. 
     The change in cost is so rapid initially, it is useful to plot the initial decent on a different scale than the final descent. 
     In the plots below, note the scale of cost on the axes and the iteration step.    
@@ -14,4 +14,5 @@ def CostIterationPlot(costs: list[float]):
     ax1.set_title("Cost vs. iteration(start)");  ax2.set_title("Cost vs. iteration (end)")
     ax1.set_ylabel('Cost')            ;  ax2.set_ylabel('Cost') 
     ax1.set_xlabel('iteration step')  ;  ax2.set_xlabel('iteration step') 
+    plt.legend()
     plt.show()
