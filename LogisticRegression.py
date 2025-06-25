@@ -1,4 +1,4 @@
-import math, numpy
+import math, numpy, copy
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from sklearn.datasets import load_digits
@@ -44,6 +44,16 @@ You should carefully match the solver and regularization method for several reas
 'newton-cg', 'sag', 'saga', and 'lbfgs' don’t support L1 regularization.
 'saga' is the only solver that supports elastic-net regularization.
 
+Squared error cannot be used because f(x) = 1 / (1 + e^-z) is non-linear
+Loss function:
+z = linear regression modal. Ex: wx + b
+f_w_b = g(z) = 1 / (1 + e^(-z))
+-log(f_w_b(X)) for y == 1
+-log(1 - f_w_b(X)) for y == 0
+= -ylog(f_w_b(X)) - (1 - y)log(1 - f_w_b(X))
+Cost = Lost / m <= NOTE: NOT divided by 2m which is different from linear regression.
+Regularized Cost Function: =  Unregularized cost function + lambda * sum(w ** 2) / 2m
+Derived from statistics using maximum likelihood estimation.
 """
 x = numpy.array([4, 3, 0])
 c1 = numpy.array([-.5, .1, .08])
@@ -51,6 +61,22 @@ c2 = numpy.array([-.2, .2, .31])
 c3 = numpy.array([.5, -.1, 2.53])
 
 def sigmoid(z):
+    """
+    Compute the sigmoid of z
+
+    Args:
+        z (ndarray): A scalar, numpy array of any size.
+
+    Returns:
+        g (ndarray): sigmoid(z), with the same shape as z
+
+    Recall that for logistic regression, the model is represented as
+    f(w,b) = g(w.x + b)
+ 
+    where function g:
+    is the sigmoid function. The sigmoid function is defined as:
+    g(z) = 1 / (1 + exp(-z))
+    """
     # add your implementation of the sigmoid function here
     # s(z)=1÷(1+exp(−z))
     print(1/(1+math.exp(-z)))
@@ -62,6 +88,143 @@ result3 = x @ c3
 sigmoid(result1)
 sigmoid(result2)
 sigmoid(result3)
+
+def LogisticRegressionCost(x, y, w, b, lambda_: float = 1.0):
+    """
+    Computes cost
+
+    Args:
+      X (ndarray (m,n)): Data, m examples with n features
+      y (ndarray (m,)) : target values
+      w (ndarray (n,)) : model parameters  
+      b (scalar)       : model parameter
+    
+    Returns:
+      cost (scalar): cost
+    """
+    m = x.shape[0]
+    cost = 0.0
+    for i in range(m):
+        z_i = numpy.dot(x[i], w) + b
+        f_w_b = sigmoid(z_i)
+        cost += - y[i] * math.log(f_w_b) - (1 - y[i]) * math.log(1 - f_w_b)
+    cost /= m
+    rcost = 0.0
+    for i in w:
+        rcost += i ** 2
+    rcost *= lambda_ / (2 * m)
+    return cost + rcost
+
+def LogisticGradient(x, y, w, b, lambda_: float = 1.0):
+    """
+    Computes the gradient for logistic regression 
+ 
+    Args:
+      X (ndarray (m,n): Data, m examples with n features
+      y (ndarray (m,)): target values
+      w (ndarray (n,)): model parameters  
+      b (scalar)      : model parameter
+    Returns
+      dj_dw (ndarray (n,)): The gradient of the cost w.r.t. the parameters w. 
+      dj_db (scalar)      : The gradient of the cost w.r.t. the parameter b.
+
+    dJ(w,b)/dw[col] = (sum((f_w_b - y[row]) * x[row, col]) + lambda * w[j]) / m
+    dJ(w,b)/db[col] = (sum(f_w_b - y[row]) / m
+    f_w_b = sigmoid(z_i)
+    """
+    rows, cols = x.shape
+    dj_dw = numpy.zeros((cols,))
+    dj_db = 0.0
+    for i in range(rows):
+        z_i = numpy.dot(x[i], w) + b
+        f_w_b = sigmoid(z_i)
+        err = f_w_b - y[i]
+        for j in range(cols):
+            dj_dw[j] += err * x[i,j] + lambda_ * w[j]
+        dj_db += err
+    return dj_dw / rows, dj_db / rows
+
+def LogisticGradientDescent(x, y, w_in, b_in, alpha, iterations):
+    """
+    Performs batch gradient descent
+    
+    Args:
+      X (ndarray (m,n)   : Data, m examples with n features
+      y (ndarray (m,))   : target values
+      w_in (ndarray (n,)): Initial values of model parameters  
+      b_in (scalar)      : Initial values of model parameter
+      alpha (float)      : Learning rate
+      num_iters (scalar) : number of iterations to run gradient descent
+      
+    Returns:
+      w (ndarray (n,))   : Updated values of parameters
+      b (scalar)         : Updated value of parameter 
+    """
+    # An array to store cost J and w's at each iteration primarily for graphing later
+    J_history = []
+    w = copy.deepcopy(w_in)  #avoid modifying global w within function
+    b = b_in
+    
+    for i in range(iterations):
+        # Calculate the gradient and update the parameters
+        dj_db, dj_dw = LogisticGradient(x, y, w, b)   
+
+        # Update Parameters using w, b, alpha and gradient
+        w -= alpha * dj_dw               
+        b -= alpha * dj_db               
+      
+        # Save cost J at each iteration
+        if i<100000:      # prevent resource exhaustion 
+            J_history.append(LogisticRegressionCost(x, y, w, b) )
+
+        # Print cost every at intervals 10 times or as many iterations if < 10
+        if i% math.ceil(iterations / 10) == 0:
+            print(f"Iteration {i:4d}: Cost {J_history[-1]}   ")
+    return w, b, J_history         #return final w,b and J history for graphing    
+
+def LogisticPredict(x, w, b, threshold):
+    """
+    Predict whether the label is 0 or 1 using learned logistic
+    regression parameters w
+    
+    Args:
+      X : (ndarray Shape (m,n)) data, m examples by n features
+      w : (ndarray Shape (n,))  values of parameters of the model      
+      b : (scalar)              value of bias parameter of the model
+
+    Returns:
+      p : (ndarray (m,)) The predictions for X using a threshold at 0.5
+    """
+    # number of training examples
+    m, n = x.shape   
+    p = numpy.zeros(m)
+    # Loop over each example
+    for i in range(m):   
+        z_wb = 0.0
+        # Loop over each feature
+        for j in range(n): 
+            # Add the corresponding term to z_wb
+            z_wb += x[i, j] * w[j]
+        
+        # Add bias term 
+        z_wb += b
+        
+        # Calculate the prediction for this example
+        f_wb = sigmoid(z_wb)
+
+        # Apply the threshold
+        p[i] = f_wb >= threshold
+    return p
+
+def test_LogisticPrediction():
+    # Test your predict code
+    numpy.random.seed(1)
+    tmp_w = numpy.random.randn(2)
+    tmp_b = 0.3    
+    tmp_X = numpy.random.randn(4, 2) - 0.5
+    tmp_p = LogisticPredict(tmp_X, tmp_w, tmp_b)
+    print(f'Output of predict: shape {tmp_p.shape}, value {tmp_p}')    
+    #print('Train Accuracy: %f'%(numpy.mean(tmp_p == y_train) * 100))
 
 def single_variate_binary_classification(C: float = 1.0):
     """
@@ -171,6 +334,8 @@ def ShowConfusionMatrix(confusion):
     plt.show()
 
 if __name__ == "__main__":
+    assert sigmoid(0) == 0.5
+    test_LogisticPrediction()
     single_variate_binary_classification()
     single_variate_binary_classification(10.0)
     single_variate_binary_classification_statsmodels()

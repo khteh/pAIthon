@@ -122,7 +122,8 @@ def SquaredErrorCostFunction(x, y, w: float, b:float):
     Args:
       x (ndarray (m,)): Data, m examples 
       y (ndarray (m,)): target values
-      w,b (scalar)    : model parameters  
+      w,b (scalar)    : model parameters
+     lambda_ (scalar): Controls amount of regularization
     
     Returns
         total_cost (float): The cost of using w,b as the parameters for linear regression
@@ -131,19 +132,19 @@ def SquaredErrorCostFunction(x, y, w: float, b:float):
     sum((predictons[i] - targets[i]) ** 2) / 2n
     n: number of observations
     2: Further division by 2 is just to make the error number neat without affecting the modal performance measurement.
-
+    J(w,b) = (sum((f_w_b(x) - y) ** 2)) / 2m
     Squared error cost will never have multiple local minimums. Only ONE single global minimum. In 3D plot, it is a bowl shape. It is a convex function.
     """
     # number of training examples
-    m = x.shape[0] 
+    m = x.shape[0]
     cost = 0 
     for i in range(m): 
         f_wb = w * x[i] + b   
-        cost += (f_wb - y[i]) ** 2  
+        cost += (f_wb - y[i]) ** 2
     cost /= (2 * m)
     return cost
 
-def MultipleLinearRegressionSquaredErrorCostFunction(x, y, w, b: float):
+def MultipleLinearRegressionSquaredErrorCostFunction(x, y, w, b: float, lambda_: float = 1.0):
     """
     Computes the cost function for multiple linear regression.
     
@@ -160,15 +161,21 @@ def MultipleLinearRegressionSquaredErrorCostFunction(x, y, w, b: float):
     sum((predictons[i] - targets[i]) ** 2) / 2n
     n: number of observations
     2: Further division by 2 is just to make the error number neat without affecting the modal performance measurement.
-
+    J(w,b) = (sum((f_w_b(x) - y) ** 2)) / 2m
+    Regularized: J(w,b) = (sum((f_w_b(x) - y) ** 2) + lambda * sum(w ** 2)) / 2m
     Squared error cost will never have multiple local minimums. Only ONE single global minimum. In 3D plot, it is a bowl shape. It is a convex function.
     """
     # number of training examples
     m = x.shape[0] 
-    cost_sum = 0 
+    cost = 0
+    rcost = 0
     for i in range(m): 
         f_wb_i = numpy.dot(x[i], w) + b   
-        cost += (f_wb_i - y[i]) ** 2  
+        cost += (f_wb_i - y[i]) ** 2
+    for i in w:
+        rcost += i ** 2
+    rcost *= lambda_
+    cost += rcost
     cost /= (2 * m)
     return cost
 
@@ -183,6 +190,8 @@ def UniVariateLinearRegressionGradient(x, y, w: float, b: float):
       dj_dw (scalar): The gradient of the cost w.r.t. the parameters w
       dj_db (scalar): The gradient of the cost w.r.t. the parameter b
     
+    dJ(w,b)/dw = (sum((f_w_b(x) - y) * x)) / m
+    dJ(w,b)/db = (sum((f_w_b(x) - y))) / m
     Gradient descent is picking the 'correct' features for us by emphasizing its associated parameter.
     Less weight value implies less important/correct feature, and in extreme, when the weight becomes zero or very close to zero, the associated feature is not useful in fitting the model to the data.
     """
@@ -199,7 +208,7 @@ def UniVariateLinearRegressionGradient(x, y, w: float, b: float):
     dj_db = dj_db / m 
     return dj_dw, dj_db
 
-def MultipleLinearRegressionGradient(X, y, w, b: float): 
+def MultipleLinearRegressionGradient(X, y, w, b: float, lambda_): 
     """
     Computes the gradient for linear regression 
     Args:
@@ -207,11 +216,14 @@ def MultipleLinearRegressionGradient(X, y, w, b: float):
       y (ndarray (m,)) : target values
       w (ndarray (n,)) : model parameters  
       b (scalar)       : model parameter
+      lambda_ (scalar): Controls amount of regularization
       
     Returns:
       dj_dw (ndarray (n,)): The gradient of the cost w.r.t. the parameters w. 
       dj_db (scalar):       The gradient of the cost w.r.t. the parameter b.
-    
+
+    dJ(w,b)/dw = (sum((f_w_b(x) - y) * x) + lambda * w) / m
+    dJ(w,b)/db = (sum((f_w_b(x) - y))) / m
     Gradient descent is picking the 'correct' features for us by emphasizing its associated parameter.
     Less weight value implies less important/correct feature, and in extreme, when the weight becomes zero or very close to zero, the associated feature is not useful in fitting the model to the data.
     """
@@ -219,12 +231,12 @@ def MultipleLinearRegressionGradient(X, y, w, b: float):
     dj_dw = numpy.zeros((n,))
     dj_db = 0.
     for i in range(m):                             
-        err = (numpy.dot(X[i], w) + b) - y[i]   
+        err = (numpy.dot(X[i], w) + b) - y[i]
         for j in range(n):                         
-            dj_dw[j] = dj_dw[j] + err * X[i, j]    
-        dj_db = dj_db + err                        
-    dj_dw = dj_dw / m                                
-    dj_db = dj_db / m                                
+            dj_dw[j] += err * X[i, j] + lambda_ * w[j]
+        dj_db += err                        
+    dj_dw /= m                                
+    dj_db /= m                                
     return dj_db, dj_dw
 
 def UniVariateLinearRegressionGradientDescent(x, y, w_in: float, b_in: float, alpha, num_iters, cost_function, gradient_function): 
@@ -257,8 +269,8 @@ def UniVariateLinearRegressionGradientDescent(x, y, w_in: float, b_in: float, al
         dj_dw, dj_db = gradient_function(x, y, w , b)
 
         # Update Parameters using equation (3) above
-        b = b - alpha * dj_db                            
-        w = w - alpha * dj_dw                            
+        b -= alpha * dj_db                            
+        w -= alpha * dj_dw                            
 
         # Save cost J at each iteration
         if i<100000:      # prevent resource exhaustion 
@@ -299,8 +311,8 @@ def MultipleLinearRegressionGradientDescent(X, y, w_in, b_in, cost_function, gra
         dj_db,dj_dw = gradient_function(X, y, w, b)   ##None
 
         # Update Parameters using w, b, alpha and gradient
-        w = w - alpha * dj_dw               ##None
-        b = b - alpha * dj_db               ##None
+        w -= alpha * dj_dw               ##None
+        b -= alpha * dj_db               ##None
       
         # Save cost J at each iteration
         if i<100000:      # prevent resource exhaustion 

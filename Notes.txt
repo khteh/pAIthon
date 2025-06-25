@@ -99,14 +99,35 @@ Types of loss functions:
 L1 Loss: |actual - prediction| -> Used in continuous number prediction. Used when we don't care about outliers.
 L2 Loss: (actual - prediction)^2 -> Penalizes worse / bigger loss more harshly. Used when we care about outliers.
 
-Overfitting:
-A model that fits too closely to a particular data set and therefore may fail to generalize to future data.
+Underfitting (High bias):
+The model has a strong preconception of how the data  should fit into itself. For example, linear function, etc.
+
+Overfitting (High variance):
+A model that fits too closely to a particular data set and therefore may fail to generalize to future data. High variance because if the model overfits, a tiny change in one of the training data set will end up completely different model.
 This is a side effect of minimizing loss of a model. If loss = 0, the model may only work on the specific data set.
 One way to counter this problem is add other parameters to optimization. For example, consider complexity:
 
 Cost(h) = Loss(h) + w*Complexity(h) : 'w' gives weight to the complexity
 
 Adding the term w*Complexity(h) is called "Regularization": Penalizing hypotheses that are more complex to favour simpler, more general hypotheses
+To overcome overfitting:
+(1) Collect more training samples / observations.
+(2) Use fewer features.
+Many features + insufficient data -> overfitting
+(3) Regularization - Gently reduces the impact of some of the features without eliminating them outright. It encourages the model to shrink the values of the parameters without necessarily setting them to 0 which eliminates the features.
+    Cost(w,b) = (sum((f_w_b(x) - y) ** 2) + lambda * sum(w[j] ** 2)) / 2m
+    f_w_b <= Linear regression modal
+    sum((f_w_b(x) - y) ** 2) <= Mean squared error. Fit data
+    sum(w[j] ** 2) <= Regularization term. Keep w[j] small
+    lambda balances both goals
+    Example: f_w_b = w1x + w2x^2 + w3x^3 + w4x^4 + b
+    lambda = 0: Overfitting. Wiggly curve/graph which tries to fit every single data point in the training data set.
+    lambda = 10^10: f_w_b = b Underfitting
+Gradient Descent withh regularization:
+w = w - alpha/m * (sum((f_w_b(x) - y) * x) + lambda * w[j])
+  = w * (1 - alpha * lambda / m) - (alpha / m ) * sum((f_w_b(x) - y) * x)
+  alpha: 0.01, lambda: 10, m: 100 => (1 - alpha * lambda / m) = (1 - 0.001) = 0.999
+  This shows that every iteration of gradient descent, regularization reduces the value of w, thus reduces the impact of the feature.
 
 Hold-out cross validation splits data into training and testing data sets. How to split?
 k-fold corss-validation: Splitting data into k sets, and experimenting k times, using each set as a test set once, and using remaining data as training set.
