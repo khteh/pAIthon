@@ -132,7 +132,7 @@ def SquaredErrorCostFunction(x, y, w: float, b:float):
     sum((predictons[i] - targets[i]) ** 2) / 2n
     n: number of observations
     2: Further division by 2 is just to make the error number neat without affecting the modal performance measurement.
-    J(w,b) = (sum((f_w_b(x) - y) ** 2)) / 2m
+    J(w,b) = (sum((f_w_b(x) - y) ** 2)) / 2m (MeanSquaredError)
     Squared error cost will never have multiple local minimums. Only ONE single global minimum. In 3D plot, it is a bowl shape. It is a convex function.
     """
     # number of training examples
@@ -161,7 +161,7 @@ def MultipleLinearRegressionSquaredErrorCostFunction(x, y, w, b: float, lambda_:
     sum((predictons[i] - targets[i]) ** 2) / 2n
     n: number of observations
     2: Further division by 2 is just to make the error number neat without affecting the modal performance measurement.
-    J(w,b) = (sum((f_w_b(x) - y) ** 2)) / 2m
+    J(w,b) = (sum((f_w_b(x) - y) ** 2)) / 2m (MeanSquaredError)
     Regularized: J(w,b) = (sum((f_w_b(x) - y) ** 2) + lambda * sum(w ** 2)) / 2m
     Squared error cost will never have multiple local minimums. Only ONE single global minimum. In 3D plot, it is a bowl shape. It is a convex function.
     """
@@ -194,6 +194,7 @@ def UniVariateLinearRegressionGradient(x, y, w: float, b: float):
     dJ(w,b)/db = (sum((f_w_b(x) - y))) / m
     Gradient descent is picking the 'correct' features for us by emphasizing its associated parameter.
     Less weight value implies less important/correct feature, and in extreme, when the weight becomes zero or very close to zero, the associated feature is not useful in fitting the model to the data.
+    In Tensorflow, derivatives are calculated using back-propagation
     """
     # Number of training examples
     m = x.shape[0]    
@@ -226,6 +227,7 @@ def MultipleLinearRegressionGradient(X, y, w, b: float, lambda_):
     dJ(w,b)/db = (sum((f_w_b(x) - y))) / m
     Gradient descent is picking the 'correct' features for us by emphasizing its associated parameter.
     Less weight value implies less important/correct feature, and in extreme, when the weight becomes zero or very close to zero, the associated feature is not useful in fitting the model to the data.
+    In Tensorflow, derivatives are calculated using back-propagation
     """
     m,n = X.shape           #(number of examples, number of features)
     dj_dw = numpy.zeros((n,))
@@ -269,8 +271,8 @@ def UniVariateLinearRegressionGradientDescent(x, y, w_in: float, b_in: float, al
         dj_dw, dj_db = gradient_function(x, y, w , b)
 
         # Update Parameters using equation (3) above
-        b -= alpha * dj_db                            
-        w -= alpha * dj_dw                            
+        b -= alpha * dj_db
+        w -= alpha * dj_dw
 
         # Save cost J at each iteration
         if i<100000:      # prevent resource exhaustion 

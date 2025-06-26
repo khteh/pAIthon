@@ -42,14 +42,16 @@ class Discriminator():
         self._model.add(layers.Dropout(0.3))
 
         self._model.add(layers.Flatten())
-        self._model.add(layers.Dense(1))
+        # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+        self._model.add(layers.Dense(1)) # Linear activation ("pass-through") if not specified
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
         Using from_logits=True can offer numerical stability and potentially improve training, as it avoids the repeated application of the sigmoid or softmax function, which can lead to precision errors. 
-        It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.    
+        It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.
+        logit = z. from_logits=True gives Tensorflow more flexibility in terms of how to compute this and whether or not it wnts to compyte g(z) explicitly. TensorFlow will compute z as an intermediate value, but it can rearrange terms to make this become computed more accurately with a little but less numerical roundoff error.
         """
-        self._cross_entropy = losses.BinaryCrossentropy(from_logits=True)
+        self._cross_entropy = losses.BinaryCrossentropy(from_logits=True) # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) 
         self.optimizer = optimizers.Adam(1e-4)
 
     def run(self, input, training: bool):
@@ -77,7 +79,7 @@ class Generator():
         Notice the tf.keras.layers.LeakyReLU activation for each layer, except the output layer which uses tanh since the output coefficients should be in the interval from -1 to 1
         """
         self._model = models.Sequential()
-        self._model.add(layers.Dense(7*7*256, use_bias=False, input_shape=(100,)))
+        self._model.add(layers.Dense(7*7*256, use_bias=False, input_shape=(100,), name="L1"))
         self._model.add(layers.BatchNormalization())
         self._model.add(layers.LeakyReLU())
 
@@ -100,9 +102,10 @@ class Generator():
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
         Using from_logits=True can offer numerical stability and potentially improve training, as it avoids the repeated application of the sigmoid or softmax function, which can lead to precision errors. 
-        It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.    
+        It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.
+        logit = z. from_logits=True gives Tensorflow more flexibility in terms of how to compute this and whether or not it wnts to compyte g(z) explicitly. TensorFlow will compute z as an intermediate value, but it can rearrange terms to make this become computed more accurately with a little but less numerical roundoff error.
         """
-        self._cross_entropy = losses.BinaryCrossentropy(from_logits=True)
+        self._cross_entropy = losses.BinaryCrossentropy(from_logits=True) # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) 
         self.optimizer = optimizers.Adam(1e-4)
 
     def run(self, input, training: bool):

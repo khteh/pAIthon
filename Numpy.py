@@ -52,6 +52,38 @@ def multiDArray(i:int, j: int, k:int):
     print(f"axis-0 element-1, axis-1 1:2 => {multi[1, 1:2]}")
     print(f"axis-0 element-1, axis-1 0:2 => {multi[1, :2]}")
 
+def Broadcasting():
+    """
+    Z = XW + b utilized NumPy broadcasting to expand the vector b. If you are not familiar with NumPy Broadcasting, this short tutorial is provided.
+    XW is a matrix-matrix operation with dimensions (𝑚,j1)(j1,j2) which results in a matrix with dimension (𝑚,j2). To that, we add a vector b with dimension (1,j2). b must be expanded to be a (𝑚,j2) matrix for this element-wise operation to make sense. This expansion is accomplished for you by NumPy broadcasting.
+
+    Broadcasting applies to element-wise operations.
+    Its basic operation is to 'stretch' a smaller dimension by replicating elements to match a larger dimension.
+
+    More specifically: When operating on two arrays, NumPy compares their shapes element-wise. It starts with the trailing (i.e. rightmost) dimensions and works its way left. Two dimensions are compatible when
+
+    they are equal, or
+    one of them is 1
+    If these conditions are not met, a ValueError: operands could not be broadcast together exception is thrown, indicating that the arrays have incompatible shapes. The size of the resulting array is the size that is not 1 along each axis of the inputs.    
+    """
+    a = numpy.array([1,2,3]).reshape(-1,1)  #(3,1)
+    b = 5
+    result = a + b
+    assert result.shape == (3,1)
+    assert result == numpy.array([[6],[7],[8]])
+    result = a * b
+    assert result.shape == (3,1)
+    assert result == numpy.array([[5],[10],[15]])
+    a = numpy.array([1,2,3,4]).reshape(-1,1) # (4,1)
+    b = numpy.array([1,2,3]).reshape(1,-1) # (1,3)
+    result = a + b
+    assert result.shape == (4,3)
+    assert result == numpy.array([
+                        [2 3 4],
+                        [3 4 5],
+                        [4 5 6],
+                        [5 6 7]])
+
 def ConcatenateSliceObjects():
     """
     https://numpy.org/doc/stable/reference/generated/numpy.c_.html

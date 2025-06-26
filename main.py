@@ -44,20 +44,24 @@ def permutations(route, ports):
     # Print the port names in route when the recursion terminates
 
 def polynomial():
+    print(f"\n=== {polynomial.__name__} ===")
     x = numpy.array([66, 5, 15, 2, 500])
     c = numpy.array([3000, 200 , -50, 5000, 100])
+    # @ operator = numpy.matmul (matrix multiplication)
     print(f"x @ c: {x @ c}, numpy.dot(x, c): {numpy.dot(x, c)}")
     x = numpy.array([[66, 5, 15, 2, 500], 
               [21, 3, 50, 1, 100]])
     print(f"x @ c: {x @ c}, numpy.dot(x, c): {numpy.dot(x, c)}")
 
 def kmin(n): #N minimum (index) values in a numpy array
+    print(f"\n=== {kmin.__name__} ===")
     # https://stackoverflow.com/questions/16817948/i-have-need-the-n-minimum-index-values-in-a-numpy-array
     arr = numpy.array([1, 4, 2, 5, 3])
     indices = arr.argsort()[:n] # Sort the array
     print(f"arr: {arr}, tmp: {indices}")
 
 def testZip():
+    print(f"\n=== {testZip.__name__} ===")
     a = [1,2,3,4,5]
     b = [9,8,3,5,6]
     for i, j in zip(a,b):
@@ -68,6 +72,7 @@ def testZip():
     print(f"Manhattan distance: {d}")
 
 def VectorSlicing():
+    print(f"\n=== {VectorSlicing.__name__} ===")
     #vector slicing operations
     a = numpy.arange(10)
     print(f"a         = {a}")
@@ -88,6 +93,7 @@ def VectorSlicing():
     c = a[:];         print("a[:]     = ", c)
 
 def Matrix():
+    print(f"\n=== {Matrix.__name__} ===")
     #vector indexing operations on matrices
     a = numpy.arange(6).reshape(-1, 2)   #reshape is a convenient way to create matrices
     print(f"a.shape: {a.shape}, \na= {a}")
@@ -129,6 +135,7 @@ def secondary_left_diagonal(matrix):
     return sum
 
 def matrix_sums():
+    print(f"\n=== {matrix_sums.__name__} ===")
     matrix = [
         [1,2,3,4],
         [1,2,3,4],

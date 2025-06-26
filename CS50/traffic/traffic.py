@@ -39,6 +39,14 @@ def main():
         # Get a compiled neural network
         model = get_model()
         # Fit model on training data
+
+        # Epochs and batches
+        # In the fit statement above, the number of epochs was set to 10. This specifies that the entire data set should be applied during training 10 times. During training, you see output describing the progress of training that looks like this:
+        # Epoch 1/10
+        # 6250/6250 [==============================] - 6s 910us/step - loss: 0.1782
+        # The first line, Epoch 1/10, describes which epoch the model is currently running. For efficiency, the training data set is broken into 'batches'. The default size of a batch in Tensorflow is 32. 
+        # So, for example, if there are 200000 examples in our data set, there will be 6250 batches. The notation on the 2nd line 6250/6250 [==== is describing which batch has been executed.
+        # Or, epochs = how many steps of a learning algorithm like gradient descent to run
         history = model.fit(x_train, y_train, epochs=EPOCHS)
         saveModel = True
 
@@ -107,17 +115,19 @@ def get_model():
     In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
     These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
     Using from_logits=True can offer numerical stability and potentially improve training, as it avoids the repeated application of the sigmoid or softmax function, which can lead to precision errors. 
-    It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.    
+    It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.
+    logit = z. from_logits=True gives Tensorflow more flexibility in terms of how to compute this and whether or not it wnts to compyte g(z) explicitly. TensorFlow will compute z as an intermediate value, but it can rearrange terms to make this become computed more accurately with a little but less numerical roundoff error.
     """
     model = models.Sequential()
     model.add(layers.Conv2D(64, (3, 3), activation='softmax', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)))
     model.add(layers.MaxPooling2D((2, 2)))
     model.add(layers.Flatten())
-    model.add(layers.Dense(64, activation='softmax'))
+    model.add(layers.Dense(64, activation='softmax', name="L1"))
     model.add(layers.Dropout(0.5))
-    model.add(layers.Dense(64, activation='softmax'))
+    model.add(layers.Dense(64, activation='softmax', name="L2"))
     model.add(layers.Dropout(0.5))
-    model.add(layers.Dense(NUM_CATEGORIES))
+    # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+    model.add(layers.Dense(NUM_CATEGORIES, name="L3")) # Linear activation ("pass-through") if not specified
     model.compile(optimizer='adam',
                 loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/CategoricalCrossentropy
                 metrics=['accuracy'])

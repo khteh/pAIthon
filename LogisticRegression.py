@@ -47,13 +47,19 @@ You should carefully match the solver and regularization method for several reas
 Squared error cannot be used because f(x) = 1 / (1 + e^-z) is non-linear
 Loss function:
 z = linear regression modal. Ex: wx + b
-f_w_b = g(z) = 1 / (1 + e^(-z))
--log(f_w_b(X)) for y == 1
--log(1 - f_w_b(X)) for y == 0
-= -ylog(f_w_b(X)) - (1 - y)log(1 - f_w_b(X))
+f(X) = g(z) = 1 / (1 + e^(-z)) = P(y=1|x)
+-log(f(X)) for y == 1 = Loss of P(y=1|x)
+-log(1 - f(X)) for y == 0 = Loss of P(y=0|x)
+= -ylog(f(X)) - (1 - y)log(1 - f(X)) = BinaryCrossentropy
 Cost = Lost / m <= NOTE: NOT divided by 2m which is different from linear regression.
 Regularized Cost Function: =  Unregularized cost function + lambda * sum(w ** 2) / 2m
 Derived from statistics using maximum likelihood estimation.
+
+Softmax is a generalization of Logistic Regression: a[j] = e^z[j] / sum(e^z[k]) for k: [1, N]
+It is used for multiclass classification
+Loss function is -log(a[j]) Loss of P(y=j|x)
+Tensorflow loss = SparseCategoricalCrossentropy
+"Sparse" means can only be exactly ONE of the categories but NOT multi-class at any one time.
 """
 x = numpy.array([4, 3, 0])
 c1 = numpy.array([-.5, .1, .08])
@@ -79,15 +85,15 @@ def sigmoid(z):
     """
     # add your implementation of the sigmoid function here
     # s(z)=1÷(1+exp(−z))
-    print(1/(1+math.exp(-z)))
+    return 1/(1+math.exp(-z))
 
 # calculate the output of the sigmoid for x with all three coefficients
 result1 = x @ c1
 result2 = x @ c2
 result3 = x @ c3
-sigmoid(result1)
-sigmoid(result2)
-sigmoid(result3)
+print(sigmoid(result1))
+print(sigmoid(result2))
+print(sigmoid(result3))
 
 def LogisticRegressionCost(x, y, w, b, lambda_: float = 1.0):
     """
@@ -131,6 +137,7 @@ def LogisticGradient(x, y, w, b, lambda_: float = 1.0):
     dJ(w,b)/dw[col] = (sum((f_w_b - y[row]) * x[row, col]) + lambda * w[j]) / m
     dJ(w,b)/db[col] = (sum(f_w_b - y[row]) / m
     f_w_b = sigmoid(z_i)
+    In Tensorflow, derivatives are calculated using back-propagation
     """
     rows, cols = x.shape
     dj_dw = numpy.zeros((cols,))
@@ -195,6 +202,7 @@ def LogisticPredict(x, w, b, threshold):
     Returns:
       p : (ndarray (m,)) The predictions for X using a threshold at 0.5
     """
+    assert 0 <= threshold <= 1
     # number of training examples
     m, n = x.shape   
     p = numpy.zeros(m)
