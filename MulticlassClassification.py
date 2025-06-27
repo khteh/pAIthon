@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 numpy.set_printoptions(precision=2)
-#from lab_utils_multiclass_TF import *
+from lab_utils_multiclass_TF import *
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 tf.autograph.set_verbosity(0)
 """
@@ -20,6 +20,7 @@ def PrepareData():
     coordinates = [[-5, 2], [-2, -2], [1, 2], [5, -2]]
     std = 1.0
     X_train, y_train = make_blobs(n_samples=m, centers=coordinates, cluster_std=std,random_state=30)
+    plt_mc(X_train,y_train,classes, coordinates, std=std)
     # show classes in data set
     print(f"unique classes {numpy.unique(y_train)}")
     # show how classes are represented
@@ -35,6 +36,7 @@ def MulticlassClassification(X_train, y_train):
     While it is possible to include the softmax in the output layer, it is more numerically stable if linear outputs are passed to the loss function during training. 
     If the model is used to predict probabilities, the softmax can be applied at that point.    
     """
+    classes = 4
     tf.random.set_seed(1234)  # applied to achieve consistent results
     model = Sequential(
         [
@@ -51,3 +53,8 @@ def MulticlassClassification(X_train, y_train):
         X_train,y_train,
         epochs=200
     )
+    plt_cat_mc(X_train, y_train, model, classes)
+
+if __name__ == "__main__":
+    X_train, y_train = PrepareData()
+    MulticlassClassification(X_train, y_train)
