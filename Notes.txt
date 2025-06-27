@@ -168,6 +168,7 @@ Tasks:
 (2) Anomaly Detection: Find unusual events in the data.
     Use case: Fraud detection.
 (3) Dimensionality Reduction: Compress large corpuses of data to a much smaller dataset without losing key / important information.
+
 Neural Network (multilayer perceptron):
 Activation functions:
 (1) Step function: g(x) = 1 if x >=0, else 0
@@ -183,7 +184,12 @@ Choices of Activation Function:
     (ii) There are 2 horizontal asymtotes in Sigmoid. This results in derivaties being close to 0 and therefore make gradient descent slower to run to global minimum.
     Do NOT use linear activation function. This will result in a linear regression and defeats the purpose of NN.
     The "off" or disable feature  of the ReLU activation enables models to stitch together linear segments to model complex non-linear functions.
-
+Types of Layers:
+(1) Dense: Every neuron in a layer computes it's output / activation using ALL inputs/activations from ALL neurons in previous layer.
+(2) Convolution: Neurons only look at regions of the data. Benefits:
+    (i) Faster computation.
+    (ii) Need less training data - less prone to overfitting.
+    
 h(x1,x2) = g(w0 + w1x1 + w2x2 + ...)
 Example:
 (1) To mdel the OR function:

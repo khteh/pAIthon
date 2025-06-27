@@ -59,6 +59,12 @@ def main():
     test_loss, test_accuracy = model.evaluate(x_test,  y_test, verbose=2)
     print(f'Training accuracy: {train_accuracy:.4f}, loss: {train_loss:.4f}')
     print(f'Testing accuracy: {test_accuracy:.4f}, loss: {test_loss:.4f}')
+
+    # Predict using linear activation with from_logits=True
+    # This produces linear regression output (z). NOT g(z).
+    #logits = model.predict(x_test)
+    #f_x = tf.nn.softmax(logits) # g(z)
+
     # Save model to file
     if saveModel and len(sys.argv) == 3:
         filename = sys.argv[2]
@@ -116,6 +122,8 @@ def get_model():
     These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
     Using from_logits=True can offer numerical stability and potentially improve training, as it avoids the repeated application of the sigmoid or softmax function, which can lead to precision errors. 
     It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.
+    More stable and accurate results can be obtained if the sigmoid/softmax and loss are combined during training.
+    In the preferred organization the final layer has a linear activation. For historical reasons, the outputs in this form are referred to as *logits*. The loss function has an additional argument: `from_logits = True`. This informs the loss function that the sigmoid/softmax operation should be included in the loss calculation. This allows for an optimized implementation.
     logit = z. from_logits=True gives Tensorflow more flexibility in terms of how to compute this and whether or not it wnts to compyte g(z) explicitly. TensorFlow will compute z as an intermediate value, but it can rearrange terms to make this become computed more accurately with a little but less numerical roundoff error.
     """
     model = models.Sequential()
@@ -128,7 +136,14 @@ def get_model():
     model.add(layers.Dropout(0.5))
     # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
     model.add(layers.Dense(NUM_CATEGORIES, name="L3")) # Linear activation ("pass-through") if not specified
-    model.compile(optimizer='adam',
+    """
+    SparseCategorialCrossentropy or CategoricalCrossEntropy
+    Tensorflow has two potential formats for target values and the selection of the loss defines which is expected.
+
+    SparseCategorialCrossentropy: expects the target to be an integer corresponding to the index. For example, if there are 10 potential target values, y would be between 0 and 9.
+    CategoricalCrossEntropy: Expects the target value of an example to be one-hot encoded where the value at the target index is 1 while the other N-1 entries are zero. An example with 10 potential target values, where the target is 2 would be [0,0,1,0,0,0,0,0,0,0].    
+    """
+    model.compile(optimizer='adam', # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                 loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/CategoricalCrossentropy
                 metrics=['accuracy'])
     return model

@@ -79,10 +79,10 @@ def Broadcasting():
     result = a + b
     assert result.shape == (4,3)
     assert result == numpy.array([
-                        [2 3 4],
-                        [3 4 5],
-                        [4 5 6],
-                        [5 6 7]])
+                        [2, 3, 4],
+                        [3, 4, 5],
+                        [4, 5, 6],
+                        [5, 6, 7]])
 
 def ConcatenateSliceObjects():
     """
@@ -203,6 +203,7 @@ def HierarchicalDataAnalysis(companies, prices):
     plt.title("Tech Share Valuation")
     plt.legend()
     #plt.show() This blocks
+    
 def Tensors():
     """
     Tensors in ML are multi-dimensional arrays used to and process data for NN

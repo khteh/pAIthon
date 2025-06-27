@@ -167,7 +167,7 @@ def univariate_plot():
     y_train = numpy.array([300.0, 500.0])
     UniVariatePlot(x_train, y_train, [], 0.0, "Housing Prices", 'Price (in 1000s of dollars)', 'Size (1000 sqft)')
 
-def main():
+if __name__ == "__main__":
     sort_dict_by_tuple_values()
     permutations([0], list(range(1, len(portnames)))) # This will start the recursion with 0 ("PAN") as the first stop
     print(' '.join([portnames[i] for i in bestroute]) + " %.1f kg" % smallest)
@@ -178,6 +178,3 @@ def main():
     Matrix()
     matrix_sums()
     #univariate_plot() This blocks
-
-if __name__ == "__main__":
-    main()

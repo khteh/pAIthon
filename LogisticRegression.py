@@ -79,8 +79,7 @@ def sigmoid(z):
     Recall that for logistic regression, the model is represented as
     f(w,b) = g(w.x + b)
  
-    where function g:
-    is the sigmoid function. The sigmoid function is defined as:
+    where function g is the sigmoid function. The sigmoid function is defined as:
     g(z) = 1 / (1 + exp(-z))
     """
     # add your implementation of the sigmoid function here
