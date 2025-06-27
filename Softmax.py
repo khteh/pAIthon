@@ -10,8 +10,8 @@ from matplotlib.widgets import Slider
 SparseCategorialCrossentropy or CategoricalCrossEntropy
 Tensorflow has two potential formats for target values and the selection of the loss defines which is expected.
 
-SparseCategorialCrossentropy: expects the target to be an integer corresponding to the index. For example, if there are 10 potential target values, y would be between 0 and 9.
-CategoricalCrossEntropy: Expects the target value of an example to be one-hot encoded where the value at the target index is 1 while the other N-1 entries are zero. An example with 10 potential target values, where the target is 2 would be [0,0,1,0,0,0,0,0,0,0].    
+SparseCategorialCrossentropy: expects the target/label to be an integer corresponding to the index. For example, if there are 10 potential target values, y would be between 0 and 9.
+CategoricalCrossEntropy: Expects the target/label value of an example to be one-hot encoded where the value at the target index is 1 while the other N-1 entries are zero. An example with 10 potential target values, where the target is 2 would be [0,0,1,0,0,0,0,0,0,0].    
 """
 def softmax(z):
     """
@@ -29,7 +29,7 @@ def softmax(z):
     where function g is the softmax function. The softmax function is defined as:
     g(z) = e^Z / sum(e^Z)
     """
-    ez = math.exp(z) # Element-size exponential
+    ez = numpy.exp(z) # Element-size exponential. math.exp won't work as it expects scalar input parameter
     return ez / numpy.sum(ez)
 
 def PrepareData():
@@ -90,7 +90,7 @@ def NNStableSoftmax(X_train, y_train):
     print(f"two example output vectors:\n {p_preferred[:2]}")
     print("largest value", numpy.max(p_preferred), "smallest value", numpy.min(p_preferred))
     
-    # The output predictions are not probabilities! If probabilities are the desired output, the output should be processed by a softmax.
+    # The output predictions are NOT probabilities! If probabilities are the desired output, the output should be processed by a softmax.
     sm_preferred = tf.nn.softmax(p_preferred).numpy()
     print(f"two example output vectors:\n {sm_preferred[:2]}")
     print("largest value", numpy.max(sm_preferred), "smallest value", numpy.min(sm_preferred))

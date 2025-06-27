@@ -194,7 +194,7 @@ def UniVariateLinearRegressionGradient(x, y, w: float, b: float):
     dJ(w,b)/db = (sum((f_w_b(x) - y))) / m
     Gradient descent is picking the 'correct' features for us by emphasizing its associated parameter.
     Less weight value implies less important/correct feature, and in extreme, when the weight becomes zero or very close to zero, the associated feature is not useful in fitting the model to the data.
-    In Tensorflow, derivatives are calculated using back-propagation
+    In Tensorflow, derivatives are calculated using back-propagation with time complexity of N+P (N: # nodes, P: #parameters) compared to NxP if using forward propagation
     """
     # Number of training examples
     m = x.shape[0]    
@@ -227,7 +227,7 @@ def MultipleLinearRegressionGradient(X, y, w, b: float, lambda_):
     dJ(w,b)/db = (sum((f_w_b(x) - y))) / m
     Gradient descent is picking the 'correct' features for us by emphasizing its associated parameter.
     Less weight value implies less important/correct feature, and in extreme, when the weight becomes zero or very close to zero, the associated feature is not useful in fitting the model to the data.
-    In Tensorflow, derivatives are calculated using back-propagation
+    In Tensorflow, derivatives are calculated using back-propagation with time complexity of N+P (N: # nodes, P: #parameters) compared to NxP if using forward propagation
     """
     m,n = X.shape           #(number of examples, number of features)
     dj_dw = numpy.zeros((n,))

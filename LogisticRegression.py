@@ -136,7 +136,7 @@ def LogisticGradient(x, y, w, b, lambda_: float = 1.0):
     dJ(w,b)/dw[col] = (sum((f_w_b - y[row]) * x[row, col]) + lambda * w[j]) / m
     dJ(w,b)/db[col] = (sum(f_w_b - y[row]) / m
     f_w_b = sigmoid(z_i)
-    In Tensorflow, derivatives are calculated using back-propagation
+    In Tensorflow, derivatives are calculated using back-propagation with time complexity of N+P (N: # nodes, P: #parameters) compared to NxP if using forward propagation
     """
     rows, cols = x.shape
     dj_dw = numpy.zeros((cols,))
