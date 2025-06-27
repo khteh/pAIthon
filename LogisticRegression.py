@@ -150,7 +150,7 @@ def LogisticGradient(x, y, w, b, lambda_: float = 1.0):
         dj_db += err
     return dj_dw / rows, dj_db / rows
 
-def LogisticGradientDescent(x, y, w_in, b_in, alpha, iterations):
+def LogisticGradientDescent(x, y, w_in, b_in, alpha, lambda_, iterations):
     """
     Performs batch gradient descent
     
@@ -173,7 +173,7 @@ def LogisticGradientDescent(x, y, w_in, b_in, alpha, iterations):
     
     for i in range(iterations):
         # Calculate the gradient and update the parameters
-        dj_db, dj_dw = LogisticGradient(x, y, w, b)   
+        dj_db, dj_dw = LogisticGradient(x, y, w, b, lambda_)
 
         # Update Parameters using w, b, alpha and gradient
         w -= alpha * dj_dw               
@@ -181,7 +181,7 @@ def LogisticGradientDescent(x, y, w_in, b_in, alpha, iterations):
       
         # Save cost J at each iteration
         if i<100000:      # prevent resource exhaustion 
-            J_history.append(LogisticRegressionCost(x, y, w, b) )
+            J_history.append(LogisticRegressionCost(x, y, w, b, lambda_))
 
         # Print cost every at intervals 10 times or as many iterations if < 10
         if i% math.ceil(iterations / 10) == 0:

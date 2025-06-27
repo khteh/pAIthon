@@ -123,7 +123,6 @@ def SquaredErrorCostFunction(x, y, w: float, b:float):
       x (ndarray (m,)): Data, m examples 
       y (ndarray (m,)): target values
       w,b (scalar)    : model parameters
-     lambda_ (scalar): Controls amount of regularization
     
     Returns
         total_cost (float): The cost of using w,b as the parameters for linear regression
@@ -285,7 +284,7 @@ def UniVariateLinearRegressionGradientDescent(x, y, w_in: float, b_in: float, al
                   f"w: {w: 0.3e}, b:{b: 0.5e}")
     return w, b, J_history, p_history #return w and J,w history for graphing
 
-def MultipleLinearRegressionGradientDescent(X, y, w_in, b_in, cost_function, gradient_function, alpha, num_iters): 
+def MultipleLinearRegressionGradientDescent(X, y, w_in, b_in, cost_function, gradient_function, alpha, lambda_, num_iters): 
     """
     Performs batch gradient descent to learn w and b. Updates w and b by taking 
     num_iters gradient steps with learning rate alpha
@@ -298,6 +297,7 @@ def MultipleLinearRegressionGradientDescent(X, y, w_in, b_in, cost_function, gra
       cost_function       : function to compute cost
       gradient_function   : function to compute the gradient
       alpha (float)       : Learning rate
+      lambda_ (scalar)    : Controls amount of regularization
       num_iters (int)     : number of iterations to run gradient descent
       
     Returns:
@@ -310,7 +310,7 @@ def MultipleLinearRegressionGradientDescent(X, y, w_in, b_in, cost_function, gra
     b = b_in
     for i in range(num_iters):
         # Calculate the gradient and update the parameters
-        dj_db,dj_dw = gradient_function(X, y, w, b)   ##None
+        dj_db,dj_dw = gradient_function(X, y, w, b, lambda_)   ##None
 
         # Update Parameters using w, b, alpha and gradient
         w -= alpha * dj_dw               ##None
@@ -318,7 +318,7 @@ def MultipleLinearRegressionGradientDescent(X, y, w_in, b_in, cost_function, gra
       
         # Save cost J at each iteration
         if i<100000:      # prevent resource exhaustion 
-            J_history.append( cost_function(X, y, w, b))
+            J_history.append( cost_function(X, y, w, b, lambda_))
         # Print cost every at intervals 10 times or as many iterations if < 10
         if i% math.ceil(num_iters / 10) == 0:
             print(f"Iteration {i:4d}: Cost {J_history[-1]:8.2f}   ")
@@ -365,10 +365,11 @@ def MultipleLinearRegressionTraining():
     Example: start from 0.001, 0.003 (x3), 0.01 (x3), 0.03 (x3), 0.1 (x3), 1.0 (x3) ...
     """
     alpha = 5.0e-7
+    lambda_ = 0.75
     # run gradient descent 
     w_final, b_final, J_hist = MultipleLinearRegressionGradientDescent(X_train, y_train, initial_w, initial_b,
                                                         MultipleLinearRegressionSquaredErrorCostFunction, MultipleLinearRegressionGradient, 
-                                                        alpha, iterations)
+                                                        alpha, lambda_, iterations)
     print(f"b,w found by gradient descent: {b_final:0.2f},{w_final} ")
     m,_ = X_train.shape
     for i in range(m):
