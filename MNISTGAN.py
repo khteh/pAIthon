@@ -6,7 +6,7 @@ import tensorflow.keras.layers as layers
 import tensorflow_datasets as tfds
 import numpy.lib.recfunctions as reconcile
 import matplotlib.pyplot as plt
-from tensorflow.keras import layers, losses, optimizers
+from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.TensorModelPlot import PlotModelHistory
 from utiuls.GAN import restore_latest_checkpoint, TrainStep, Train, save_images, show_image, CreateGIF
 from numpy.random import Generator, PCG64DXSM
@@ -31,19 +31,21 @@ class Discriminator():
         """
         The Discriminator
         The discriminator is a CNN-based image classifier.
+        L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+        L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
-        self._model = models.Sequential()
-        self._model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same', input_shape=[28, 28, 1]))
-        self._model.add(layers.LeakyReLU())
-        self._model.add(layers.Dropout(0.3))
+        self._model = models.Sequential([
+                        layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same', input_shape=[28, 28, 1]),
+                        layers.LeakyReLU(),
+                        layers.Dropout(0.3),
 
-        self._model.add(layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same'))
-        self._model.add(layers.LeakyReLU())
-        self._model.add(layers.Dropout(0.3))
+                        layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same'),
+                        layers.LeakyReLU(),
+                        layers.Dropout(0.3),
 
-        self._model.add(layers.Flatten())
-        # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
-        self._model.add(layers.Dense(1)) # Linear activation ("pass-through") if not specified
+                        layers.Flatten(),
+                        # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+                        layers.Dense(1), kernel_regularizer=regularizers.l2(0.01)]) # Linear activation ("pass-through") if not specified
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -79,12 +81,13 @@ class Generator():
         The Generator
         The generator uses tf.keras.layers.Conv2DTranspose (upsampling) layers to produce an image from a seed (random noise). Start with a Dense layer that takes this seed as input, then upsample several times until you reach the desired image size of 28x28x1. 
         Notice the tf.keras.layers.LeakyReLU activation for each layer, except the output layer which uses tanh since the output coefficients should be in the interval from -1 to 1
+        L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+        L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
         """
         self._model = models.Sequential()
-        self._model.add(layers.Dense(7*7*256, use_bias=False, input_shape=(100,), name="L1"))
+        self._model.add(layers.Dense(7*7*256, use_bias=False, input_shape=(100,), name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
         self._model.add(layers.BatchNormalization())
         self._model.add(layers.LeakyReLU())
-
         self._model.add(layers.Reshape((7, 7, 256)))
         assert self._model.output_shape == (None, 7, 7, 256)  # Note: None is the batch size
 

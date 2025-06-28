@@ -5,6 +5,7 @@ from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras import Sequential
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.activations import sigmoid
+from tensorflow.keras import layers, losses, optimizers, regularizers
 
 X_train = numpy.array([[1.0], [2.0]], dtype=numpy.float32)           #(size in 1000 square feet)
 Y_train = numpy.array([[300.0], [500.0]], dtype=numpy.float32)       #(price in 1000s of dollars)
@@ -26,8 +27,10 @@ def LinearRegressionModel():
     The function implemented by a neuron with no activation is the same as linear regression:
     f_w_b(x) = numpy.dot(w, x) + b
     We can define a layer with one neuron or unit and compare it to the familiar linear regression function.
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
     """       
-    linear_layer = tf.keras.layers.Dense(units=1, activation = 'linear', name="L1")
+    linear_layer = tf.keras.layers.Dense(units=1, activation = 'linear', name="L1", kernel_regularizer=regularizers.l2(0.01)) # Decrease to fix high bias; Increase to fix high variance.
     w, b = linear_layer.get_weights()
     # There are no weights as the weights are not yet instantiated. 
     print(f"weights: {w}")
@@ -76,9 +79,13 @@ def LogisticNeuron():
     ax.set_title('one variable plot')
     ax.legend(fontsize=12)
     plt.show()
+    """
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
+    """
     model = Sequential(
         [
-            tf.keras.layers.Dense(1, input_dim=1,  activation = 'sigmoid', name='L1')
+            tf.keras.layers.Dense(1, input_dim=1,  activation = 'sigmoid', name='L1', kernel_regularizer=regularizers.l2(0.01)) # Decrease to fix high bias; Increase to fix high variance.
         ]
     )
     # model.summary() shows the layers and number of parameters in the model. There is only one layer in this model and that layer has only one unit. The unit has two parameters, w and b

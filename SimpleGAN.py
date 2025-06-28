@@ -7,7 +7,7 @@ import tensorflow_datasets as tfds
 import numpy.lib.recfunctions as reconcile
 import matplotlib.pyplot as plt
 from utiuls.GAN import restore_latest_checkpoint, TrainStep, Train, save_images, show_image, CreateGIF
-from tensorflow.keras import layers, losses, optimizers
+from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.TensorModelPlot import PlotModelHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
@@ -47,15 +47,17 @@ class Discriminator():
             nn.Sigmoid(),
         )
         https://stackoverflow.com/questions/66626700/difference-between-tensorflows-tf-keras-layers-dense-and-pytorchs-torch-nn-lin
+        L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+        L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
-        self._model = models.Sequential()
-        self._model.add(layers.Dense(256, input_shape=(2,), activation='relu', name="L1"))
-        self._model.add(layers.Dropout(0.3))
-        self._model.add(layers.Dense(128, input_shape=(256,), activation='relu', name="L2"))
-        self._model.add(layers.Dropout(0.3))
-        self._model.add(layers.Dense(64, input_shape=(128,), activation='relu', name="L3"))
-        self._model.add(layers.Dropout(0.3))
-        self._model.add(layers.Dense(1, input_shape=(64,), activation='linear', name="L4")) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+        self._model = models.Sequential([
+            layers.Dense(256, input_shape=(2,), activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+            layers.Dropout(0.3),
+            layers.Dense(128, input_shape=(256,), activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
+            layers.Dropout(0.3),
+            layers.Dense(64, input_shape=(128,), activation='relu', name="L3", kernel_regularizer=regularizers.l2(0.01)),
+            layers.Dropout(0.3),
+            layers.Dense(1, input_shape=(64,), activation='linear', name="L4")]) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -96,13 +98,15 @@ class Generator():
             nn.Linear(16, 32),
             nn.ReLU(),
             nn.Linear(32, 2),
-        )        
+        )
+        L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+        L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
-        self._model = models.Sequential()
-        self._model.add(layers.Dense(16, input_shape=(2,), activation='relu', name="L1"))
-        self._model.add(layers.Dense(32, input_shape=(16,), activation='relu', name="L2"))
-        # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
-        self._model.add(layers.Dense(2, input_shape=(32,), name="L3")) # Linear activation ("pass-through") if not specified
+        self._model = models.Sequential([
+            layers.Dense(16, input_shape=(2,), activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+            layers.Dense(32, input_shape=(16,), activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
+            # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+            layers.Dense(2, input_shape=(32,), name="L3")]) # Linear activation ("pass-through") if not specified
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.

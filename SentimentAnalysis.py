@@ -8,6 +8,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras import layers, losses, optimizers, regularizers
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import tensorflow as tf
 import tensorflow.keras.models as models
@@ -97,23 +98,24 @@ def CustomEmbeddingLayer(url, path):
     x_train = pad_sequences(x_train, padding="post", maxlen=512)
     x_test = pad_sequences(x_test, padding="post", maxlen=512)
     # Add a custom embedding layer
-    model = models.Sequential()
-    model.add(
+    model = models.Sequential([
         layers.Embedding(
             input_dim=len(tokenizer.word_index) + 1, 
             output_dim=100, 
-        )
-    )
-    """
-    Low accuracy and high loss. Add a global pooling layer after the embedding layer in the model in order to
-    consider the order of the values in the vectors. Inside the pooling layer, the max values in each dimension
-    will be selected. There are also average pooling layers. The max pooling layer will highlight large values.
-    """
-    model.add(layers.Conv1D(128, 5, activation='relu'))
-    model.add(layers.GlobalMaxPool1D())
-    #model.add(layers.Flatten())
-    model.add(layers.Dense(10, activation='relu', name="L1"))
-    model.add(layers.Dense(1, activation='linear', name="L2")) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+        ),
+        """
+        Low accuracy and high loss. Add a global pooling layer after the embedding layer in the model in order to
+        consider the order of the values in the vectors. Inside the pooling layer, the max values in each dimension
+        will be selected. There are also average pooling layers. The max pooling layer will highlight large values.
+        L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+        L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
+        """
+        layers.Conv1D(128, 5, activation='relu'),
+        layers.GlobalMaxPool1D(),
+        #layers.Flatten(),
+        layers.Dense(10, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+        layers.Dense(1, activation='linear', name="L2") # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+    ]) 
     """
     In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
     These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -201,11 +203,14 @@ def SentimentAnalysis(url, path):
     # Calculate metrics
     accuracy = accuracy_score(y_test, y_pred)
     print(f"LogisticRegression: {len(sentences)} sentences, train shape: {x_train.shape}, score: {score}, accuracy: {accuracy}")
-
-    model = models.Sequential()
-    model.add(layers.Input(shape=(x_train.shape[1],)))  # Specify the input shape. https://keras.io/guides/sequential_model/#specifying-the-input-shape-in-advance
-    model.add(layers.Dense(10, activation='relu', name="L1"))
-    model.add(layers.Dense(1, activation='linear', name="L2")) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+    """
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
+    """
+    model = models.Sequential([
+        layers.Input(shape=(x_train.shape[1],)),  # Specify the input shape. https://keras.io/guides/sequential_model/#specifying-the-input-shape-in-advance
+        layers.Dense(10, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+        layers.Dense(1, activation='linear', name="L2")]) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
     print("Model Summary:")
     model.summary()
     """

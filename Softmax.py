@@ -6,6 +6,7 @@ from tensorflow.keras.layers import Dense
 from IPython.display import display, Markdown, Latex
 from sklearn.datasets import make_blobs
 from matplotlib.widgets import Slider
+from tensorflow.keras import layers, losses, optimizers, regularizers
 """
 SparseCategorialCrossentropy or CategoricalCrossEntropy
 Tensorflow has two potential formats for target values and the selection of the loss defines which is expected.
@@ -45,10 +46,14 @@ def PrepareData():
     return X_train, y_train
 
 def NNSoftmax(X_train, y_train):
+    """
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
+    """
     model = Sequential(
         [ 
-            Dense(25, activation = 'relu'),
-            Dense(15, activation = 'relu'),
+            Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+            Dense(15, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)),
             Dense(4, activation = 'softmax')    # < softmax activation here
         ]
     )
@@ -69,11 +74,13 @@ def NNStableSoftmax(X_train, y_train):
     """
     More stable and accurate results can be obtained if the sigmoid/softmax and loss are combined during training.
     In the preferred organization the final layer has a linear activation. For historical reasons, the outputs in this form are referred to as *logits*. The loss function has an additional argument: `from_logits = True`. This informs the loss function that the sigmoid/softmax operation should be included in the loss calculation. This allows for an optimized implementation.
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
     """
     preferred_model = Sequential(
         [ 
-            Dense(25, activation = 'relu'),
-            Dense(15, activation = 'relu'),
+            Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+            Dense(15, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)),
             Dense(4, activation = 'linear')   #<-- Note
         ]
     )

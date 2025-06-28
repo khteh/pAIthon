@@ -4,8 +4,10 @@ from sklearn.datasets import make_blobs
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-numpy.set_printoptions(precision=2)
+from tensorflow.keras import layers, losses, optimizers, regularizers
 from lab_utils_multiclass_TF import *
+
+numpy.set_printoptions(precision=2)
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 tf.autograph.set_verbosity(0)
 """
@@ -34,13 +36,15 @@ def MulticlassClassification(X_train, y_train):
     This network has four outputs, one for each class. Given an input example, the output with the highest value is the predicted class of the input.
     Below is an example of how to construct this network in Tensorflow. Notice the output layer uses a linear rather than a softmax activation. 
     While it is possible to include the softmax in the output layer, it is more numerically stable if linear outputs are passed to the loss function during training. 
-    If the model is used to predict probabilities, the softmax can be applied at that point.    
+    If the model is used to predict probabilities, the softmax can be applied at that point.
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
     """
     classes = 4
     tf.random.set_seed(1234)  # applied to achieve consistent results
     model = Sequential(
         [
-            Dense(2, activation = 'relu',   name = "L1"),
+            Dense(2, activation = 'relu',   name = "L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
             Dense(4, activation = 'linear', name = "L2")
         ]
     )

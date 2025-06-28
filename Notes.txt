@@ -100,12 +100,22 @@ L1 Loss: |actual - prediction| -> Used in continuous number prediction. Used whe
 L2 Loss: (actual - prediction)^2 -> Penalizes worse / bigger loss more harshly. Used when we care about outliers.
 
 Underfitting (High bias):
-The model has a strong preconception of how the data  should fit into itself. For example, linear function, etc.
+- J(train) AND J(cv) are high
+- The model has a strong preconception of how the data  should fit into itself. For example, linear function, etc.
+- More data will NOT help.
 
 Overfitting (High variance):
-A model that fits too closely to a particular data set and therefore may fail to generalize to future data. High variance because if the model overfits, a tiny change in one of the training data set will end up completely different model.
-This is a side effect of minimizing loss of a model. If loss = 0, the model may only work on the specific data set.
-One way to counter this problem is add other parameters to optimization. For example, consider complexity:
+- J(train) is low; J(cv) is high
+- A model that fits too closely to a particular data set and therefore may fail to generalize to future data. High variance because if the model overfits, a tiny change in one of the training data set will end up completely different model.
+- This is a side effect of minimizing loss of a model. If loss = 0, the model may only work on the specific data set.
+- One way to counter this problem is add other parameters to optimization. For example, consider complexity:
+- More data is likely to help.
+
+High bias AND high variance:
+- J(train) is high; J(cv) higher than J(train)
+- Sometimes happen in NN. Less in linear regression.
+- Doesn't really happen for linear models applied to 1-D.
+- Underfit and overfit on parts of the data at the same time.
 
 Cost(h) = Loss(h) + w*Complexity(h) : 'w' gives weight to the complexity
 
@@ -129,11 +139,19 @@ w = w - alpha/m * (sum((f_w_b(x) - y) * x) + lambda * w[j])
   alpha: 0.01, lambda: 10, m: 100 => (1 - alpha * lambda / m) = (1 - 0.001) = 0.999
   This shows that every iteration of gradient descent, regularization reduces the value of w, thus reduces the impact of the feature.
 
+Strategy to debugging a learning algorithm:
+(1) Get more data - Fixes high variance.
+(2) Try smaller sets of features (Simplify polynomial equation by removing some of the higher order components.) - Fixes high variance.
+(3) Add more features - Fixes high bias
+(4) Add polynomial features - Fixes high bias
+(5) Decrease lambda - Fixes high bias
+(6) Increase lambda - Fixes high variance.
+
 Hold-out cross validation splits data into training and testing data sets. How to split?
 k-fold corss-validation: Splitting data into k sets, and experimenting k times, using each set as a test set once, and using remaining data as training set.
 
 Feature Scaling: When a feature has a large range of values, the weight/parameter calculated by the model will have small range. In this case, a small change in weight will have big change in the cost value.
-This causes the gradient descent to take longer time to find it's global minimum. To oversome this, scale the input data. 2 ways:
+This causes the gradient descent to take longer time to find it's global minimum, i.e., converge slower. To oversome this, scale the input data. 2 ways:
 (1) Divide by the maximum value of the data range. This will produce scaled input data of [0, 1]
 (2) Mean normalization: Find the average value (ave). (x - ave) / (Xmax - Xmin). This will produce scaled input data of [-1, 1] which centers around 0.
 (3) Z-score normalization: Find the standard deviation (d) and the mean. (x - ave) / d.
@@ -213,7 +231,12 @@ Backpropagation: Algorithm for training NN with hidden layers
     - For each layer, starting with output layer, and moving inwards towards the earliest hidden layer
       - Propagate error back one layer
 
-To prevent Overfitting:
+To prevent underfitting (high bias):
+(1) Use a larger network.
+
+To prevent Overfitting (high variance):
+(1) Collect more data
+(2) Choose lambda appropriately.
 Dropout: Temporarily removing units - selected at random - from a NN to prevent over-reliance on certain units
 playground.tensorflow.org
 Image Convolution: Applying a filter that adds each pixel value of an image to it's neighbours, weighted according to a kernel matrix.
@@ -236,3 +259,36 @@ For large data sets, load the data from data warehouse into SSD storage (Cloud o
 JSONL: JSON Lines is a simple text-based format with rows. It is human readable and an ideal choice for small to medium-sized datasets.
 TFRecord: Binary format and easier to read for computers, ideal for efficient training.
 Parquet: Good for large and complex datasets.
+=========================================================================================================================================================================================================================================
+Data Augmentation:
+(1) Image: replicate and distort/transform original data sets
+(2) Voice: Add noisy background, audio on bad connection, etc.
+
+Data Synthesis:
+(1) Image OCR
+
+Transfer Learning:
+Example: A NN trained on 1 million images of diverse object types (animal, fruits, plants, people, etc). You want to come up with a NN for character OCR.
+Make a copy of the NN, replace the output layer with a 10-unit layer. Then, there are 2 options to train the "new" NN:
+(1) Only train output layer parameters - This works if having a small data set
+(2) Train all parameters - This works with a huge data set.
+The NN trained on 1 million images is called "supervised pretrained model".
+The "new" copy of the NN is called "fine-tuning".
+This works because layers of neurons have learnt different parts of the images. This could generalize to other types of images not found in the original dataset.
+Only work for the same input types: text, images, audio.
+Use-case exmaples: GPT-3, BERT, imageNet.
+
+Skewed Datasets:
+Precision = #True positives / (#True + #False positives) = #True positives / (#Total predicted positives)
+Recall = #True positives / (#True positives + #False negatives) = #True positives / (#Total actual positives) - Helps detect if the learning algorithm is predicting negatives all the time because the value will be zero.
+For use cases with skewed classes or a rare class, decently high precision and recall values helps reassures the usefulness of the learning algorithm.
+
+Trade-off between Precision and Recall:
+Logistic regression: 0 <= F(w,b) <= 1
+Predict 1 if F(w,b) >= threshold
+Predict 0 if F(w,b) < threshold
+To predict 1 only if very confident, use high value of threshold. This results in high precision, low recall
+To predict 1 even when in doubt, use low value of threshold. This results in low precision, high recall
+
+To automatically decide on the best learning algorithm without having to manually select between Precision and Recall, choose the algorithm with the highest F1 score.
+F1 score = 2 * PR / (P + R) <= Harmonic mean. A mean calculation which pays attention to the lower value.

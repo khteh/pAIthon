@@ -188,18 +188,21 @@ def LogisticGradientDescent(x, y, w_in, b_in, alpha, lambda_, iterations):
             print(f"Iteration {i:4d}: Cost {J_history[-1]}   ")
     return w, b, J_history         #return final w,b and J history for graphing    
 
-def LogisticPredict(x, w, b, threshold):
+def LogisticPredict(x, w, b, threshold: float = 0.5):
     """
-    Predict whether the label is 0 or 1 using learned logistic
-    regression parameters w
+    Predict whether the label is 0 or 1 using learned logistic regression parameters w
     
     Args:
       X : (ndarray Shape (m,n)) data, m examples by n features
       w : (ndarray Shape (n,))  values of parameters of the model      
       b : (scalar)              value of bias parameter of the model
-
+      threshold: (scalar) 
+      
     Returns:
-      p : (ndarray (m,)) The predictions for X using a threshold at 0.5
+      p : (ndarray (m,)) The predictions for X using a threshold
+
+    To predict 1 only if very confident, use high value of threshold. This results in high precision, low recall
+    To predict 1 even when in doubt, use low value of threshold. This results in low precision, high recall
     """
     assert 0 <= threshold <= 1
     # number of training examples
@@ -291,6 +294,9 @@ def HandwritingClassification():
     Divide the obtained difference by the corresponding standard deviation.
     It’s a good practice to standardize the input data that you use for logistic regression, although in many cases it’s not necessary. Standardization might improve the performance of your algorithm. It helps if you need to compare and interpret the weights. 
     It’s important when you apply penalization because the algorithm is actually penalizing against the large values of the weights.
+    StandardScaler from scikitlearn computes the z-score of your inputs. As a refresher, the z-score is given by the equation:
+        z = (x - 𝜇) / lambda
+    where  𝜇 is the mean of the feature values and lambda is the standard deviation. 
     """
     scaler = StandardScaler() # perform z-score normalization
     x_train = scaler.fit_transform(x_train)
