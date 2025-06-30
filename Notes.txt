@@ -292,3 +292,48 @@ To predict 1 even when in doubt, use low value of threshold. This results in low
 
 To automatically decide on the best learning algorithm without having to manually select between Precision and Recall, choose the algorithm with the highest F1 score.
 F1 score = 2 * PR / (P + R) <= Harmonic mean. A mean calculation which pays attention to the lower value.
+=========================================================================================================================================================================================================================================
+Decision Tree Learning:
+Decision 1: How to choose what feature to split on at each node?
+            Goal: Maximize purity / Minimize impurity - decision which gives fastest path to leave nodes.
+Decision 2: When do you stop splitting?
+            (1) When a node is 100% one class
+            (2) Tree depth. Deep tree could result in overfitting / high variance.
+            (3) When improvement on purity score are below a threshold.
+            (4) When the #samples in a node is below a threshold.
+Entropy as a measure of impurity
+p1 = Fraction of samples that are positive
+p0 = 1 - p1
+H(p1) = -p1log2(p1) - (1 - p1)log2(1 - p1)
+      = -p1log2(p1) - p0log2(p0)
+Note:
+(1) Use log2 to make the symmetric bell curve range from 0 to 1
+(2) 0log2(0) = 0 <- log(0) is negative infinity
+
+Decision 1: Goal: Reduce entropy, H(p1) = Information gain.
+Information Gain = H(p1root) - (wl * H(p1l) + wr * H(p1r))
+wl = weight of left branch = #left samples / #root samples
+wr = weight of right branch = #right samples / #root samples
+
+Regression Tree: Decision Tree which predicts a number.
+- Use variance of the sample labels to decide which features to split on.
+- Split on feature which gives highest reduction in variance (highest information gain)
+Information Gain = V(p1root) - (wl * V(p1l) + wr * V(p1r))
+
+Any single decision tree is highly sensitive to small change in the data. Solution is to use tree ensemble to let multiple trees vote on the final prediction.
+(1) Use sampling with replacement to build data for tree ensemble. This is called "bagged" decision tree (https://medium.com/data-science/understanding-sampling-with-and-without-replacement-python-7aff8f47ebe4)
+(2) Random forest - Randomizing the feature selection. Select from k < n features at each node. k is usually sqrt(n). Works better for large feature set.
+(3) XGBoost - Instead of picking from all examples with equal 1/m probability, make it more likely to pick misclassified samples from all the trees constructed so far.
+
+Decision Trees vs. Neural Networks
+Decision Trees and Tree Ensembles:
+(1) Works well on structured data
+(2) Not recommended for Unstrcutured data (video, audio, images, text)
+(3) Fast to train
+(4) Small decision trees maybe human interpretable.
+
+NN:
+(1) Works well on ALL types of data and the combination of them.
+(2) Maybe slower to train compared to decision trees
+(3) Works with transfer learning - Can use pretrained models to train the output layer with fewer data.
+(4) Can string together multiple NN when building a system of multiple models working together.

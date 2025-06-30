@@ -3,13 +3,12 @@ import numpy
 # for building and training neural networks
 import tensorflow as tf
 # custom functions
-import utils
 # for building linear regression models and preparing data
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
-
+from utils.Plots import *
 # reduce display precision on numpy arrays
 numpy.set_printoptions(precision=2)
 
@@ -84,7 +83,7 @@ class LinearRegressionModelEvaluationAndSelection():
         print(f"the shape of the test set (target) is: {self._Y_test.shape}")
 
         # Data set plot to show which points were used as training, cross validation, or test data.
-        utils.plot_train_cv_test(self._X_train, self._Y_train, self._X_cv, self._Y_cv, self._X_test, self._Y_test, title="input vs. target")
+        plot_train_cv_test(self._X_train, self._Y_train, self._X_cv, self._Y_cv, self._X_test, self._Y_test, title="input vs. target")
         """
         StandardScaler from scikitlearn computes the z-score of your inputs. As a refresher, the z-score is given by the equation:
             z = (x - 𝜇) / lambda
@@ -100,7 +99,7 @@ class LinearRegressionModelEvaluationAndSelection():
         print(f"Computed standard deviation of the data: {self._scaler.scale_.squeeze():.2f}")
 
         # Plot the results
-        #utils.plot_dataset(x=data, y=y_train, title="scaled input vs. target")
+        plot_dataset(x=data, y=self._Y_train, title="scaled input vs. target")
         return scaled_data
 
     def RegressionModel(self, X, y):
@@ -232,7 +231,7 @@ class LinearRegressionModelEvaluationAndSelection():
             
         # Plot the results
         degrees=range(1,11)
-        utils.plot_train_cv_mses(degrees, train_mses, cv_mses, title="degree of polynomial vs. train and CV MSEs")
+        plot_train_cv_mses(degrees, train_mses, cv_mses, title="degree of polynomial vs. train and CV MSEs")
         # use the model with the lowest cv_mse as the one best suited for your application.
         # Get the model with the lowest CV MSE (add 1 because list indices start at 0)
         # This also corresponds to the degree of the polynomial added
