@@ -43,7 +43,7 @@
 #*.jpg   binary
 #*.png   binary
 #*.gif   binary
-
+*.npy binary
 ###############################################################################
 # diff behavior for common document formats
 # 
