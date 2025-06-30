@@ -82,7 +82,9 @@ class Discriminator():
         return real_loss + fake_loss
     
     def UpdateParameters(self, tape, loss):
+        # Use the gradient tape to automatically retrieve the gradients of the loss with respect to the trainable variables, dJ/dw.
         gradients = tape.gradient(loss, self._model.trainable_variables)
+        # Run one step of gradient descent by updating the value of the variable to minimize the loss
         self.optimizer.apply_gradients(zip(gradients, self._model.trainable_variables))
    
 class Generator():
@@ -131,7 +133,9 @@ class Generator():
         return real_loss + fake_loss
     
     def UpdateParameters(self, tape, loss):
+        # Use the gradient tape to automatically retrieve the gradients of the loss with respect to the trainable variables, dJ/dw.
         gradients = tape.gradient(loss, self._model.trainable_variables)
+        # Run one step of gradient descent by updating the value of the variable to minimize the loss
         self.optimizer.apply_gradients(zip(gradients, self._model.trainable_variables))
     
 def PrepareTrainingData(size: int, buffer_size: int, batch_size: int):

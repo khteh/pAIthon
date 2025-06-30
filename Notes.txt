@@ -229,6 +229,17 @@ Supervised Learning:
 (2) Enough positive examples for algorithm to get a sense of what positive examples are lke; future positive samples likely to be similar to ones in training set.
 Examples: Email spam classification, defects detection of mobile phone manufacturing, weather prediction, disease classification.
 
+Anomaly Detection feature selection:
+(1) Choose feature with gaussian distribution property (plt.hist(x)). Otherwise, try to transform it:
+    (i) log(x + C) : Lower values of C transform better
+    (ii) sqrt(x)
+    (iii) x ^ 1/3
+
+Anomaly Detection error analysis:
+Most common problem: p(x) is comparable for both normal and anomalous samples. p(x) is large. In this case, the algorithm will fail to flag an anomalous test data. Solutions:
+(1) Check the anomalous test data. Create new feature which helps detect the anomaly.
+(2) Create new feature based on existing ones using simple equations like x1 / x2 or (x1^2) / x2, etc.
+
 Neural Network (multilayer perceptron):
 Activation functions:
 (1) Step function: g(x) = 1 if x >=0, else 0

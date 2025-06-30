@@ -14,6 +14,7 @@ def TrainStep(images, discriminator, generator, batch_size: int):
     The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
     """
     noise = tf.random.normal([batch_size, noise_dim])
+    # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
       generated_images = generator.run(noise, training=True)
 
@@ -24,6 +25,7 @@ def TrainStep(images, discriminator, generator, batch_size: int):
       disc_loss = discriminator.loss(real_output, fake_output)
 
     generator.UpdateParameters(gen_tape, gen_loss)
+    # Use the GradientTape to calculate the gradients of the cost with respect to the parameter w: dJ/dw.
     discriminator.UpdateParameters(disc_tape, disc_loss)
 
 def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch_size: int, num_examples_to_generate: int, image_rows: int, image_cols: int):

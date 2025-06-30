@@ -6,6 +6,40 @@ numpy._import_array()
 """
 https://realpython.com/build-recommendation-engine-collaborative-filtering/
 Mock up user-based similarity with one new user "E" who has rated only movie 1"
+
+r[i,j] = 1 if user j has rated movie i, 0 otherwise
+y[i,j] = rating given by user j for movie i, if r[i,j] = 1
+w[j], b[j] = parameters for user j
+x[i] = features of movie i
+m[j] = # movies rated by user j
+n = # features
+Nu = # users
+Nm = # movies
+Cost function for a single user: J(w[j],b[j]) = sum((w[j] * x[i] + b[i] - y[i,j]) ** 2) / 2m[j] + lambda * sum(w[j] ** 2) / 2m[j] for all r[i,j] == 1
+Cost function for all users: J(w,b) = sum(sum((w[j] * x[i] + b[i] - y[i,j])) ** 2) / 2m[j] + lambda * sum(sum(w[j] ** 2)) / 2m[j] for all r[i,j] == 1
+
+Suppose we know the w[j], b[j], we can estimate features using these cost functions
+Cost function for a single feature: J(x[j]) = sum((w[j] * x[i] + b[i] - y[i,j]) ** 2) / 2m[j] + lambda * sum(x[i] ** 2) / 2m[j] for all r[i,j] == 1
+Cost function for all features: J(x) = sum(sum((w[j] * x[i] + b[i] - y[i,j])) ** 2) / 2m[j] + lambda * sum(sum(x[i] ** 2)) / 2m[j] for all r[i,j] == 1
+This is only possible in Collaborative filtering because we have relevant data to do this "reverse engineering" from Y to features. Not possible in linear regression.
+
+Putting the 2 above together, we have:
+J(w,b,x) = sum((w[j] * x[i] + b[j] - y[i,j]) ** 2) / 2 + lambda * sum(sum(w[j] ** 2)) / 2 + lambda * sum(sum(x[i] ** 2)) / 2 for all r[i,j] == 1. Ignore /m[j] to simplify it.
+With this, we could use Gradient Descent optimizer to learn w,b AND x. Now, x, the feature becomes a parameter. This is only possible in Collaborative Filtering because of the nature of input data.
+
+This works also for binary classification by using g(z).
+
+Mean Normalization: Makes training faster and prediction of new row / column more reasonable instead of '0'. Without the mean of the rows/cols, 'w' ~= 0 (because of regularization) and therefore, 'z' is likely to be 0.
+
+To find item k with x[k] similar to x[i]: Min(sum((x[k] - x[i]) ** 2))
+
+Limitations:
+(1) Cold start problem. For example,
+    (i) Rank new items that few users have rated.
+    (ii) Show something reasonable to new users who have rated only a few items.
+(2) It doesn't give a natural way to use side information or additional information about items or users. For example,
+    (i) Items: Genre, movie stars, studio, authors, etc.
+    (ii) Users: Demographics (age, gender, location), expressed preferences, types of devices/browsers used to access the application, etc.
 """
 def LoadData():
     return Dataset.load_builtin("ml-100k")
