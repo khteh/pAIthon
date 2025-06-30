@@ -1,6 +1,7 @@
 import numpy
 import matplotlib.pyplot as plt
 from numpy.random import Generator, PCG64DXSM
+from Sigmoid import sigmoid
 # https://realpython.com/python-ai-neural-network/
 rng = Generator(PCG64DXSM())
 
@@ -13,19 +14,16 @@ class NeuralNetwork():
         self._weights = [rng.random(), rng.random()]
         self._bias = rng.random()
 
-    def sigmoid(self, x):
-        return 1 / (1 + numpy.exp(-x))
-
     def SigmoidDerivative(self, x):
         """
         You can take the derivative of the sigmoid function by multiplying sigmoid(x) and 1 - sigmoid(x).
         """
-        tmp = self.sigmoid(x)
+        tmp = sigmoid(x)
         return tmp * (1 - tmp)
 
     def Predict(self, input):
         l1 = numpy.dot(input, self._weights) + self._bias
-        l2 = self.sigmoid(l1)
+        l2 = sigmoid(l1)
         return l2
 
     def ComputeGradients(self, input, target):
@@ -33,7 +31,7 @@ class NeuralNetwork():
         The power rule states that the derivative of xⁿ is nx⁽ⁿ⁻¹⁾. So the derivative of np.square(x) is 2 * x, and the derivative of x is 1.
         """
         l1 = numpy.dot(input, self._weights) + self._bias
-        l2 = self.sigmoid(l1)
+        l2 = sigmoid(l1)
         prediction = l2
 
         derror_dprediction = 2 * (prediction - target)

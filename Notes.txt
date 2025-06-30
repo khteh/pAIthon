@@ -187,6 +187,48 @@ Tasks:
     Use case: Fraud detection.
 (3) Dimensionality Reduction: Compress large corpuses of data to a much smaller dataset without losing key / important information.
 
+k-means clustering:
+(1) Choose a number for 'k' cluster centroids, u[k]. k < len(data)
+(2) Randomly assigns 'k's values which have the same dimension as the dataset.
+(3) Assign samples to the nearest centroid (k)
+    for i of range(len(data)):
+      c[i] = index (from 1 to k) of cluster centroids closest to x[i]
+    The distance can be calculated with min(|x[i] - u[k]|), or more generally, min(|x[i] - u[k]|  ** 2 )
+(4) Move the cluster centroids to the average of the points
+    for i of range(k):
+      u[i] = average (mean) of points assigned to cluster k
+    The means can be calculated with sum(x[]) / len(x[])
+There will be situations where one of the uk has zero data points assigned to it. In this case, either
+(1) Remove the empty cluster: k = k - 1
+(2) Reinitialize the cluster centroids and restart the algorithm.
+Optimization objective:
+c[i] = index of cluster (1,2,...,k) to which sample x[i] is currently assigned to.
+uk = cluster centroid k
+uc[i] = location of centroid k to which x[i] is currently assigned to.
+cost function: J(c, uk) = sum(|x[i] - u[k]|  ** 2 ) / m
+Every step along the way reduces J(c, uk).
+To minimize local minimum and choose the best cluster centroids, use multiple random initializations and choose the cluster with the lowest J(c,u). i.e., run the algorithm multiple times, maybe 50 to 1000.
+
+Anomaly Detection:
+Density Estimation: Model p(x) from data. Probability of x[i] being seen in the dataset.
+p(x[i]) < epsilon : Anomaly
+p(x[i]) >= epsilon: OK
+p = Gaussian distribution - Needs mean and sigma (standard distribution); sigma ** 2 is variance
+To model p(x) with multiple featues (N), every feature is a Gaussian distribution.
+(1) Calculate the mean and sigma of every feature.
+(2) p(x) = p(x1; u1,s1) * p(x2; u2,s2) * p(x3; u3,s3) * ... * p(xN; uN,sN)
+
+Anomaly Detection vs Supervised Learning:
+Anomaly Detection is mostly used when:
+(1) Very small number of positive exaples (y=1). 0-20 is common. Large number of negative (y=0)
+(2) Many different "types" of anomalies. Hard for any algorithm to learn from positive examples what the anomalies look like; future anomalies may look nothing like any of the anomalous samples seen so far (training set)
+Examples: Security related applications like fraud, defects detection of manufacturing very complex products like the aircraft engines, monitoring complex systems like in a data center.
+
+Supervised Learning:
+(1) Large number of positive and negative examples
+(2) Enough positive examples for algorithm to get a sense of what positive examples are lke; future positive samples likely to be similar to ones in training set.
+Examples: Email spam classification, defects detection of mobile phone manufacturing, weather prediction, disease classification.
+
 Neural Network (multilayer perceptron):
 Activation functions:
 (1) Step function: g(x) = 1 if x >=0, else 0

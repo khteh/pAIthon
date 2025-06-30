@@ -22,8 +22,6 @@ numpy.set_printoptions(precision=2)
 tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(0)
 
-#TODO: Add similar classes for NN and Classification
-
 class ClassificationModelEvaluationAndSelection():
     _X_train = None
     _X_train_scaled = None

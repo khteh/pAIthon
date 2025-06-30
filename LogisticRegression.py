@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
-
+from Sigmoid import sigmoid
 """
 https://realpython.com/logistic-regression-python/
 
@@ -65,26 +65,6 @@ x = numpy.array([4, 3, 0])
 c1 = numpy.array([-.5, .1, .08])
 c2 = numpy.array([-.2, .2, .31])
 c3 = numpy.array([.5, -.1, 2.53])
-
-def sigmoid(z):
-    """
-    Compute the sigmoid of z
-
-    Args:
-        z (ndarray): A scalar, numpy array of any size.
-
-    Returns:
-        g (ndarray): sigmoid(z), with the same shape as z
-
-    Recall that for logistic regression, the model is represented as
-    f(w,b) = g(w.x + b)
- 
-    where function g is the sigmoid function. The sigmoid function is defined as:
-    g(z) = 1 / (1 + exp(-z))
-    """
-    # add your implementation of the sigmoid function here
-    # s(z)=1÷(1+exp(−z))
-    return 1/(1+math.exp(-z))
 
 # calculate the output of the sigmoid for x with all three coefficients
 result1 = x @ c1

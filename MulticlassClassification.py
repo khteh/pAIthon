@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import layers, losses, optimizers, regularizers
-from lab_utils_multiclass_TF import *
+from utils.lab_utils_multiclass_TF import *
 
 numpy.set_printoptions(precision=2)
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
