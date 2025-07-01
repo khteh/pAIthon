@@ -240,6 +240,18 @@ Most common problem: p(x) is comparable for both normal and anomalous samples. p
 (1) Check the anomalous test data. Create new feature which helps detect the anomaly.
 (2) Create new feature based on existing ones using simple equations like x1 / x2 or (x1^2) / x2, etc.
 
+Principal Component Analysis:
+(1) Commonly used for visualization. Example: Take data with many features, say 50, 1000 or even more, reduce the #features to a few so as to enable visualization / plotting.
+    - Common used by data scientists to visualize data for analysis.
+    - Choose feature(s) with meaningful degree of variation.
+    - Create new feature(s) based on existing ones. Example: length x height
+(2) Features should first be normalized to have zero mean before applying PCA.
+(3) Features should first be scaled before applying PCA.
+(4) It will choose an axis(the Principal Component) around the origin which results in the largest variance when projecting the data onto it (at 90 degree angle).
+    - All new axes created will be perpendicular to one another (90-degree)
+(5) Less common applications:
+    (i) Data compression - Reduce storage and/or transmission cost
+    (ii) Speed up training of a supervised learning model.
 Neural Network (multilayer perceptron):
 Activation functions:
 (1) Step function: g(x) = 1 if x >=0, else 0
@@ -392,3 +404,23 @@ NN:
 (2) Maybe slower to train compared to decision trees
 (3) Works with transfer learning - Can use pretrained models to train the output layer with fewer data.
 (4) Can string together multiple NN when building a system of multiple models working together.
+=========================================================================================================================================================================================================================================
+Collabortive Filtering: Recommend items to user based on ratings of other users who gave similar ratings as the user.
+Content-based Filtering: Recommend items to user based on features of both the user and the items to find a good match.
+  - R[i,j]=1 if user[j] has rated item[i]
+  - Y[i,j] ratings of user[j] on item[i]
+  User and item will have different sizes of features. Prediction can be simplified to numpy.dot(W[j], X[i]). bias doesn't affect the performance of the model much.
+  For the calculation to work, need to transform the feature vectors to vectors of same dimension. Use NN to achieve this. Call it User NN and Item NN with the output layers having the same #neurons.
+  These 2 NNs are trained as a single NN with ONE cost function J = sum((V[u,j] * V[m,i] - Y[i,j]) ** 2) + regularization for all R[i,j] = 1 (Use tf.keras.layers.Dot layer)
+Recommendation from LARGE Catalogue - can be done with 2 steps: Retrieval and Ranking.
+Retrieval:
+(1) Generate last list of plausible item candidates:
+    - For each item purchased by the user, find 10 most similar items. This can use overnight batch to calculate the min(|V[k] - V[i]| ** 2)
+    - For most viewed 3 categories/genres, find top 10 items.
+    - Top 20 items in the country/region.
+(2) Combine the retrieved items into a list, removing duplicates and items already purchased.
+Ranking:
+(1) Use the NN to calculate predictions on the retrieved list. Only need to calculate the missing V[j] or V[i] for the final dot product. Can be done on separated NN. This should be quick.
+(2) Display ranked items to the user.
+To speed up the response times of the system, pre-compute vectors V[i] for ALL items that it might recommend. This can be done even before a user logs in or even before Xu or Vu vector is computed.
+If 2 items have vectors V[i] and V[k] which are similar to one another, i.e., |V[k] - V[i]| is small, a conclusion could be drawn that they will be liked by similar users.
