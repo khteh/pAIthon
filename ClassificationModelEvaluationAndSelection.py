@@ -14,7 +14,7 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.activations import sigmoid
 from tensorflow.keras import layers, losses, optimizers, regularizers
-
+from utils.GPU import InitializeGPU
 # reduce display precision on numpy arrays
 numpy.set_printoptions(precision=2)
 
@@ -48,6 +48,7 @@ class ClassificationModelEvaluationAndSelection():
     _models: list[Sequential] = None
 
     def __init__(self, path):
+        InitializeGPU()
         self.PrepareData(path)
         self._X_train_scaled = self.ScaleData(self._X_train)
         self._X_cv_scaled = self.ScaleData(self._X_cv)

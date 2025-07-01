@@ -1,4 +1,4 @@
-import numpy
+import numpy, warnings
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.layers import Dense, Input
@@ -6,6 +6,7 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.activations import sigmoid
 from tensorflow.keras import layers, losses, optimizers, regularizers
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 X_train = numpy.array([[1.0], [2.0]], dtype=numpy.float32)           #(size in 1000 square feet)
 Y_train = numpy.array([[300.0], [500.0]], dtype=numpy.float32)       #(price in 1000s of dollars)
@@ -128,7 +129,7 @@ def Dense(a_in, W, b):
         a_out[i] = sigmoid(z)
     return a_out
 
-def DenseVectorized(a_in, W, b):
+def DenseVectorized(a_in, W, b, g):
     """
     Demonstrate vectorized manual implementation of a single layer of neurons. #neurons determined by the W.shape[1], i.e., #columns in W
     W = numpy.array([
@@ -139,17 +140,16 @@ def DenseVectorized(a_in, W, b):
     w[1,2] = [-3, 4] layer 1, neuron 2
     w[1,3] = [5, -6] layer 1, neuron 3
     """
-    Z = a_in @ W
-    a_out = sigmoid(Z)
-    return a_out
+    return g(a_in @ W + b)
 
-def Sequential(x, W1, b1, W2, b2):
+def Sequential(x, parameters: list[tuple]):
     """
     Demonstrate manual implementation of a TF NN by strining together multiple dense layers
     """
-    a1 = Dense(x, W1, b1)
-    a2 = Dense(a1, W2, b2)
-    return sigmoid(a2)
+    result = x
+    for i in parameters:
+        result = DenseVectorized(result, i[0], i[1], sigmoid)
+    return result
 
 def Predict(X, W1, b1, W2, b2):
     m = X.shape[0]

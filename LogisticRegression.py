@@ -255,8 +255,8 @@ def single_variate_binary_classification_statsmodels():
     print(f"confusion matrix: {confusion}")
     ShowConfusionMatrix(confusion)
     print("summary:")
-    print(model.summary())
-    print(model.summary2())
+    model.summary()
+    model.summary2()
 
 def HandwritingClassification():
     """

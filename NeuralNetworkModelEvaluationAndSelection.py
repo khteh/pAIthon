@@ -13,6 +13,7 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.activations import sigmoid
 from tensorflow.keras import layers, losses, optimizers, regularizers
+from utils.GPU import InitializeGPU
 from utils.Plots import *
 # reduce display precision on numpy arrays
 numpy.set_printoptions(precision=2)
@@ -47,6 +48,7 @@ class NeuralNetworkModelEvaluationAndSelection():
     _models: list[Sequential] = None
 
     def __init__(self, path):
+        InitializeGPU()
         self.PrepareData(path)
 
     def PrepareData(self, path: str):
