@@ -6,6 +6,7 @@ def restore_latest_checkpoint(checkpoint, checkpoint_dir):
 
 # Notice the use of `tf.function`
 # This annotation causes the function to be "compiled".
+# @tf.function decorator to increase performance. Without this decorator our training will take twice as long. If you would like to know more about how to increase performance with @tf.function take a look at the TensorFlow documentation.
 @tf.function
 def TrainStep(images, discriminator, generator, batch_size: int):
     noise_dim = 100
@@ -14,6 +15,7 @@ def TrainStep(images, discriminator, generator, batch_size: int):
     The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
     """
     noise = tf.random.normal([batch_size, noise_dim])
+    # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
     # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
       generated_images = generator.run(noise, training=True)

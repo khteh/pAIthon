@@ -88,6 +88,7 @@ def find_closest_centroids(X, centroids):
         idx (array_like): (m,) closest centroids
     https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html
     """
+    print(f"\n=== {find_closest_centroids.__name__} ===")
     # Set K
     K = centroids.shape[0]
 
@@ -120,6 +121,7 @@ def compute_centroids(X, idx, K):
     Returns:
         centroids (ndarray): (K, n) New centroids computed
     """
+    print(f"\n=== {compute_centroids.__name__} ===")
     # Useful variables
     m, n = X.shape
     
@@ -141,6 +143,7 @@ def run_kMeans(X, initial_centroids, max_iters=10, plot_progress=False):
     Runs the K-Means algorithm on data matrix X, where each row of X
     is a single example
     """   
+    print(f"\n=== {run_kMeans.__name__} ===")
     # Initialize values
     m, n = X.shape
     K = initial_centroids.shape[0]
@@ -168,7 +171,29 @@ def run_kMeans(X, initial_centroids, max_iters=10, plot_progress=False):
     plt.show() 
     return centroids, idx
 
+def kMeans_init_centroids(X, K):
+    """
+    This function initializes K centroids that are to be 
+    used in K-Means on the dataset X
+    
+    Args:
+        X (ndarray): Data points 
+        K (int):     number of centroids/clusters
+    
+    Returns:
+        centroids (ndarray): Initialized centroids
+    """
+    print(f"\n=== {kMeans_init_centroids.__name__} ===")
+    # Randomly reorder the indices of examples
+    randidx = np.random.permutation(X.shape[0])
+    
+    # Take the first K examples as centroids
+    centroids = X[randidx[:K]]
+    
+    return centroids
+
 def test_kMeans():
+    print(f"\n=== {test_kMeans.__name__} ===")
     X = numpy.load("data/ex7_X.npy")
     # Set initial centroids
     initial_centroids = numpy.array([[3,3],[6,2],[8,5]])
@@ -176,7 +201,78 @@ def test_kMeans():
     max_iters = 10
     # Run K-Means
     centroids, idx = run_kMeans(X, initial_centroids, max_iters, plot_progress=True)
+    # Run this cell repeatedly to see different outcomes.
 
+    # Set number of centroids and max number of iterations
+    K = 3
+    max_iters = 10
+
+    # Set initial centroids by picking random examples from the dataset
+    initial_centroids = kMeans_init_centroids(X, K)
+
+    # Run K-Means
+    centroids, idx = run_kMeans(X, initial_centroids, max_iters, plot_progress=True)
+    print("Shape of idx:", idx.shape)
+
+def kMeansImageCompression(path: str):
+    print(f"\n=== {kMeansImageCompression.__name__} ===")
+    # Load an image of a bird
+    original_img = plt.imread(path)
+    print("Shape of original_img is:", original_img.shape)
+    # Divide by 255 so that all values are in the range 0 - 1 (not needed for PNG files)
+    # original_img = original_img / 255
+
+    # Reshape the image into an m x 3 matrix where m = number of pixels
+    # (in this case m = 128 x 128 = 16384)
+    # Each row will contain the Red, Green and Blue pixel values
+    # This gives us our dataset matrix X_img that we will use K-Means on.
+    X_img = np.reshape(original_img, (original_img.shape[0] * original_img.shape[1], 3))
+
+    # k-Means on image pixels
+    # Run your K-Means algorithm on this data
+    # You should try different values of K and max_iters here
+    K = 16
+    max_iters = 10
+
+    # Using the function you have implemented above. 
+    initial_centroids = kMeans_init_centroids(X_img, K)
+
+    # Run K-Means - this can take a couple of minutes depending on K and max_iters
+    centroids, idx = run_kMeans(X_img, initial_centroids, max_iters)
+    print("Shape of idx:", idx.shape)
+    print("Closest centroid for the first five elements:", idx[:5])
+    # Plot the colors of the image and mark the centroids
+    plot_kMeans_RGB(X_img, centroids, idx, K)
+    # Visualize the 16 colors selected
+    show_centroid_colors(centroids)
+
+    # Compress the image
+    # Find the closest centroid of each pixel
+    idx = find_closest_centroids(X_img, centroids)
+
+    # Replace each pixel with the color of the closest centroid
+    X_recovered = centroids[idx, :] 
+
+    # Reshape image into proper dimensions
+    X_recovered = np.reshape(X_recovered, original_img.shape)
+
+    #Finally, you can view the effects of the compression by reconstructing the image based only on the centroid assignments.
+    #Specifically, you replaced each pixel with the value of the centroid assigned to it.
+    #Figure 3 shows a sample reconstruction. Even though the resulting image retains most of the characteristics of the original, you will also see some compression artifacts because of the fewer colors used.    
+    # Display original image
+    fig, ax = plt.subplots(1,2, figsize=(16,16))
+    plt.axis('off')
+
+    ax[0].imshow(original_img)
+    ax[0].set_title('Original')
+    ax[0].set_axis_off()
+
+
+    # Display compressed image
+    ax[1].imshow(X_recovered)
+    ax[1].set_title('Compressed with %d colours'%K)
+    ax[1].set_axis_off()
+    
 def kNNClassificationNumpy():
     print(f"\n=== {kNNClassificationNumpy.__name__} ===")
     # To do classification:
@@ -270,5 +366,7 @@ def AbaloneAge(url, path):
 
 if __name__ == "__main__":
     Nearest()
+    test_kMeans()
+    kMeansImageCompression("data/bird_small.png")
     kNNClassificationNumpy()
     AbaloneAge("https://archive.ics.uci.edu/ml/machine-learning-databases/abalone/abalone.data", "/tmp/abalone.data")

@@ -424,3 +424,68 @@ Ranking:
 (2) Display ranked items to the user.
 To speed up the response times of the system, pre-compute vectors V[i] for ALL items that it might recommend. This can be done even before a user logs in or even before Xu or Vu vector is computed.
 If 2 items have vectors V[i] and V[k] which are similar to one another, i.e., |V[k] - V[i]| is small, a conclusion could be drawn that they will be liked by similar users.
+=========================================================================================================================================================================================================================================
+Reinforement Learning
+State action value function (Q-function)
+Q(s,a) = Return if it, the agent:
+(1) Start at state s
+(2) Take action a (ONCE)
+(3) Behave optimally after that: max(Q(s', a'))
+The best possible return from state s is max(Q(s,a))
+The best possible action in state s is the action which  gives max(Q(s,a))
+
+Policy, pi(s) = a It's job is to take as input any state, s, and map it to some action that it wants the agent to take in that state.
+Goal of Reinforcement learning: Find a policy, pi, which tells the agent what action (a = pi(s)) to take in every state (s) so as to maximize the return.
+Bellman Equation: Q(s,a) = R(s) + gamma * max(Q(s', a'))
+gamma is discount factor [0, 1]: smaller value means higher discount and makes the agent impatient, larger value makes it more patient to obtain reward at later steps. Usually close to 1. Example, 0.9, 0.99, etc.
+
+In random/Stochastic environment, there will be multiple sequence of different rewards due to uncontrolled environment / misstep probabilities. A Policy execution could produce many different results.
+In this case, choose a Policy (pi) which maximizes the average/expected sums of discounted rewards.
+Bellman Equation: Q(s,a) = R(s) + gamma * E(max(Q(s', a'))); E = Average
+
+In continuous state-space, s is a vector of numbers (some continuous numbers, some binary). Encode the actions (a) using one-hot feature vector.
+Use Deep Reinforcement Learning to compute Q(s,a) at the current state (s). X = [s a]. In a state, s, use the NN to compute Q(s, a) of all possible actions to take. Then, pick the action which maximizes Q(s,a).
+Use Bellman Equation to generate training datasets with Q(s,a) = X; R(s) + gamma * max(Q(s',a')) = Y
+
+Learning Algorithm:
+Input: [s, a]; Output: Q(s,a)
+Initialize NN randomly as guess of Q(s,a).
+Repeat {
+  Take actions wuth the agent. Get (s,a,R(s),s') tuples. <= **
+  Store 10,000 most recent tuples. (Replay Buffer)
+
+  Train NN:
+    Create training set of 10,000 samples using x = (s,a); y = R(s) + gamma * max(Q(s', a'))
+    Train Qnew such that Qnew(s,a) ~= y (f_w_b(x) ~= y)
+  Set Q = Qnew ***
+}
+Q will improve after every training. This is Deep Q-Learning/Q-Network and can be trained by adjusting it's weights at each iteration to minimize the mean-squared error in the Bellman equation.
+
+To be more efficient, X = [s] and Y = Q(s, a) of all possible actions. Output layer has the number of neurons equal to #actions. With this a single inference will generate all the possible Q(s,a) with all possible actions. Then, the max(Q(s',a')) term is readily available.
+
+Using neural networks in reinforcement learning to estimate action-value functions has proven to be highly unstable. Here is why:
+Bellman equation error: Y - Q(s,a;w) = R(s) + gamma * max(Q(s', a'; w)) - Q(s,a; w). 
+Notice that Y will keep changing in every iteration. Having a constantly moving target can lead to oscillations and instabilities. To avoid this, we can create a separate neural network for generating the Y targets. We call this separate neural network the target Q-Network and it will have the same architecture as the original Q.
+Steps:
+Every C time steps we will use the Q-target-Network to generate the Y targets and update the weights of the Q-target-Network using the weights of the 𝑄-Network. We will update the weights of the the Q-target-Network using a soft update.
+
+
+To avoid instabilities, use a Target Network and Experience Replay.
+
+
+
+** How to choose actions while still learning? 2 options:
+(1) Pick the action a which maximizes Q(s,a) - Because of random initialization, the NN might get stuck in it's own misconception that some actions (a) are *always* bad and therefore, would never get a chance to learn them well.
+(2) epsilon-greedy policy (e = 0.05)
+    (i) Greedy/Exploitation: With probabiity 0.95, Pick the action a which maximizes Q(s,a)
+    (ii) Exploration: With probability 0.05, pick an action randomly.
+    Start e high (1.0) and gradually decreases it to 0.01 in the course of the training.
+
+Mini-batch helps in both Supervised and Reinforcement Learning when datasets is large and it takes every iteration to compute sum((f_w_b(X) - y) ** 2)/2m over large datasets and therefore takes very long time to converge and computationally expansive. However, mini-batch will exhibit some unreliable behaviour ("noisy") in graident descent although eventually it will converge faster compared to usual batch learning.
+*** To make the NN converge more reliably, soft-update learning will help:
+(1) Prevent abrupt changes to the NN
+(2) Prevent one worse learning step overwrite the existing better NN
+Q(w,b) = Qnew(w_new, b_new)
+W = 0.01 * Wnew + 0.99 * W
+B = 0.01 * Bnew + 0.99 * B
+0.01 and 0.99 adds up to 1 and are the hyperparameters which control how aggressively or gradually the training updates the NN parameters.

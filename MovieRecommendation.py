@@ -110,7 +110,7 @@ class MovieRecommendation():
         compute forward pass
         compute the derivatives of the loss relative to parameters
         update the parameters using the learning rate and the computed derivatives
-        TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer. This is a very brief introduction to a useful feature of TensorFlow and other machine learning frameworks. Further information can be found by investigating "custom training loops" within the framework of interest.        
+        TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
         Once a model is trained, the 'distance' between features vectors gives an indication of how similar items are. 
         """
         iterations = 200

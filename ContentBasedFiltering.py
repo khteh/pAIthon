@@ -132,7 +132,7 @@ class ContentBasedFiltering():
 
         # create the item input and point to the base network
         input_item = tf.keras.layers.Input(shape=(self._num_item_features))
-        vm = item_NN(input_item)
+        vm = self._item_NN(input_item)
         vm = tf.linalg.l2_normalize(vm, axis=1)
 
         # compute the dot product of the two vectors vu and vm
