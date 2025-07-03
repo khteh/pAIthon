@@ -52,6 +52,26 @@ def multiDArray(i:int, j: int, k:int):
     print(f"axis-0 element-1, axis-1 1:2 => {multi[1, 1:2]}")
     print(f"axis-0 element-1, axis-1 0:2 => {multi[1, :2]}")
 
+def AdvancedIndexing():
+    # https://numpy.org/doc/stable/user/basics.indexing.html#advanced-indexing
+    centroids = numpy.array([[0.1, 0.2, 0.3],
+                    [0.4, 0.5, 0.6],
+                    [0.7,0.8,0.9]])
+    idx = numpy.array([2,1,0,1,2,0,2,0,1])
+    X_recovered = centroids[idx, :]
+    assert X_recovered.all() == numpy.array([[0.7, 0.8, 0.9],
+                                        [0.4, 0.5, 0.6],
+                                        [0.1, 0.2, 0.3],
+                                        [0.4, 0.5, 0.6],
+                                        [0.7, 0.8, 0.9],
+                                        [0.1, 0.2, 0.3],
+                                        [0.7, 0.8, 0.9],
+                                        [0.1, 0.2, 0.3],
+                                        [0.4, 0.5, 0.6]]).all()
+    print(f"centroid: {centroids}, shape: {centroids.shape}")
+    print(f"idx: {idx}, shape: {idx.shape}")
+    print(f"centroids[idx, :]: {X_recovered}, shape: {X_recovered.shape}")
+
 def Broadcasting():
     """
     Z = XW + b utilized NumPy broadcasting to expand the vector b. If you are not familiar with NumPy Broadcasting, this short tutorial is provided.
@@ -290,6 +310,8 @@ if __name__ == "__main__":
     oneDArray(10)
     twoDArray(30)
     multiDArray(3,4,5)
+    AdvancedIndexing()
+    Broadcasting()
     ConcatenateSliceObjects()
     csvArray(3,2,3, "data/file?.csv")
     """
