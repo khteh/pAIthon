@@ -53,7 +53,10 @@ def multiDArray(i:int, j: int, k:int):
     print(f"axis-0 element-1, axis-1 0:2 => {multi[1, :2]}")
 
 def AdvancedIndexing():
-    # https://numpy.org/doc/stable/user/basics.indexing.html#advanced-indexing
+    """
+    https://numpy.org/doc/stable/user/basics.indexing.html#advanced-indexing
+    It's using idx to index (select) from the first dimension (rows) of centroids. The ,: part makes it clear that it will return all values along the second dimension.
+    """
     centroids = numpy.array([[0.1, 0.2, 0.3],
                     [0.4, 0.5, 0.6],
                     [0.7,0.8,0.9]])

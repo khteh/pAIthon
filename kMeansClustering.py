@@ -190,6 +190,7 @@ class kMeansClustering():
 
         # Replace each pixel with the color of the closest centroid
         # https://numpy.org/doc/stable/user/basics.indexing.html#advanced-indexing
+        # It's using idx to index (select) from the first dimension (rows) of centroids. The ,: part makes it clear that it will return all values along the second dimension.
         X_recovered = centroids[idx, :] 
 
         # Reshape image into proper dimensions
