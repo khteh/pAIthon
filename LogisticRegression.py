@@ -295,7 +295,7 @@ def ShowMulticlassConfusionMatrix(confusion, font_size: int):
     The numbers on the main diagonal (27, 32, …, 36) show the number of correct predictions from the test set. For example, there are 27 images with zero, 32 images of one, and so on that are correctly classified. 
     Other numbers correspond to the incorrect predictions. For example, the number 1 in the third row and the first column shows that there is one image with the number 2 incorrectly classified as 0.
     """
-    fig, ax = plt.subplots(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(8, 8)) # figsize = (width, height)
     ax.imshow(confusion)
     ax.grid(False)
     ax.set_xlabel('Predicted outputs', fontsize=font_size, color='black')
@@ -314,7 +314,7 @@ def ShowConfusionMatrix(confusion):
     Creates a heatmap that represents the confusion matrix.
     Different colors represent different numbers and similar colors represent similar numbers
     """
-    fig, ax = plt.subplots(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(8, 8)) # figsize = (width, height)
     ax.imshow(confusion)
     ax.grid(False)
     ax.xaxis.set(ticks=(0, 1), ticklabels=('Predicted 0s', 'Predicted 1s'))

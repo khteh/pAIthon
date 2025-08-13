@@ -18,7 +18,7 @@ def LinearRegressionModel():
     # Data set
     X_train = numpy.array([[1.0], [2.0]], dtype=numpy.float32)           #(size in 1000 square feet)
     Y_train = numpy.array([[300.0], [500.0]], dtype=numpy.float32)       #(price in 1000s of dollars)
-    fig, ax = plt.subplots(1,1)
+    fig, ax = plt.subplots(1,1) # figsize = (width, height)
     ax.scatter(X_train, Y_train, marker='x', c='r', label="Data Points")
     ax.legend( fontsize='xx-large')
     ax.set_ylabel('Price (in 1000s of dollars)', fontsize='xx-large')
@@ -71,7 +71,7 @@ def LogisticNeuron():
     pos = Y_train == 1
     neg = Y_train == 0
 
-    fig,ax = plt.subplots(1,1,figsize=(4,3))
+    fig,ax = plt.subplots(1,1,figsize=(4,3)) # figsize = (width, height)
     ax.scatter(X_train[pos], Y_train[pos], marker='x', s=80, c = 'red', label="y=1")
     ax.scatter(X_train[neg], Y_train[neg], marker='o', s=100, label="y=0", facecolors='none', edgecolors="dlblue",lw=3)
     ax.set_ylim(-0.08,1.1)

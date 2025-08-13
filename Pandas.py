@@ -1,5 +1,7 @@
 import numpy, timeit, pandas as pd
 """
+Series: 1-Dimensional
+DataFrame: 2-Dimensional. Row: axis-0; Column: axis-1
 DataFrame objects are collections of Series objects.
 Each item in a Series has an index.
 """
@@ -45,6 +47,12 @@ def DataFrameAttributes():
     print(data.tail())
 
 def DataFrameAccess():
+    """
+    .loc refers to index key. There could be multiple entries with the same key.
+         - Slicing on .loc includes the end of range. Ex: .loc[:3] will include entry with index key '3'. This is == .head(4)
+    .iloc refers to 0-based array index.
+    .crosstab(col1, col2) is great for comparing 2 columns
+    """
     print(f"\n=== {DataFrameAccess.__name__} ===")
     data = {
         'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],
@@ -93,6 +101,11 @@ def DataFrameAccess():
     print(data)
 
 def DataFrameModifications():
+    """
+    Creating a DF column from Series do not need the Series to have the same length as the #rows. Missing data will be NaN.
+    In contrast, creating a DF column from python list does need to have the same length as the #rows.
+    To shuffle all the rows of a DF, use .sample(frac=1)
+    """
     print(f"\n=== {DataFrameModifications.__name__} ===")
     data = {
         'Name': ['Xavier', 'Ann', 'Jana', 'Yi', 'Robin', 'Amal', 'Nori'],

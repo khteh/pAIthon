@@ -66,7 +66,7 @@ def plt_mc_data(ax, X, y, classes,  class_labels=None, map=plt.cm.Paired,
 
 def plt_mc(X_train,y_train,classes, centers, std):
     css = np.unique(y_train)
-    fig,ax = plt.subplots(1,1,figsize=(3,3))
+    fig,ax = plt.subplots(1,1,figsize=(3,3)) # figsize = (width, height)
     fig.canvas.toolbar_visible = False
     fig.canvas.header_visible = False
     fig.canvas.footer_visible = False
@@ -83,7 +83,7 @@ def plt_cat_mc(X_train, y_train, model, classes):
     #make a model for plotting routines to call
     model_predict = lambda Xl: np.argmax(model.predict(Xl),axis=1)
 
-    fig,ax = plt.subplots(1,1, figsize=(3,3))
+    fig,ax = plt.subplots(1,1, figsize=(3,3)) # figsize = (width, height)
     fig.canvas.toolbar_visible = False
     fig.canvas.header_visible = False
     fig.canvas.footer_visible = False
@@ -140,7 +140,7 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
 def plt_layer_relu(X, Y, W1, b1, classes):
     nunits = (W1.shape[1])
     Y = Y.reshape(-1,)
-    fig,ax = plt.subplots(1,W1.shape[1], figsize=(7,2.5))
+    fig,ax = plt.subplots(1,W1.shape[1], figsize=(7,2.5)) # figsize = (width, height)
     fig.canvas.toolbar_visible = False
     fig.canvas.header_visible = False
     fig.canvas.footer_visible = False
@@ -159,7 +159,7 @@ def plt_layer_relu(X, Y, W1, b1, classes):
 def plt_output_layer_linear(X, Y, W, b, classes, x0_rng=None, x1_rng=None):
     nunits = (W.shape[1])
     Y = Y.reshape(-1,)
-    fig,ax = plt.subplots(2,int(nunits/2), figsize=(7,5))
+    fig,ax = plt.subplots(2,int(nunits/2), figsize=(7,5)) # figsize = (width, height)
     fig.canvas.toolbar_visible = False
     fig.canvas.header_visible = False
     fig.canvas.footer_visible = False

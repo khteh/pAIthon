@@ -3,8 +3,19 @@ from pathlib import Path
 from utils.GPU import InitializeGPU
 import numpy.lib.recfunctions as reconcile
 import matplotlib.pyplot as plt
-
-# https://numpy.org/doc/stable/user/basics.indexing.html
+"""
+https://numpy.org/doc/stable/user/basics.indexing.html
+Numpy main data type is ndarray
+shape (n,m,...) goes from outer-most (n) to inner-most dimension (m,...).
+numpy.random.seed() is used to create reproducible random numbers aligned with the seed.
+numpy.random.randint(a, size=(n,m)): Generates random numbers of range[0, a) and shape=(n,m)
+numpy.random.random((n,m)): Generates random numbers of range[0,1) of shape=(n,m)
+// : Floor division - Removes the decimals / round down
+numpy.var(): Variance = A measure of the average degree to which each number is diff to the mean. Higher variance: wider range of numbers
+numpy.std(): Standard deviation = A measure of how spread out a group of numbers is from the mean. = sqrt(numpy.var())
+.T: Transpose reverses the axes. Ex: (2,3,4) -> (4,3,2)
+numpy.argsort(): Return the indices which will sort the ndarray
+"""
 def oneDArray(n: int):
     print(f"=== {oneDArray.__name__} ===")
     one = numpy.array(range(n))
@@ -28,6 +39,9 @@ def twoDArray(n: int):
     print(f"Aggregates axis-0: {aggregate0}, axis-1: {aggregate1}")
 
 def multiDArray(i:int, j: int, k:int):
+    """
+    For 3-D, axis-0 is z-axis, axis-1 is rows, axis-2 is columns
+    """
     print(f"\n=== {multiDArray.__name__} ===")
     multi = numpy.zeros((i,j,k))
     print(f"{multi} shape: {multi.shape}\n")
@@ -38,7 +52,7 @@ def multiDArray(i:int, j: int, k:int):
     print(f"[0]: {multi[0]}, [1]: {multi[1]}")
     # [1,3] [axis-0 index-1, axis-1 index-3]
     print(f"[1,3] [axis-0 index-1, axis-1 index-3]: {multi[1,3]}")
-    # z-axis consists of 2 elements; y-axis consists of 3 elements; x-axis consists of 1 element:
+    # z-axis (axis-0) consists of 2 elements; y-axis (axis-1) consists of 3 elements; x-axis (axis-2) consists of 1 element:
     multi = numpy.array([[[1],[2],[3]], [[4],[5],[6]]])
     print(f"ndim: {multi.ndim}, size: {multi.size}, shape: {multi.shape}")
     # If the number of objects in the selection tuple is less than N, then : is assumed for any subsequent dimensions. For example:

@@ -200,7 +200,7 @@ class kMeansClustering():
         #Specifically, you replaced each pixel with the value of the centroid assigned to it.
         #Figure 3 shows a sample reconstruction. Even though the resulting image retains most of the characteristics of the original, you will also see some compression artifacts because of the fewer colors used.    
         # Display original image
-        fig, ax = plt.subplots(1,2, figsize=(16,16))
+        fig, ax = plt.subplots(1,2, figsize=(16,16)) # figsize = (width, height)
         plt.axis('off')
 
         ax[0].imshow(self._original_img)

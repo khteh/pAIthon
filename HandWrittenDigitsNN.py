@@ -39,7 +39,7 @@ class HandWrittenDigitsNN():
 
     def VisualizeData(self):
         m, n = self._X.shape
-        fig, axes = plt.subplots(8,8, figsize=(8,8))
+        fig, axes = plt.subplots(8,8, figsize=(8,8)) # figsize = (width, height)
         fig.tight_layout(pad=0.1)
         for i,ax in enumerate(axes.flat):
             # Select random indices
@@ -91,7 +91,7 @@ class HandWrittenDigitsNN():
         # The following code compares the predictions vs the labels for a random sample of 64 digits. This takes a moment to run.
         m, n = self._X.shape
 
-        fig, axes = plt.subplots(8,8, figsize=(8,8))
+        fig, axes = plt.subplots(8,8, figsize=(8,8)) # figsize = (width, height)
         fig.tight_layout(pad=0.1,rect=[0, 0.03, 1, 0.92]) #[left, bottom, right, top]
 
         for i,ax in enumerate(axes.flat):

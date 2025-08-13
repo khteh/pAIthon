@@ -103,6 +103,7 @@ Underfitting (High bias):
 - J(train) AND J(cv) are high
 - The model has a strong preconception of how the data  should fit into itself. For example, linear function, etc.
 - More data will NOT help.
+- Example: Training dataset performance: 64%, Test dataset performance: 47%
 
 Overfitting (High variance):
 - J(train) is low; J(cv) is high
@@ -110,12 +111,17 @@ Overfitting (High variance):
 - This is a side effect of minimizing loss of a model. If loss = 0, the model may only work on the specific data set.
 - One way to counter this problem is add other parameters to optimization. For example, consider complexity:
 - More data is likely to help.
+- One of the causes is data leakage - some of test data leak into training data.
+- Example: Training dataset performance: 93%, Test dataset performance: 99%
 
 High bias AND high variance:
 - J(train) is high; J(cv) higher than J(train)
 - Sometimes happen in NN. Less in linear regression.
 - Doesn't really happen for linear models applied to 1-D.
 - Underfit and overfit on parts of the data at the same time.
+
+Balanced (Goldilocks zone):
+- Example: Training dataset performance: 98%, Test dataset performance: 96%
 
 Cost(h) = Loss(h) + w*Complexity(h) : 'w' gives weight to the complexity
 
