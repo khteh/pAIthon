@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy, math
 import matplotlib.pyplot as plt
-from utils import *
+from utils import DecisionTreeViz
 
 class DecisionTree():
     _X_train = None
@@ -168,10 +168,13 @@ class DecisionTree():
         self.build_tree_recursive(left_indices, "Left", max_depth, current_depth+1)
         self.build_tree_recursive(right_indices, "Right", max_depth, current_depth+1)
 
+    def show_tree(self):
+        DecisionTreeViz.generate_tree_viz(self._root_indices, self._Y_train, self._tree)
+
 if __name__ == "__main__":
     root_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     dt = DecisionTree(root_indices, 0)
     feature = dt.get_best_split(root_indices)
     print(f"Best feature to split on: {feature}")
     dt.build_tree_recursive(root_indices, "Root", max_depth=2, current_depth=0)
-    DecisionTreeViz.generate_tree_viz()
+    dt.show_tree()

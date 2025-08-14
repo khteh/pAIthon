@@ -1,10 +1,14 @@
 from PIL import Image
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib import get_configdir
 from networkx.drawing.nx_pydot import graphviz_layout
 import numpy as np
 from matplotlib.widgets import Slider, Button
-plt.style.use('./deeplearning.mplstyle')
+print(f"configdif: {get_configdir()}")
+plt.style.reload_library()
+#print(f"style.available: {plt.style.available}")
+#plt.style.use('deeplearning.mplstyle')
 
 def generate_node_image(node_indices):
     image_paths = ["images/%d.png" % idx for idx in node_indices]
@@ -26,18 +30,15 @@ def generate_node_image(node_indices):
     return new_im
 
 def generate_split_viz(node_indices, left_indices, right_indices, feature):
-    
     G=nx.DiGraph()
-    
     indices_list = [node_indices, left_indices, right_indices]
+
     for idx, indices in enumerate(indices_list):
         G.add_node(idx,image= generate_node_image(indices))
 
     G.add_edge(0,1)
     G.add_edge(0,2)
-
     pos = graphviz_layout(G, prog="dot")
-
     fig=plt.figure()
     ax=plt.subplot(111)
     ax.set_aspect('equal')
@@ -45,7 +46,6 @@ def generate_split_viz(node_indices, left_indices, right_indices, feature):
     
     trans=ax.transData.transform
     trans2=fig.transFigure.inverted().transform
-
     feature_name = ["Ear Shape", "Face Shape", "Whiskers"][feature]
     ax_name = ["Splitting on %s" % feature_name , "Left: %s = 1" % feature_name, "Right: %s = 0" % feature_name]
     for idx, n in enumerate(G):
@@ -62,46 +62,35 @@ def generate_split_viz(node_indices, left_indices, right_indices, feature):
     plt.show()
 
 def generate_tree_viz(root_indices, y, tree):
-    
     G=nx.DiGraph()
-    
-    
     G.add_node(0,image= generate_node_image(root_indices))
     idx = 1
     root = 0
-    
     num_images = [len(root_indices)]
-    
     feature_name = ["Ear Shape", "Face Shape", "Whiskers"]
     y_name = ["Non Cat","Cat"]
-    
     decision_names = []
     leaf_names = []
-    
+
     for i, level in enumerate(tree):
         indices_list = level[:2]
         for indices in indices_list:
             G.add_node(idx,image= generate_node_image(indices))
             G.add_edge(root, idx)
-            
             # For visualization
             num_images.append(len(indices))
             idx += 1
             if i > 0:
                 leaf_names.append("Leaf node: %s" % y_name[max(y[indices])])
-            
         decision_names.append("Split on: %s" % feature_name[level[2]])
         root += 1
     
-    
     node_names = decision_names + leaf_names
     pos = graphviz_layout(G, prog="dot")
-
     fig=plt.figure(figsize=(14, 10))
     ax=plt.subplot(111)
     ax.set_aspect('equal')
     nx.draw_networkx_edges(G,pos,ax=ax, arrows=True, arrowsize=40)
-    
     trans=ax.transData.transform
     trans2=fig.transFigure.inverted().transform
 

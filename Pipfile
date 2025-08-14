@@ -22,6 +22,8 @@ spacy = "*"
 python-magic = "*"
 tf-keras = "*"
 tabulate = "*"
+networkx = "*"
+pydot = "*"
 
 [dev-packages]
 check50 = "*"

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2dd5e2905779445c4747295cc062835ed9c9d8c72af2a3e648ea968329656616"
+            "sha256": "09ef115e939372af6a49f81f8613469e366c4d0aa43f0ab88f9bb3f568ff65ee"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1043,6 +1043,15 @@
             "markers": "python_version >= '3.7'",
             "version": "==8.4.0"
         },
+        "networkx": {
+            "hashes": [
+                "sha256:0030d386a9a06dee3565298b4a734b68589749a544acbb6c412dc9e2489ec6ec",
+                "sha256:d4c6f9cf81f52d69230866796b82afbccdec3db7ae4fbd1b65ea750feed50037"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.11'",
+            "version": "==3.5"
+        },
         "nltk": {
             "hashes": [
                 "sha256:4fa26829c5b00715afe3061398a8989dc643b92ce7dd93fb4585a70930d168a1",
@@ -1745,6 +1754,15 @@
             ],
             "markers": "python_version >= '3.9'",
             "version": "==2.33.2"
+        },
+        "pydot": {
+            "hashes": [
+                "sha256:869c0efadd2708c0be1f916eb669f3d664ca684bc57ffb7ecc08e70d5e93fee6",
+                "sha256:c2148f681c4a33e08bf0e26a9e5f8e4099a82e0e2a068098f32ce86577364ad5"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.8'",
+            "version": "==4.0.1"
         },
         "pygame": {
             "hashes": [
