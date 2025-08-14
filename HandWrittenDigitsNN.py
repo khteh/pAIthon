@@ -1,10 +1,11 @@
 import numpy, logging, warnings
 import tensorflow as tf
+from pathlib import Path
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 import matplotlib.pyplot as plt
 from utils.GPU import InitializeGPU
-from autils import *
+from utils import *
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 tf.autograph.set_verbosity(0)
@@ -13,10 +14,15 @@ class HandWrittenDigitsNN():
     _X = None
     _Y = None
     _model: Sequential = None
-    def __init__(self):
+    _model_path: str = None
+    def __init__(self, path):
+        self._model_path = path
         InitializeGPU()
         self.PrepareData()
         self.VisualizeData()
+        if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
+            print(f"Using saved model {self._model_path}...")
+            self._model = tf.keras.models.load_model(self._model_path)
 
     def PrepareData(self):
         """
@@ -33,7 +39,7 @@ class HandWrittenDigitsNN():
         This is a subset of the MNIST handwritten digit dataset (http://yann.lecun.com/exdb/mnist/)</sub>
         """
         self._X = numpy.load("data/X.npy")
-        self._y = numpy.load("data/y.npy")
+        self._Y = numpy.load("data/y.npy")
         self._X = self._X[0:1000]
         self._Y = self._Y[0:1000]
 
@@ -58,7 +64,9 @@ class HandWrittenDigitsNN():
         fig.suptitle("Label", fontsize=16)
         plt.show()
 
-    def BuildModel(self):
+    def BuildModel(self, rebuild: bool = False):
+        if self._model and not rebuild:
+            return
         self._model = Sequential(
             [               
                 tf.keras.Input(shape=(400,)),    #specify input size
@@ -77,6 +85,9 @@ class HandWrittenDigitsNN():
             self._X, self._Y, epochs=20
         )        
         self._model.summary()
+        if self._model_path:
+            self._model.save(self._model_path)
+            print(f"Model saved to {self._model_path}.")
 
     def Predict(self):
         """
@@ -119,6 +130,6 @@ class HandWrittenDigitsNN():
         plt.show()
 
 if __name__ == "__main__":
-    handwritten = HandWrittenDigitsNN()
+    handwritten = HandWrittenDigitsNN("models/HandwrittenDigits.keras")
     handwritten.BuildModel()
     handwritten.Predict()
