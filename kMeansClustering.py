@@ -26,7 +26,7 @@ class kMeansClustering():
     def load_numpy(self, path: str):
         self._X = numpy.load(path)
 
-    def find_closest_centroids(self, centroids):
+    def _find_closest_centroids(self, centroids):
         """
         Computes the centroid memberships for every example
         
@@ -39,7 +39,7 @@ class kMeansClustering():
             output a one-dimensional array idx (which has the same number of elements as X) that holds the index of the closest centroid (a value in  {0,...,K-1}, where K is total number of centroids) to every training samples
         https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html
         """
-        print(f"\n=== {self.find_closest_centroids.__name__} ===")
+        print(f"\n=== {self._find_closest_centroids.__name__} ===")
         # Set K
         K = centroids.shape[0]
         idx = numpy.zeros(self._X.shape[0], dtype=int)
@@ -48,14 +48,14 @@ class kMeansClustering():
         for i in range(len(idx)):
             distance = numpy.inf
             for k in range(K):
-                norm_ij = numpy.linalg.norm(X[i] - centroids[k])
+                norm_ij = numpy.linalg.norm(self._X[i] - centroids[k])
                 if norm_ij < distance:
                     distance = norm_ij
                     idx[i] = k
         #print(f"idx: {idx}")
         return idx
 
-    def compute_centroids(self, idx, K):
+    def _compute_centroids(self, idx, K):
         """
         Returns the new centroids by computing the means of the 
         data points assigned to each centroid.
@@ -70,7 +70,7 @@ class kMeansClustering():
         Returns:
             centroids (ndarray): (K, n) New centroids computed
         """
-        print(f"\n=== {self.compute_centroids.__name__} ===")
+        print(f"\n=== {self._compute_centroids.__name__} ===")
         # Useful variables
         m, n = self._X.shape
         
@@ -107,7 +107,7 @@ class kMeansClustering():
             print("K-Means iteration %d/%d" % (i, self._max_iters-1))
             
             # For each example in X, assign it to the closest centroid
-            idx = self.find_closest_centroids(self._X, centroids)
+            idx = self._find_closest_centroids(centroids)
             
             # Optionally plot progress
             if plot_progress:
@@ -115,8 +115,8 @@ class kMeansClustering():
                 previous_centroids = centroids
                 
             # Given the memberships, compute new centroids
-            centroids = self.compute_centroids(self._X, idx, self._K)
-        plt.show() 
+            centroids = self._compute_centroids(idx, self._K)
+        plt.show()
         return centroids, idx
 
     def kMeans_init_centroids(self):
@@ -142,6 +142,8 @@ class kMeansClustering():
         print(f"\n=== {self.kMeansImageCompression.__name__} ===")
         # Load an image of a bird
         self._original_img = plt.imread(path)
+        # Visualizing the image
+        plt.imshow(self._original_img)
         # Shape of original_img is: (128, 128, 3)
         print("Shape of original_img is:", self._original_img.shape)
 
@@ -175,7 +177,7 @@ class kMeansClustering():
 
         # Compress the image
         """
-        After finding the top K=16 colors to represent the image, you can now assign each pixel position to its closest centroid using the find_closest_centroids function.
+        After finding the top K=16 colors to represent the image, you can now assign each pixel position to its closest centroid using the _find_closest_centroids function.
 
         This allows you to represent the original image using the centroid assignments of each pixel.
         Notice that you have significantly reduced the number of bits that are required to describe the image.
@@ -186,7 +188,7 @@ class kMeansClustering():
         The final number of bits used is therefore  16x24+128x128x4=65,920 bits, which corresponds to compressing the original image by about a factor of 6.    
         """
         # Find the closest centroid of each pixel
-        idx = self.find_closest_centroids(self._X, centroids)
+        idx = self._find_closest_centroids(centroids)
 
         # Replace each pixel with the color of the closest centroid
         # https://numpy.org/doc/stable/user/basics.indexing.html#advanced-indexing
@@ -200,6 +202,7 @@ class kMeansClustering():
         #Specifically, you replaced each pixel with the value of the centroid assigned to it.
         #Figure 3 shows a sample reconstruction. Even though the resulting image retains most of the characteristics of the original, you will also see some compression artifacts because of the fewer colors used.    
         # Display original image
+        print(f"Showing original and compressed images...")
         fig, ax = plt.subplots(1,2, figsize=(16,16)) # figsize = (width, height)
         plt.axis('off')
 
@@ -211,6 +214,7 @@ class kMeansClustering():
         ax[1].imshow(X_recovered)
         ax[1].set_title('Compressed with %d colours'%K)
         ax[1].set_axis_off()
+        plt.show()
 
 if __name__ == "__main__":
     # Set initial centroids
@@ -232,8 +236,8 @@ if __name__ == "__main__":
     # Set initial centroids by picking random examples from the dataset
     initial_centroids = kmeans.kMeans_init_centroids()
     # Run K-Means
-    centroids, idx = kmeans.run_kMeans(max_iters, plot_progress=True)
-    print("Shape of idx:", idx.shape)
+    centroids, idx = kmeans.run_kMeans(plot_progress=True)
+    print(f"Shape of idx: {idx.shape}")
 
     # Image compression
     K = 16
