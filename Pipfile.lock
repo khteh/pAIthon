@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "aec3d3596683d36cbf17ecafd7f128c01eb3f03245493a6d144c3da0e687667a"
+            "sha256": "2dd5e2905779445c4747295cc062835ed9c9d8c72af2a3e648ea968329656616"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -2269,6 +2269,15 @@
             ],
             "markers": "python_version < '3.14' and python_version >= '3.9'",
             "version": "==2.5.1"
+        },
+        "tabulate": {
+            "hashes": [
+                "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c",
+                "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f"
+            ],
+            "index": "pypi",
+            "markers": "python_version >= '3.7'",
+            "version": "==0.9.0"
         },
         "tensorboard": {
             "hashes": [

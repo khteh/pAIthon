@@ -21,6 +21,7 @@ tensorflow = {extras = ["and-cuda"], version = "*"}
 spacy = "*"
 python-magic = "*"
 tf-keras = "*"
+tabulate = "*"
 
 [dev-packages]
 check50 = "*"

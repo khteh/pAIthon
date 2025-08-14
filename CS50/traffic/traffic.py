@@ -1,8 +1,6 @@
-import cv2
+import cv2, os, sys
 import numpy as np
-import os
 from pathlib import Path
-import sys
 import tensorflow as tf
 from utils.GPU import InitializeGPU
 from tensorflow.keras import datasets, layers, models
@@ -19,7 +17,7 @@ IMG_HEIGHT = 30
 NUM_CATEGORIES = 43
 TEST_SIZE = 0.4
 
-def main():
+def main(model_path):
     # Check command-line arguments
     if len(sys.argv) not in [2, 3]:
         sys.exit("Usage: python traffic.py data_directory [model.keras]")
@@ -33,9 +31,9 @@ def main():
         np.array(images), np.array(labels), test_size=TEST_SIZE
     )
     saveModel: bool = False
-    if (len(sys.argv) == 3) and sys.argv[2] and Path(sys.argv[2]).exists() and Path(sys.argv[2]).is_file():
-        print(f"Using saved model {sys.argv[2]}...")
-        model = tf.keras.models.load_model(sys.argv[2])
+    if model_path and len(model_path) and Path(model_path).exists() and Path(model_path).is_file():
+        print(f"Using saved model {model_path}...")
+        model = tf.keras.models.load_model(model_path)
     else:
         # Get a compiled neural network
         model = get_model()
@@ -67,10 +65,10 @@ def main():
     #f_x = tf.nn.softmax(logits) # g(z)
 
     # Save model to file
-    if saveModel and len(sys.argv) == 3:
-        filename = sys.argv[2]
-        model.save(filename)
-        print(f"Model saved to {filename}.")
+    if saveModel:
+        #filename = sys.argv[2]
+        model.save(model_path)
+        print(f"Model saved to {model_path}.")
 
 def load_data(data_dir):
     """
@@ -158,4 +156,4 @@ __name__ stores the name of a module when it is loaded. It is set to either the 
 """
 if __name__ == "__main__":
     InitializeGPU()
-    main()
+    main("models/traffic_lights.keras")

@@ -1,19 +1,23 @@
-import csv, numpy
+import csv, numpy, pickle
 import numpy.ma as ma
 import pandas as pd
 import tensorflow as tf
-import pickle5 as pickle
+from pathlib import Path
 from collections import defaultdict
 from numpy import genfromtxt
 from tensorflow import keras
+from keras import saving
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.layers import Dense, Input, Layer
 from tensorflow.keras import layers, losses, optimizers, regularizers
 import tabulate
-from recsysNN_utils import *
 pd.set_option("display.precision", 1)
-
+@saving.register_keras_serializable()
+class L2_Normalize(Layer):
+    def call(self, x, axis):
+        return tf.linalg.l2_normalize(x, axis)
+    
 class ContentBasedFiltering():
     _item_train = None
     _item_test = None
@@ -23,38 +27,45 @@ class ContentBasedFiltering():
     _y_train = None
     _y_test = None
     _item_NN = None
+    _user_NN = None
     _item_features = None
     _user_features = None
     _item_vecs = None
     _movie_dict = None
     _user_to_genre = None
     _uvs = None
+    _ivs = None
     _u_s = None
     _i_s = None
     _model = None
+    _model_path = None
     _scalerUser: StandardScaler = None
     _scalerItem: StandardScaler = None
     _scalerTarget: MinMaxScaler = None
     def __init__(self, path):
+        self._model_path = path
+        if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
+            print(f"Using saved model {self._model_path}...")
+            self._model = tf.keras.models.load_model(self._model_path)
         self.PrepareData()
         self.ScaleData()
         self.SplitData()
 
     def _load_data(self):
         ''' called to load preprepared data for the lab '''
-        self._item_train = genfromtxt('./data/content_item_train.csv', delimiter=',')
-        self._user_train = genfromtxt('./data/content_user_train.csv', delimiter=',')
-        self._y_train    = genfromtxt('./data/content_y_train.csv', delimiter=',')
-        with open('./data/content_item_train_header.txt', newline='') as f:    #csv reader handles quoted strings better
+        self._item_train = genfromtxt('./data/ContentBasedFiltering/content_item_train.csv', delimiter=',')
+        self._user_train = genfromtxt('./data/ContentBasedFiltering/content_user_train.csv', delimiter=',')
+        self._y_train    = genfromtxt('./data/ContentBasedFiltering/content_y_train.csv', delimiter=',')
+        with open('./data/ContentBasedFiltering/content_item_train_header.txt', newline='') as f:    #csv reader handles quoted strings better
             self._item_features = list(csv.reader(f))[0]
-        with open('./data/content_user_train_header.txt', newline='') as f:
+        with open('./data/ContentBasedFiltering/content_user_train_header.txt', newline='') as f:
             self._user_features = list(csv.reader(f))[0]
-        self._item_vecs = genfromtxt('./data/content_item_vecs.csv', delimiter=',')
+        self._item_vecs = genfromtxt('./data/ContentBasedFiltering/content_item_vecs.csv', delimiter=',')
 
         self._movie_dict = defaultdict(dict)
         count = 0
-    #    with open('./data/movies.csv', newline='') as csvfile:
-        with open('./data/content_movie_list.csv', newline='') as csvfile:
+    #    with open('./data/ContentBasedFiltering/movies.csv', newline='') as csvfile:
+        with open('./data/ContentBasedFiltering/content_movie_list.csv', newline='') as csvfile:
             reader = csv.reader(csvfile, delimiter=',', quotechar='"')
             for line in reader:
                 if count == 0:
@@ -66,7 +77,7 @@ class ContentBasedFiltering():
                     self._movie_dict[movie_id]["title"] = line[1]
                     self._movie_dict[movie_id]["genres"] = line[2]
 
-        with open('./data/content_user_to_genre.pickle', 'rb') as f:
+        with open('./data/ContentBasedFiltering/content_user_to_genre.pickle', 'rb') as f:
             self._user_to_genre = pickle.load(f)
 
     def PrepareData(self):
@@ -75,7 +86,7 @@ class ContentBasedFiltering():
         self._num_user_features = self._user_train.shape[1] - 3  # remove userid, rating count and ave rating during training
         self._num_item_features = self._item_train.shape[1] - 1  # remove movie id at train time
         self._uvs = 3  # user genre vector start
-        ivs = 3  # item genre vector start
+        self._ivs = 3  # item genre vector start
         self._u_s = 3  # start of columns to use in training, user
         self._i_s = 1  # start of columns to use in training, items
         print(f"Number of training vectors: {len(self._item_train)}")
@@ -110,10 +121,12 @@ class ContentBasedFiltering():
         print(f"movie/item test data shape: {self._item_test.shape}")
         self._pprint_train(self._user_train, self._user_features, self._uvs, self._u_s, maxcount=5)
 
-    def BuildModels(self):
+    def BuildModels(self, rebuild: bool = False):
+        if self._model and not rebuild:
+            return
         num_outputs = 32
         tf.random.set_seed(1)
-        user_NN = tf.keras.models.Sequential([
+        self._user_NN = tf.keras.models.Sequential([
             Dense(256, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
             Dense(128, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
             Dense(num_outputs, activation = 'linear')
@@ -126,14 +139,14 @@ class ContentBasedFiltering():
         ])
 
         # create the user input and point to the base network
-        input_user = tf.keras.layers.Input(shape=(self._num_user_features))
-        vu = user_NN(input_user)
-        vu = tf.linalg.l2_normalize(vu, axis=1)
+        input_user = tf.keras.layers.Input(shape=(self._num_user_features,))
+        vu = self._user_NN(input_user)
+        vu = L2_Normalize()(vu, axis=1)
 
         # create the item input and point to the base network
-        input_item = tf.keras.layers.Input(shape=(self._num_item_features))
+        input_item = tf.keras.layers.Input(shape=(self._num_item_features,))
         vm = self._item_NN(input_item)
-        vm = tf.linalg.l2_normalize(vm, axis=1)
+        vm = L2_Normalize()(vm, axis=1)
 
         # compute the dot product of the two vectors vu and vm
         output = tf.keras.layers.Dot(axes=1)([vu, vm])
@@ -141,8 +154,13 @@ class ContentBasedFiltering():
         # specify the inputs and output of the model
         self._model = tf.keras.Model([input_user, input_item], output)
         self._model.summary()
+        self._train_model()
+        self._evaluate_model()
+        if self._model_path:
+            self._model.save(self._model_path)
+            print(f"Model saved to {self._model_path}.")
 
-    def TrainModel(self):
+    def _train_model(self):
         tf.random.set_seed(1)
         cost_fn = tf.keras.losses.MeanSquaredError()
         opt = keras.optimizers.Adam(learning_rate=0.01)
@@ -150,32 +168,16 @@ class ContentBasedFiltering():
         tf.random.set_seed(1)
         self._model.fit([self._user_train[:, self._u_s:], self._item_train[:, self._i_s:]], self._y_train, epochs=30)
 
-    def EvaluateModel(self):
+    def _evaluate_model(self):
         self._model.evaluate([self._user_test[:, self._u_s:], self._item_test[:, self._i_s:]], self._y_test)
 
-    def PredictNewUser(self):
-        new_user_id = 5000
-        new_rating_ave = 0.0
-        new_action = 0.0
-        new_adventure = 5.0
-        new_animation = 0.0
-        new_childrens = 0.0
-        new_comedy = 0.0
-        new_crime = 0.0
-        new_documentary = 0.0
-        new_drama = 0.0
-        new_fantasy = 5.0
-        new_horror = 0.0
-        new_mystery = 0.0
-        new_romance = 0.0
-        new_scifi = 0.0
-        new_thriller = 0.0
-        new_rating_count = 3
-        user_vec = numpy.array([[new_user_id, new_rating_count, new_rating_ave,
-                            new_action, new_adventure, new_animation, new_childrens,
-                            new_comedy, new_crime, new_documentary,
-                            new_drama, new_fantasy, new_horror, new_mystery,
-                            new_romance, new_scifi, new_thriller]])
+    def PredictNewUser(self, user):
+        print(f"\n=== {self.PredictNewUser.__name__} ===")
+        user_vec = numpy.array([[user["id"], user["rating_count"], user["rating_ave"],
+                            user["action"], user["adventure"], user["animation"], user["childrens"],
+                            user["comedy"], user["crime"], user["documentary"],
+                            user["drama"], user["fantasy"], user["horror"], user["mystery"],
+                            user["romance"], user["scifi"], user["thriller"]]])
         # generate and replicate the user vector to match the number movies in the data set.
         user_vecs = self._gen_user_vecs(user_vec,len(self._item_vecs))
 
@@ -194,12 +196,14 @@ class ContentBasedFiltering():
         sorted_ypu   = y_pu[sorted_index]
         sorted_items = self._item_vecs[sorted_index]  #using unscaled vectors for display
 
-        self._print_pred_movies(sorted_ypu, sorted_items, self._movie_dict, maxcount = 10)
+        result = self._print_pred_movies(sorted_ypu, sorted_items, self._movie_dict, maxcount = 10)
+        print(f"New user: {user["id"]}, recommendation:{result}")
 
     def PredictExistingUser(self):
+        print(f"\n=== {self.PredictExistingUser.__name__} ===")
         uid = 2 
         # form a set of user vectors. This is the same vector, transformed and repeated.
-        user_vecs, y_vecs = self._get_user_vecs(uid, self._user_train_unscaled, self._item_vecs, self._user_to_genre)
+        user_vecs, y_vecs = self._get_user_vecs(uid)
 
         # scale our user and item vectors
         suser_vecs = self._scalerUser.transform(user_vecs)
@@ -219,7 +223,8 @@ class ContentBasedFiltering():
         sorted_y     = y_vecs[sorted_index]
 
         #print sorted predictions for movies rated by the user
-        self._print_existing_user(sorted_ypu, sorted_y.reshape(-1,1), sorted_user, sorted_items, self._ivs, self._uvs, self._movie_dict, maxcount = 50)        
+        result = self._print_existing_user(sorted_ypu, sorted_y.reshape(-1,1), sorted_user, sorted_items, self._ivs, self._uvs, self._movie_dict, maxcount = 50)
+        print(f"Existing user: {uid}, recommendation:{result}")
 
     def FindSimilarItems(self):
         """
@@ -277,6 +282,38 @@ class ContentBasedFiltering():
             user predict maxtrix to match the size of item_vecs """
         user_vecs = numpy.tile(user_vec, (num_items, 1))
         return user_vecs
+
+    def _get_user_vecs(self, user_id):
+        """ 
+        given a user_id, return:
+            user train/predict matrix to match the size of item_vecs
+            y vector with ratings for all rated movies and 0 for others of size item_vecs 
+        self._user_train_unscaled, self._item_vecs, self._user_to_genre
+        """
+        if not user_id in self._user_to_genre:
+            print("error: unknown user id")
+            return None
+        else:
+            user_vec_found = False
+            for i in range(len(self._user_train_unscaled)):
+                if self._user_train_unscaled[i, 0] == user_id:
+                    user_vec = self._user_train_unscaled[i]
+                    user_vec_found = True
+                    break
+            if not user_vec_found:
+                print("error in get_user_vecs, did not find uid in user_train")
+            num_items = len(self._item_vecs)
+            user_vecs = numpy.tile(user_vec, (num_items, 1))
+
+            y = numpy.zeros(num_items)
+            for i in range(num_items):  # walk through movies in item_vecs and get the movies, see if user has rated them
+                movie_id = self._item_vecs[i, 0]
+                if movie_id in self._user_to_genre[user_id]['movies']:
+                    rating = self._user_to_genre[user_id]['movies'][movie_id]
+                else:
+                    rating = 0
+                y[i] = rating
+        return(user_vecs, y)
 
     def _print_pred_movies(self, y_p, item, movie_dict, maxcount=10):
         """ print results of prediction of a new user. inputs are expected to be in
@@ -360,3 +397,29 @@ class ContentBasedFiltering():
                     s = s[:mid] + " " + s[mid:]
             ofeatures.append(s)
         return ofeatures
+
+if __name__ == "__main__":
+    contentBasedFiltering = ContentBasedFiltering("models/ContentBasedFiltering.keras")
+    contentBasedFiltering.BuildModels()
+    contentBasedFiltering.PredictExistingUser()
+    user = {
+        "id": 1234,
+        "rating_ave": 0.0,
+        "action": 0.0,
+        "adventure": 5.0,
+        "animation": 0.0,
+        "childrens": 0.0,
+        "comedy": 0.0,
+        "crime": 0.0,
+        "documentary": 0.0,
+        "drama": 0.0,
+        "fantasy": 5.0,
+        "horror": 0.0,
+        "mystery": 0.0,
+        "romance": 0.0,
+        "scifi": 0.0,
+        "thriller": 0.0,
+        "rating_count": 3
+
+    }
+    contentBasedFiltering.PredictNewUser(user)
