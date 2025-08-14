@@ -50,9 +50,7 @@ class ClassificationModelEvaluationAndSelection():
     def __init__(self, path):
         InitializeGPU()
         self.PrepareData(path)
-        self._X_train_scaled = self.ScaleData(self._X_train)
-        self._X_cv_scaled = self.ScaleData(self._X_cv)
-        self._X_test_scaled = self.ScaleData(self._X_test)
+        self.ScaleData()
 
     def PrepareData(self, path: str):
         print(f"\n=== {self.PrepareData.__name__} ===")
@@ -84,6 +82,18 @@ class ClassificationModelEvaluationAndSelection():
         print(f"the shape of the cross validation set (target) is: {self._Y_cv.shape}\n")
         print(f"the shape of the test set (input) is: {self._X_test.shape}")
         print(f"the shape of the test set (target) is: {self._Y_test.shape}")
+
+    def ScaleData(self):
+        # Scale the features
+        print(f"\n=== {self.ScaleData.__name__} ===")
+
+        # Initialize the class
+        self._scaler = StandardScaler()
+
+        # Compute the mean and standard deviation of the training set then transform it
+        self._X_train_scaled = self._scaler.fit_transform(self._X_train)
+        self._X_cv_scaled = self._scaler.transform(self._X_cv)
+        self._X_test_scaled = self._scaler.transform(self._X_test)        
 
     def BuildModels(self):
         tf.random.set_seed(20)

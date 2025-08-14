@@ -19,10 +19,16 @@ def F1Score(truths, predictions):
     Picking the threshold is not something can be done with cross-validation. It's up to the business needs / use-case.
     To automatically decide on the best learning algorithm without having to manually select between Precision and Recall, choose the algorithm with the highest F1 score.
     F1 score = 2 * PR / (P + R) <= Harmonic mean. A mean calculation which pays attention to the lower value.
+
+    Reference: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html#sklearn.metrics.f1_score
     """
+    #print(f"\n=== {F1Score.__name__} ===")
+    #print(f"truths: {truths.shape}, predictions: {predictions.shape}")
+    assert truths.shape == predictions.shape
     tp = np.sum((predictions == 1) & (truths == 1))
     fp = np.sum((predictions == 1) & (truths == 0))
     fn = np.sum((predictions == 0) & (truths == 1))
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
-    return 2 * (precision * recall) / (precision + recall)
+    #print(f"tp: {tp}, fp: {fp}, tp + fp: {tp + fp}")
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+    return 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0

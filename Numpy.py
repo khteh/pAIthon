@@ -107,19 +107,19 @@ def Broadcasting():
     b = 5
     result = a + b
     assert result.shape == (3,1)
-    assert result == numpy.array([[6],[7],[8]])
+    assert (result == numpy.array([[6],[7],[8]])).all()
     result = a * b
     assert result.shape == (3,1)
-    assert result == numpy.array([[5],[10],[15]])
+    assert (result == numpy.array([[5],[10],[15]])).all()
     a = numpy.array([1,2,3,4]).reshape(-1,1) # (4,1)
     b = numpy.array([1,2,3]).reshape(1,-1) # (1,3)
     result = a + b
     assert result.shape == (4,3)
-    assert result == numpy.array([
+    assert (result == numpy.array([
                         [2, 3, 4],
                         [3, 4, 5],
                         [4, 5, 6],
-                        [5, 6, 7]])
+                        [5, 6, 7]])).all()
 
 def ConcatenateSliceObjects():
     """

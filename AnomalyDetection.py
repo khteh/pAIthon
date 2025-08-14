@@ -1,12 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import *
-from F1score import F1Score
+from F1Score import F1Score
 
 def estimate_gaussian(X): 
     """
-    Calculates mean and variance of all features 
-    in the dataset
+    Calculates mean and variance of all features in the dataset
     
     Args:
         X (ndarray): (m, n) Data matrix
@@ -15,11 +14,11 @@ def estimate_gaussian(X):
         mu (ndarray): (n,) Mean of all features
         var (ndarray): (n,) Variance of all features
     """
-
     m, n = X.shape
     #print(f"m: {m}, n: {n}")
     ### START CODE HERE ### 
     sum = np.sum(X, axis=0) # axis=0
+    #print(f"sum: {sum[:10]}, m: {m}")
     miu = sum / m
     #print(f"sum: {sum[:10]}, miu: {miu[:10]}")
     variances = np.zeros(n)
@@ -35,10 +34,9 @@ def estimate_gaussian(X):
 
 def select_threshold(y_val, p_val): 
     """
-    Finds the best threshold to use for selecting outliers 
-    based on the results from a validation set (p_val) 
+    Finds the best threshold to use for selecting outliers based on the results from a validation set (p_val) 
     and the ground truth (y_val)
-    
+
     Args:
         y_val (ndarray): Ground truth on validation set
         p_val (ndarray): Results on validation set
@@ -46,16 +44,14 @@ def select_threshold(y_val, p_val):
     Returns:
         epsilon (float): Threshold chosen 
         F1 (float):      F1 score by choosing epsilon as threshold
-    """ 
-
+    """
+    print(f"\n=== {select_threshold.__name__} ===")
+    #print(f"y_val: {y_val.shape}, p_val: {p_val.shape}")
     best_epsilon = 0
     best_F1 = 0
     F1 = 0
-    
     step_size = (max(p_val) - min(p_val)) / 1000
-    
     for epsilon in np.arange(min(p_val), max(p_val), step_size):
-    
         ### START CODE HERE ### 
         predictions = p_val < epsilon
         F1 = F1Score(y_val, predictions)
@@ -74,16 +70,12 @@ def multivariate_gaussian(X, mu, var):
     as the var values of the variances in each dimension (a diagonal
     covariance matrix
     """
-    
     k = len(mu)
-    
     if var.ndim == 1:
         var = np.diag(var)
-        
     X = X - mu
     p = (2* np.pi)**(-k/2) * np.linalg.det(var)**(-0.5) * \
         np.exp(-0.5 * np.sum(np.matmul(X, np.linalg.pinv(var)) * X, axis=1))
-    
     return p
 
 if __name__ == "__main__":
@@ -96,6 +88,7 @@ if __name__ == "__main__":
     # Returns the density of the multivariate normal
     # at each data point (row) of X_train
     p_val = multivariate_gaussian(X_val, mu, var)
+    #print(f"X_val: {X_val.shape}, var: {var.shape}, p_val: {p_val.shape}")
     epsilon, F1 = select_threshold(y_val, p_val)
     print('Best epsilon found using cross-validation: %e' % epsilon)
     print('Best F1 on Cross Validation Set: %f' % F1)
@@ -115,7 +108,7 @@ if __name__ == "__main__":
     p_high = multivariate_gaussian(X_train, mu_high, var_high)
 
     # Evaluate the probabilites for the cross validation set
-    p_val_high = multivariate_gaussian(X_train, mu_high, var_high)
+    p_val_high = multivariate_gaussian(X_val, mu_high, var_high)
 
     # Find the best threshold
     epsilon_high, F1_high = select_threshold(y_val, p_val_high)
