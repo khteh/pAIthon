@@ -98,7 +98,8 @@ class kMeansClustering():
         centroids = self._initial_centroids
         previous_centroids = centroids    
         idx = np.zeros(m)
-        plt.figure(figsize=(8, 6))
+        if plot_progress:
+            plt.figure(figsize=(8, 6))
 
         # Run K-Means
         for i in range(self._max_iters):
@@ -111,12 +112,14 @@ class kMeansClustering():
             
             # Optionally plot progress
             if plot_progress:
-                plot_progress_kMeans(self._X, centroids, previous_centroids, idx, self._K, i)
+                plot_progress_kMeans(self._X, centroids, previous_centroids, idx, i)
                 previous_centroids = centroids
                 
             # Given the memberships, compute new centroids
             centroids = self._compute_centroids(idx, self._K)
-        plt.show()
+        if plot_progress:
+            #print(f"plt.show() from run_kMeans()")
+            plt.show()
         return centroids, idx
 
     def kMeans_init_centroids(self):
@@ -143,7 +146,7 @@ class kMeansClustering():
         # Load an image of a bird
         self._original_img = plt.imread(path)
         # Visualizing the image
-        plt.imshow(self._original_img)
+        #plt.imshow(self._original_img)
         # Shape of original_img is: (128, 128, 3)
         print("Shape of original_img is:", self._original_img.shape)
 
@@ -171,7 +174,7 @@ class kMeansClustering():
         print(f"Shape of centroids: {centroids.shape}") # (K, 3)
         print("Closest centroid for the first five elements:", idx[:5])
         # Plot the colors of the image and mark the centroids
-        plot_kMeans_RGB(self._X, centroids, idx, self._K)
+        plot_kMeans_RGB(self._X, centroids)
         # Visualize the 16 colors selected
         show_centroid_colors(centroids)
 

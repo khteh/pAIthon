@@ -15,7 +15,7 @@ def plot_data_points(X, idx):
     # index assignments in idx have the same color
     plt.scatter(X[:, 0], X[:, 1], facecolors='none', edgecolors=c, linewidth=0.1, alpha=0.7)
 
-def plot_progress_kMeans(X, centroids, previous_centroids, idx, K, i):
+def plot_progress_kMeans(X, centroids, previous_centroids, idx, i):
     # Plot the examples
     plot_data_points(X, idx)
     
@@ -29,7 +29,7 @@ def plot_progress_kMeans(X, centroids, previous_centroids, idx, K, i):
     plt.title("Iteration number %d" %i)
 
 
-def plot_kMeans_RGB(X, centroids, idx, K):
+def plot_kMeans_RGB(X, centroids):
     # Plot the colors and centroids in a 3D space
     fig = plt.figure(figsize=(16, 16))
     ax = fig.add_subplot(221, projection='3d')
@@ -41,7 +41,6 @@ def plot_kMeans_RGB(X, centroids, idx, K):
     ax.yaxis.set_pane_color((0., 0., 0., .2))
     ax.set_title("Original colors and their color clusters' centroids")
     plt.show()
-
 
 def show_centroid_colors(centroids):
     palette = np.expand_dims(centroids, axis=0)
