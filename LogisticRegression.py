@@ -238,6 +238,7 @@ def single_variate_binary_classification(C: float = 1.0):
     print(classification_report(y, predictions))
 
 def single_variate_binary_classification_statsmodels():
+    print(f"\n=== {single_variate_binary_classification_statsmodels.__name__} ===")
     x = numpy.arange(10).reshape(-1, 1) # one column for each input, and the number of rows should be equal to the number of observations.
     y = numpy.array([0, 1, 0, 0, 1, 1, 1, 1, 1, 1])
     """
@@ -254,9 +255,10 @@ def single_variate_binary_classification_statsmodels():
     confusion = model.pred_table()
     print(f"confusion matrix: {confusion}")
     ShowConfusionMatrix(confusion)
-    print("summary:")
-    model.summary()
-    model.summary2()
+    print("summary():")
+    print(model.summary())
+    print("summary2():")
+    print(model.summary2())
 
 def HandwritingClassification():
     """

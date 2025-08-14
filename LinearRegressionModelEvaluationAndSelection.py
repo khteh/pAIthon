@@ -119,6 +119,7 @@ class LinearRegressionModelEvaluationAndSelection():
         Scikit-learn also has a built-in mean_squared_error() function that you can use. Take note though that as per the documentation, scikit-learn's implementation only divides by m and not 2*m, where m is the number of examples. As mentioned in Course 1 of this Specialization (cost function lectures), dividing by 2m is a convention we will follow but the calculations should still work whether or not you include it. Thus, to match the equation above, you can use the scikit-learn function then divide by 2 as shown below. We also included a for-loop implementation so you can check that it's equal.
         Another thing to take note: Since you trained the model on scaled values (i.e. using the z-score), you should also feed in the scaled training set instead of its raw values.    
         """
+        print(f"\n=== {self.EvaluateLinearModel.__name__} ===")
         # Firstly, evaluate model against test data set
         # Feed the scaled training set and get the predictions
         yhat = self._model.predict(self._X_train_scaled)
@@ -160,6 +161,7 @@ class LinearRegressionModelEvaluationAndSelection():
         Now that you have these values of the training and cross validation MSE from the linear model, you can try adding polynomial features to see if you can get a better performance. The code will mostly be the same but with a few extra preprocessing steps.
         First, you will generate the polynomial features from your training set. The code below demonstrates how to do this using the PolynomialFeatures class. It will create a new input feature which has the squared values of the input x (i.e. degree=2).    
         """
+        print(f"\n=== {self.AddPolynomialFeatures.__name__} ===")
         # Instantiate the class to make polynomial features
         poly = PolynomialFeatures(degree=degree, include_bias=include_bias)
 
@@ -190,6 +192,11 @@ class LinearRegressionModelEvaluationAndSelection():
         self._X_cv_scaled = self.ScaleData(X_cv_mapped)
 
     def ModelSelection(self, max_degree: int):
+        """
+        This function creates a loop which serves to automate the steps of model selection by iterating the polynomial degree from 1 to max_degree.
+        A plot is presented to show the MSEs vs. degree for both train and CV datasets
+        """
+        print(f"\n=== {self.ModelSelection.__name__} ===")
         # Initialize lists to save the errors, models, and feature transforms
         train_mses = []
         cv_mses = []
@@ -245,6 +252,7 @@ class LinearRegressionModelEvaluationAndSelection():
         """
         Obtain and publish the generalization error by computing the test set's MSE. As usual, you should transform this data the same way you did with the training and cross validation sets.
         """
+        print(f"\n=== {self.TestDataSetPerformance.__name__} ===")
         # Add polynomial features to the test set
         X_test_mapped = self._poly.transform(self._X_test)
 

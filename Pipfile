@@ -24,6 +24,7 @@ tf-keras = "*"
 tabulate = "*"
 networkx = "*"
 pydot = "*"
+statsmodels = "*"
 
 [dev-packages]
 check50 = "*"
