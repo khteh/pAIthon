@@ -327,7 +327,7 @@ def DataFrameTimeSeries():
     temp = [8.0,7.1,6.8,6.4,6.0,5.4,4.8,5.0,
                     9.1,12.8,15.3,19.1,21.2,22.1,22.4,23.1,
                     21.0,17.9,15.5,14.4,11.9,11.3,20.2,9.1]
-    dateRange = pd.date_range(start='2025--2-13 00:00:00', periods=24, freq='h')
+    dateRange = pd.date_range(start='2025-2-13 00:00:00', periods=24, freq='h')
     temperatures = pd.DataFrame(data={'Temp (C)': temp}, index=dateRange)
     print(temperatures)
     print("\nTemperatures from 09:00 to 18:00") #Slicing
