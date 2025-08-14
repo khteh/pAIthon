@@ -1,18 +1,6 @@
-import numpy as np
-
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
-plt.style.use('./deeplearning.mplstyle')
-
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
-
-from sklearn import datasets
-from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.preprocessing import StandardScaler, PolynomialFeatures
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
+#plt.style.use('./deeplearning.mplstyle')
 
 def plot_dataset(x, y, title):
     plt.rcParams["figure.figsize"] = (12,8)

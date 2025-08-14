@@ -44,9 +44,12 @@ class LinearRegressionModelEvaluationAndSelection():
 
     def __init__(self, path):
         self.PrepareData(path)
-        self.ScaleData(self._X_train)
-        self.ScaleData(self._X_cv)
-        self.ScaleData(self._X_test)
+        self._X_train_scaled = self.ScaleData(self._X_train)
+        # Plot the results
+        plot_dataset(x=self._X_train_scaled, y=self._Y_train, title="scaled input vs. target")
+        self._X_cv_scaled = self.ScaleData(self._X_cv)
+        self._X_test_scaled = self.ScaleData(self._X_test)
+        self._model = LinearRegression()
 
     def PrepareData(self, path: str):
         print(f"\n=== {self.PrepareData.__name__} ===")
@@ -95,23 +98,17 @@ class LinearRegressionModelEvaluationAndSelection():
         if not self._scaler:
             self._scaler = StandardScaler()
         scaled_data = self._scaler.fit_transform(data)
-        print(f"Computed mean of the data: {self._scaler.mean_.squeeze():.2f}")
-        print(f"Computed standard deviation of the data: {self._scaler.scale_.squeeze():.2f}")
-
-        # Plot the results
-        plot_dataset(x=data, y=self._Y_train, title="scaled input vs. target")
+        print(f"data: {data.shape}, scaled_data: {scaled_data.shape}, mean_: {self._scaler.mean_.shape} {self._scaler.mean_} {self._scaler.mean_.squeeze()}")
+        print(f"Computed mean of the data: {self._scaler.mean_.squeeze()}") # :.2f does NOT work for list, i.e, when mean_.shape is > 1
+        print(f"Computed standard deviation of the data: {self._scaler.scale_.squeeze()}")
         return scaled_data
 
-    def RegressionModel(self, X, y):
+    def TrainModel(self):
         """
         Create a linear or polynomial regression model using the input data
         """
-        # Initialize the class
-        if not self._model:
-            self._model = LinearRegression()
-
         # Train the model
-        self._model.fit(X, y)
+        self._model.fit(self._X_train_scaled, self._Y_train)
 
     def EvaluateLinearModel(self) -> float:
         """
@@ -127,7 +124,7 @@ class LinearRegressionModelEvaluationAndSelection():
         yhat = self._model.predict(self._X_train_scaled)
 
         # Use scikit-learn's utility function and divide by 2
-        print(f"training MSE (using sklearn function): {mean_squared_error(self._Y_train, yhat) / 2}")
+        print(f"Training MSE (using sklearn function): {mean_squared_error(self._Y_train, yhat) / 2}")
 
         # for-loop implementation
         total_squared_error = 0
@@ -137,7 +134,7 @@ class LinearRegressionModelEvaluationAndSelection():
             total_squared_error += squared_error_i
 
         self._train_mse = total_squared_error / (2*len(yhat))
-        print(f"training MSE (for-loop implementation): {self._train_mse.squeeze()}") # Remove axes of length one from mse.
+        print(f"tTaining MSE (for-loop implementation): {self._train_mse.squeeze()}") # Remove axes of length one from mse.
 
         # Secondly, evaluate model against cross-validation data set
         """
@@ -213,18 +210,19 @@ class LinearRegressionModelEvaluationAndSelection():
             X_train_mapped_scaled = standard_scaler.fit_transform(X_train_mapped)
             scalers.append(standard_scaler)
 
+            # Create and train the model
+            model = LinearRegression()
+            model.fit(X_train_mapped_scaled, self._Y_train)
+            models.append(model)
+
+            # Compute the training MSE
+            yhat = model.predict(X_train_mapped_scaled)
+            train_mses.append(mean_squared_error(self._Y_train, yhat) / 2)
+
             # Add polynomial features and scale the cross validation set
             X_cv_mapped = poly.transform(self._X_cv)
             X_cv_mapped_scaled = standard_scaler.transform(X_cv_mapped)
 
-            # Create and train the model
-            model = LinearRegression()
-            models.append(model)
-            
-            # Compute the training MSE
-            yhat = model.predict(X_train_mapped_scaled)
-            train_mses.append(mean_squared_error(self._Y_train, yhat) / 2)
-        
             # Compute the cross validation MSE
             yhat = model.predict(X_cv_mapped_scaled)
             cv_mses.append(mean_squared_error(self._Y_cv, yhat) / 2)
@@ -263,12 +261,15 @@ class LinearRegressionModelEvaluationAndSelection():
 
 if __name__ == "__main__":
     model = LinearRegressionModelEvaluationAndSelection('./data/data_w3_ex1.csv')
+    model.TrainModel()
     linear_mse = model.EvaluateLinearModel()
+
     model.AddPolynomialFeatures()
+    model.TrainModel()
     poly_mse = model.EvaluateLinearModel()
     if linear_mse <= poly_mse:
-        print("Linear model is the right choice")
+        print(">>> Linear model is the right choice <<<")
     else:
-        print("Polynomial model is the right choice")
+        print(">>> Polynomial model is the right choice <<<")
     model.ModelSelection(10)
     model.TestDataSetPerformance()
