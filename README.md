@@ -1,6 +1,6 @@
 # pAIthon
 
-Exploration of python language features and AI/ML.
+AI/ML exploration.
 
 ## Harvard Extended CS50 course works
 
