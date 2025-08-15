@@ -1,14 +1,10 @@
 from pathlib import Path
-import glob, imageio, matplotlib.pyplot as plt, os, PIL, time
+import matplotlib.pyplot as plt, os, PIL, time
 import numpy, math, tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
-import tensorflow_datasets as tfds
-import numpy.lib.recfunctions as reconcile
-import matplotlib.pyplot as plt
 from tensorflow.keras import layers, losses, optimizers, regularizers
-from utils.TensorModelPlot import PlotModelHistory
-from utiuls.GAN import restore_latest_checkpoint, TrainStep, Train, save_images, show_image, CreateGIF
+from utils.GAN import restore_latest_checkpoint, TrainStep, Train, save_images, show_image, CreateGIF
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 """
@@ -24,7 +20,7 @@ Generation of human faces with StyleGAN, as demonstrated on the website This Per
 Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative models.
 """
 class Discriminator():
-    _model = None
+    model = None
     _cross_entropy = None
     optimizer = None
     def __init__(self):
@@ -34,8 +30,9 @@ class Discriminator():
         L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
-        self._model = models.Sequential([
-                        layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same', input_shape=[28, 28, 1]),
+        self.model = models.Sequential([
+                        layers.Input(shape=(28, 28, 1)),
+                        layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same'),
                         layers.LeakyReLU(),
                         layers.Dropout(0.3),
 
@@ -45,7 +42,7 @@ class Discriminator():
 
                         layers.Flatten(),
                         # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
-                        layers.Dense(1), kernel_regularizer=regularizers.l2(0.01)]) # Linear activation ("pass-through") if not specified
+                        layers.Dense(1, kernel_regularizer=regularizers.l2(0.01))]) # Linear activation ("pass-through") if not specified
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -59,7 +56,7 @@ class Discriminator():
         self.optimizer = optimizers.Adam(1e-4)
 
     def run(self, input, training: bool):
-        return self._model(input, training)
+        return self.model(input, training=training)
 
     def loss(self, real, fake):
         """
@@ -71,11 +68,11 @@ class Discriminator():
     
     def UpdateParameters(self, tape, loss):
         # Use the gradient tape to automatically retrieve the gradients of the loss with respect to the trainable variables, dJ/dw.
-        gradients = tape.gradient(loss, self._model.trainable_variables)
+        gradients = tape.gradient(loss, self.model.trainable_variables)
         # Run one step of gradient descent by updating the value of the variable to minimize the loss
-        self.optimizer.apply_gradients(zip(gradients, self._model.trainable_variables))
+        self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 class Generator():
-    _model = None
+    model = None
     _cross_entropy = None
     optimizer = None
     def __init__(self):
@@ -86,25 +83,26 @@ class Generator():
         L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
         """
-        self._model = models.Sequential()
-        self._model.add(layers.Dense(7*7*256, use_bias=False, input_shape=(100,), name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
-        self._model.add(layers.BatchNormalization())
-        self._model.add(layers.LeakyReLU())
-        self._model.add(layers.Reshape((7, 7, 256)))
-        assert self._model.output_shape == (None, 7, 7, 256)  # Note: None is the batch size
+        self.model = models.Sequential()
+        self.model.add(layers.Input(shape=(100,)))
+        self.model.add(layers.Dense(7*7*256, use_bias=False, name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
+        self.model.add(layers.BatchNormalization())
+        self.model.add(layers.LeakyReLU())
+        self.model.add(layers.Reshape((7, 7, 256)))
+        assert self.model.output_shape == (None, 7, 7, 256)  # Note: None is the batch size
 
-        self._model.add(layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=False))
-        assert self._model.output_shape == (None, 7, 7, 128)
-        self._model.add(layers.BatchNormalization())
-        self._model.add(layers.LeakyReLU())
+        self.model.add(layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=False))
+        assert self.model.output_shape == (None, 7, 7, 128)
+        self.model.add(layers.BatchNormalization())
+        self.model.add(layers.LeakyReLU())
 
-        self._model.add(layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=False))
-        assert self._model.output_shape == (None, 14, 14, 64)
-        self._model.add(layers.BatchNormalization())
-        self._model.add(layers.LeakyReLU())
+        self.model.add(layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=False))
+        assert self.model.output_shape == (None, 14, 14, 64)
+        self.model.add(layers.BatchNormalization())
+        self.model.add(layers.LeakyReLU())
 
-        self._model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
-        assert self._model.output_shape == (None, 28, 28, 1)
+        self.model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
+        assert self.model.output_shape == (None, 28, 28, 1)
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -118,7 +116,7 @@ class Generator():
         self.optimizer = optimizers.Adam(1e-4)
 
     def run(self, input, training: bool):
-        return self._model(input, training)
+        return self.model(input, training=training)
 
     def loss(self, fake):
         """
@@ -128,9 +126,9 @@ class Generator():
 
     def UpdateParameters(self, tape, loss):
         # Use the gradient tape to automatically retrieve the gradients of the loss with respect to the trainable variables, dJ/dw.
-        gradients = tape.gradient(loss, self._model.trainable_variables)
+        gradients = tape.gradient(loss, self.model.trainable_variables)
         # Run one step of gradient descent by updating the value of the variable to minimize the loss
-        self.optimizer.apply_gradients(zip(gradients, self._model.trainable_variables))
+        self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
 def PrepareMNISTData(buffer_size: int, batch_size: int):
     """
@@ -168,5 +166,4 @@ if __name__ == "__main__":
     train_dataset = PrepareMNISTData(BUFFER_SIZE, BATCH_SIZE)
     checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 16, 4, 4)
     show_image(EPOCHS)
-    gif = os.path.join(checkpoint_dir, "mnist_gan.gif")
-    CreateGIF(gif)
+    CreateGIF("output/mnist_gan.gif")

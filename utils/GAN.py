@@ -33,8 +33,8 @@ def TrainStep(images, discriminator, generator, batch_size: int):
 def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch_size: int, num_examples_to_generate: int, image_rows: int, image_cols: int):
     checkpoint = tf.train.Checkpoint(generator_optimizer = generator.optimizer,
                                     discriminator_optimizer = discriminator.optimizer,
-                                    generator = generator,
-                                    discriminator = discriminator)
+                                    generator = generator.model,
+                                    discriminator = discriminator.model)
     noise_dim = 100
     #num_examples_to_generate = 16
     # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
@@ -50,7 +50,7 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
             TrainStep(image_batch, discriminator, generator, batch_size)
 
         # Produce images for the GIF as you go
-        save_images(generator.run(seed, training=False), f'image_at_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
+        save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'image_at_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
 
         # Save the model every 15 epochs
         if (epoch + 1) % 15 == 0:
@@ -59,10 +59,10 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
         print(f"Time for epoch {epoch + 1} is {time.time()-start}s")
 
     # Generate after the final epoch
-    save_images(generator.run(seed, training=False), f'image_at_epoch_{epoch:04d}.png', (image_rows, image_cols))
+    save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epochs}", f'image_at_epoch_{epochs:04d}.png', (image_rows, image_cols))
     return checkpoint
 
-def save_images(data, filename: str, dimension):
+def save_images(data, title:str, filename: str, dimension):
     # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
     #fig = plt.figure(figsize=(4, 4))
     fig = plt.figure(figsize=dimension)
@@ -70,23 +70,24 @@ def save_images(data, filename: str, dimension):
         plt.subplot(4, 4, i+1)
         plt.imshow(data[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
         plt.axis('off')
-    plt.legend()
-    plt.savefig(filename)
-    plt.show()
+    #plt.legend()
+    plt.suptitle(title)
+    plt.savefig(f"output/{filename}")
+    #plt.show()
+    plt.close()
 
 def show_image(epoch: int):
     # Display a single image using the epoch number
-  return PIL.Image.open(f'image_at_epoch_{epoch:04d}.png')
+  return PIL.Image.open(f'output/image_at_epoch_{epoch:04d}.png')
 
-def CreateGIF(filename: str):
+def CreateGIF(anim_file: str):
     """
     Use imageio to create an animated gif using the images saved during training.
     """
-    with imageio.get_writer(filename, mode='I') as writer:
-        filenames = glob.glob('image*.png')
+    with imageio.get_writer(anim_file, mode='I') as writer:
+        filenames = glob.glob('output/image_at_epoch_*.png')
         filenames = sorted(filenames)
         for f in filenames:
             image = imageio.imread(f)
             writer.append_data(image)
-        image = imageio.imread(f)
-        writer.append_data(image)
+    print(f"{anim_file} created successfully!")

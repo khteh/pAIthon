@@ -25,6 +25,7 @@ tabulate = "*"
 networkx = "*"
 pydot = "*"
 statsmodels = "*"
+imageio = "*"
 
 [dev-packages]
 check50 = "*"

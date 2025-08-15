@@ -5,3 +5,5 @@
 **/.env
 **/__pycache__/
 **/*.png
+**/output/
+**/training_checkpoints/
