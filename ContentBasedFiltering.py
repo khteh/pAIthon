@@ -387,6 +387,7 @@ class ContentBasedFiltering():
                         ])
         table = tabulate.tabulate(disp, tablefmt='html', headers="firstrow", floatfmt=flist, numalign='center')
         return table
+    
     def _split_str(self, ifeatures, smax):
         ''' split the feature name strings to tables fit '''
         ofeatures = []
