@@ -1,6 +1,6 @@
 # pAIthon
 
-AI/ML exploration.
+AI/ML exploration playground.
 
 ## Harvard Extended CS50 course works
 
