@@ -3,7 +3,7 @@ import statsmodels.api as sm
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from io import StringIO
-from CostIterationPlot import CostIterationPlot
+from utils.CostIterationPlot import CostIterationPlot
 """
 Goal: Build a mathematical model describing the effect of a set of input variables x1,x2,...,xn on another variable y.
 x1,x2,...,xn are called predictors, independent variables, features.
@@ -487,11 +487,6 @@ def MultiplePolynomialRegression():
     print(f"y:           {y}")
     print(f"predictions: {predictions}")
     print(f"residuals:   {residuals}")
-    x_new = numpy.range(10).reshape((-1, 2))
-    print("x_new:")
-    print(x_new)
-    predictions = model.predict(x_new)
-    print(f"predictions: {predictions}")
 
 def MultiplePolynomialRegressionStatsModels():
     """
@@ -499,10 +494,9 @@ def MultiplePolynomialRegressionStatsModels():
     statsmodels provides advanced statistical parameters of a model prediction result. Otherwise it is almost the same as scikit-learn.
     """
     print(f"\n=== {MultiplePolynomialRegressionStatsModels.__name__} ===")
-    x = [[0, 1], [5, 1], [15, 2], [25, 5], [35, 11], [45, 15], [55, 34], [60, 35]]
-    y = [4, 5, 20, 14, 32, 22, 38, 43]
-    x = numpy.array(x)
-    y = numpy.array(y)
+    x = numpy.array([[0, 1], [5, 1], [15, 2], [25, 5], [35, 11], [45, 15], [55, 34], [60, 35]])
+    y = numpy.array([4, 5, 20, 14, 32, 22, 38, 43])
+    print(f"x: {x.shape}, y: {y.shape}")
     """
     Add the column of ones to the inputs if you want statsmodels to calculate the intercept 𝑏₀. It doesn’t take 𝑏₀ into account by default.
     returns a new array with the column of ones inserted at the beginning.
@@ -511,18 +505,24 @@ def MultiplePolynomialRegressionStatsModels():
     print("x:")
     print(x)
     model = sm.OLS(y, x)   
-    result: statsmodels.regression.linear_model.RegressionResultsWrapper = model.fit()
-    print("results: ")
+    result = model.fit()
+    """
+    .rsquared holds 𝑅².
+    .rsquared_adj represents adjusted 𝑅²—that is, 𝑅² corrected according to the number of input features.
+    .params refers the array with 𝑏₀, 𝑏₁, and 𝑏₂.    
+    """
+    print(f"result.params: {result.params.shape}, x: {x.shape}")
     print(result.summary())
-    predictions = model.predict(x)
+    predictions = model.predict(result.params, x)
     residuals = y - predictions
     print(f"y:           {y}")
     print(f"predictions: {predictions}")
     print(f"residuals:   {residuals}")
-    x_new = numpy.range(10).reshape((-1, 2))
+    x_new = sm.add_constant(numpy.arange(10).reshape((-1, 2)))
     print("x_new:")
     print(x_new)
-    predictions = model.predict(x_new)
+    print(f"result.params: {result.params.shape}, x_new: {x_new.shape}")
+    predictions = model.predict(result.params, x_new)
     print(f"predictions: {predictions}")
 
 if __name__ == "__main__":
