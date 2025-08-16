@@ -1,11 +1,8 @@
 import numpy, warnings
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Input
-from tensorflow.keras import Sequential
-from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
+from tensorflow.keras import regularizers, Sequential
 from tensorflow.keras.activations import sigmoid
-from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.GPU import InitializeGPU
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -72,9 +69,9 @@ def LogisticNeuron():
     pos = Y_train == 1
     neg = Y_train == 0
 
-    fig,ax = plt.subplots(1,1,figsize=(4,3)) # figsize = (width, height)
+    fig, ax = plt.subplots(1,1,figsize=(4,3)) # figsize = (width, height)
     ax.scatter(X_train[pos], Y_train[pos], marker='x', s=80, c = 'red', label="y=1")
-    ax.scatter(X_train[neg], Y_train[neg], marker='o', s=100, label="y=0", facecolors='none', edgecolors="dlblue",lw=3)
+    ax.scatter(X_train[neg], Y_train[neg], marker='o', s=100, label="y=0", facecolors='none', edgecolors="darkblue",lw=3)
     ax.set_ylim(-0.08,1.1)
     ax.set_ylabel('y', fontsize=12)
     ax.set_xlabel('x', fontsize=12)
@@ -151,8 +148,8 @@ def Predict(X, W: list[float], b: list[float]):
     """
     assert len(W) == len(b)
     result = X
-    for i in range(len(W)):
-        result = DenseVectorized(result, W[i], b[i], sigmoid)
+    for layer in range(len(W)):
+        result = DenseVectorized(result, W[layer], b[layer], sigmoid)
     return result
 
 def DenseVectorizedTest():
@@ -165,6 +162,7 @@ def DenseVectorizedTest():
 
 if __name__ == "__main__":
     InitializeGPU()
+    LogisticNeuron()
     DenseVectorizedTest()
     X_tst = numpy.array([
         [200,13.9],  # postive example
