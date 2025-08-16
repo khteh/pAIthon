@@ -23,6 +23,18 @@ tf.get_logger().setLevel('ERROR')
 tf.autograph.set_verbosity(0)
 
 class NeuralNetworkModelEvaluationAndSelection():
+    """
+    TODO: Cross-validation MSE much higher than training MSE.
+    RESULTS:
+    Model 1: Training MSE: 73.51, CV MSE: 2754.62
+    Model 2: Training MSE: 406.08, CV MSE: 3696.82
+    Model 3: Training MSE: 408.54, CV MSE: 3720.65
+    the model with the lowest CV MSE is 0
+    1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 30ms/step
+    Training MSE: 73.51
+    Cross Validation MSE: 2754.62
+    Test MSE: 4314.66
+    """
     _X_train = None
     _X_train_scaled = None
 
@@ -94,6 +106,7 @@ class NeuralNetworkModelEvaluationAndSelection():
         """
 
     def ScaleData(self, data):
+        print(f"\n=== {self.ScaleData.__name__} ===")
         # Compute the mean and standard deviation of the training set then transform it
         if not self._scaler:
             self._scaler = StandardScaler()
@@ -102,7 +115,10 @@ class NeuralNetworkModelEvaluationAndSelection():
         print(f"Computed standard deviation of the data: {self._scaler.scale_.squeeze():.2f}")
 
         # Plot the results
-        plot_dataset(x=data, y=self._Y_train, title="scaled input vs. target")
+        print(f"data: {data.shape}, Y_train: {self._Y_train.shape}")
+        print(f"x: {data.shape}, y: {self._Y_train.shape}")
+        if data.shape == self._Y_train.shape:
+            plot_dataset(x=data, y=self._Y_train, title="scaled input vs. target")
         return scaled_data
     
     def BuildModels(self):
@@ -140,14 +156,15 @@ class NeuralNetworkModelEvaluationAndSelection():
         )
         self._models = [model_1, model_2, model_3]
 
-    def AddPolynomialFeatures(self, degree: int = 1, include_bias: bool = False):
+    def AddPolynomialFeatures(self, degree: int = 1, bias: bool = False):
         """
         This is optional because neural networks can learn non-linear relationships so you can opt to skip adding polynomial features. 
         The code is still included below in case you want to try later and see what effect it will have on your results. 
         The default degree is set to 1 to indicate that it will just use x_train, x_cv, and x_test as is (i.e. without any additional polynomial features).
         """
+        print(f"\n=== {self.AddPolynomialFeatures.__name__} ===")
         # Add polynomial features
-        self._poly = PolynomialFeatures(degree, include_bias=False)
+        self._poly = PolynomialFeatures(degree, include_bias = bias)
         X_train_mapped = self._poly.fit_transform(self._X_train)
         X_cv_mapped = self._poly.transform(self._X_cv)
         X_test_mapped = self._poly.transform(self._X_test)
@@ -155,7 +172,7 @@ class NeuralNetworkModelEvaluationAndSelection():
         self._X_cv_scaled = self.ScaleData(X_cv_mapped)
         self._X_test_scaled = self.ScaleData(X_test_mapped)
 
-    def ModelSelection(self):
+    def ModelSelection(self, rate: float):
         # Initialize lists that will contain the errors for each model
         nn_train_mses = []
         nn_cv_mses = []
@@ -169,7 +186,7 @@ class NeuralNetworkModelEvaluationAndSelection():
             # Setup the loss and optimizer
             model.compile(
                 loss='mse',
-                optimizer=tf.keras.optimizers.Adam(learning_rate=0.1),
+                optimizer=tf.keras.optimizers.Adam(learning_rate=rate),
             )
 
             print(f"Training {model.name}...")
@@ -200,9 +217,11 @@ class NeuralNetworkModelEvaluationAndSelection():
                 f"CV MSE: {nn_cv_mses[model_num]:.2f}"
                 )
         # Select the model with the lowest CV MSE
-        self._model = self._models[numpy.argmin(nn_cv_mses)]
-        self._train_mse = nn_train_mses[numpy.argmin(nn_cv_mses)]
-        self._cv_mse = nn_cv_mses[numpy.argmin(nn_cv_mses)]
+        model = numpy.argmin(nn_cv_mses)
+        print(f"The model with the lowest CV MSE is {model}")
+        self._model = self._models[model]
+        self._train_mse = nn_train_mses[model]
+        self._cv_mse = nn_cv_mses[model]
 
     def TestDataSetPerformance(self):
         """
@@ -216,7 +235,7 @@ class NeuralNetworkModelEvaluationAndSelection():
         print(f"Test MSE: {self._test_mse:.2f}")
 
 if __name__ == "__main__":
-    model = NeuralNetworkModelEvaluationAndSelection('./data/data_w3_ex1.csv')
-    model.AddPolynomialFeatures()
-    model.ModelSelection()
-    model.TestDataSetPerformance()
+    nn = NeuralNetworkModelEvaluationAndSelection('./data/data_w3_ex1.csv')
+    nn.AddPolynomialFeatures()
+    nn.ModelSelection(0.1)
+    nn.TestDataSetPerformance()
