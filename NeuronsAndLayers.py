@@ -6,6 +6,7 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.activations import sigmoid
 from tensorflow.keras import layers, losses, optimizers, regularizers
+from utils.GPU import InitializeGPU
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 X_train = numpy.array([[1.0], [2.0]], dtype=numpy.float32)           #(size in 1000 square feet)
@@ -129,7 +130,7 @@ def Dense(a_in, W, b):
         a_out[i] = sigmoid(z)
     return a_out
 
-def DenseVectorized(a_in, W, b, g):
+def DenseVectorized(a_in, W, b, g = sigmoid):
     """
     Demonstrate vectorized manual implementation of a single layer of neurons. #neurons determined by the W.shape[1], i.e., #columns in W
     W = numpy.array([
@@ -140,25 +141,31 @@ def DenseVectorized(a_in, W, b, g):
     w[1,2] = [-3, 4] layer 1, neuron 2
     w[1,3] = [5, -6] layer 1, neuron 3
     """
+    print(f"\n=== {DenseVectorized.__name__} ===")
+    print(f"a_in: {a_in.shape}, W: {W.shape}")
     return g(a_in @ W + b)
 
-def Sequential(x, parameters: list[tuple]):
+def Predict(X, W: list[float], b: list[float]):
     """
     Demonstrate manual implementation of a TF NN by strining together multiple dense layers
     """
-    result = x
-    for i in parameters:
-        result = DenseVectorized(result, i[0], i[1], sigmoid)
+    assert len(W) == len(b)
+    result = X
+    for i in range(len(W)):
+        result = DenseVectorized(result, W[i], b[i], sigmoid)
     return result
 
-def Predict(X, W1, b1, W2, b2):
-    m = X.shape[0]
-    predictions = numpy.zeros((m,1))
-    for i in range(m):
-        predictions[i,0] = Sequential(X[i], W1, b1, W2, b2)
-    return  predictions
+def DenseVectorizedTest():
+    print(f"\n=== {DenseVectorizedTest.__name__} ===")
+    X_tst = 0.1*numpy.arange(1,9,1).reshape(4,2) # (4 examples, 2 features)
+    W_tst = 0.1*numpy.arange(1,7,1).reshape(2,3) # (2 input features, 3 output features)
+    b_tst = 0.1*numpy.arange(1,4,1).reshape(1,3) # (1,3 features)
+    A_tst = DenseVectorized(X_tst, W_tst, b_tst, sigmoid)
+    print(f"A_tst: {A_tst}")
 
 if __name__ == "__main__":
+    InitializeGPU()
+    DenseVectorizedTest()
     X_tst = numpy.array([
         [200,13.9],  # postive example
         [200,17]])   # negative example
@@ -166,7 +173,9 @@ if __name__ == "__main__":
     W1_tmp = numpy.array( [[-8.93,  0.29, 12.9 ], [-0.1,  -7.32, 10.81]] )
     b1_tmp = numpy.array( [-9.82, -9.28,  0.96] )
     W2_tmp = numpy.array( [[-31.18], [-27.59], [-32.56]] )
-    b2_tmp = numpy.array( [15.41] )    
-    predictions = Predict(X_tstn, W1_tmp, b1_tmp, W2_tmp, b2_tmp)
-    categories = (predictions >= 0.5).astype(int)
-    print(f"Predictions: {predictions}, {categories}")
+    b2_tmp = numpy.array( [15.41] )
+    predictions = Predict(X_tstn, [W1_tmp, W2_tmp], [b1_tmp, b2_tmp])
+    print(f"X: {X_tst}")
+    print(f"Predictions: {predictions}")
+    assert predictions[0][0] >= 0.5
+    assert predictions[1][0] < 0.5
