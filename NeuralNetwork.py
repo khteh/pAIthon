@@ -2,10 +2,12 @@ import numpy
 import matplotlib.pyplot as plt
 from numpy.random import Generator, PCG64DXSM
 from Sigmoid import sigmoid
-# https://realpython.com/python-ai-neural-network/
 rng = Generator(PCG64DXSM())
 
 class NeuralNetwork():
+    """
+    https://realpython.com/python-ai-neural-network/
+    """
     _weights: numpy.array = None
     _bias = None
     _rate = None
@@ -30,6 +32,7 @@ class NeuralNetwork():
         """
         The power rule states that the derivative of xⁿ is nx⁽ⁿ⁻¹⁾. So the derivative of np.square(x) is 2 * x, and the derivative of x is 1.
         """
+        #print(f"self._weights: {self._weights}, input: {input}, target: {target}")
         l1 = numpy.dot(input, self._weights) + self._bias
         l2 = sigmoid(l1)
         prediction = l2
@@ -37,9 +40,11 @@ class NeuralNetwork():
         derror_dprediction = 2 * (prediction - target)
         dprediction_dl1 = self.SigmoidDerivative(l1)
         dl1_dbias = 1
-        dl1_dweights = (0 * self._weights) + (1 * input)
+        dl1_dweights = input #(0 * self._weights) + (1 * input)
         derror_bias = derror_dprediction * dprediction_dl1 * dl1_dbias
+        #print(f"{derror_dprediction} * {dprediction_dl1} * {dl1_dweights}")
         derror_weights = derror_dprediction * dprediction_dl1 * dl1_dweights
+        #print(f"derror_bias: {derror_bias}, derror_weights: {derror_weights}")
         return derror_bias, derror_weights
     
     def UpdateParameters(self, derror_dbias, derror_dweights):
@@ -50,12 +55,15 @@ class NeuralNetwork():
         cummulative_errors = []
         for i in range(iterations):
             # Randomly pick a data point
-            index = rng.randint(len(input_vectors))
-            input = input_vectors[index]
+            choice = rng.choice(input_vectors, 1)[0]
+            index = numpy.argwhere(input_vectors == choice)[0][0]
+            #print(f"input_vectors: {input_vectors}, rng.choice: {choice}")
             target = targets[index]
+            #print(f"index: {index}, target: {target}, targets: {targets}")
 
             # Compute gradients and update the weights
-            self.UpdateParameters(self.ComputeGradients(input, target))
+            derror_bias, derror_weights = self.ComputeGradients(choice, target)
+            self.UpdateParameters(derror_bias, derror_weights)
             if not i % 100:
                 cummulative_error = 0
                 # Loop through all the instances to measure the error
@@ -87,7 +95,7 @@ def Predict():
     plt.plot(training_error)
     plt.xlabel("Iterations")
     plt.ylabel("Error for all training instances")
-    plt.savefig("/tmp/cumulative_error.png")
+    plt.savefig("output/cumulative_error.png")
 
 if __name__ == "__main__":
     Predict()
