@@ -156,26 +156,33 @@ def PrepareMNISTData(buffer_size: int, batch_size: int):
     """
     (train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data() # train_images type: <class 'numpy.ndarray'>, shape: (60000, 28, 28)
     assert train_images.shape == (buffer_size, 28, 28)
-    train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
-    print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
-    #print(train_images[0])
+    #print(train_images[5])
+    train_images = train_images.reshape(buffer_size, 28, 28, 1).astype('float32') # This effectively transposes the pixel value (the last dimension) into a single column (28 rows)
+    assert train_images.shape == (buffer_size, 28, 28, 1)
+    #print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
+    #print(train_images[5])
+    #print(train_images[3][5])
     """
     The original tensors range from 0 to 1, and since the image backgrounds are black, most of the coefficients are equal to 0 when they’re represented using this range.
     Change the range of the coefficients to -1 to 1. With this transformation, the number of elements equal to 0 in the input samples is dramatically reduced, which helps in training the models.
     """
     train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
     # Batch and shuffle the data
-    return tf.data.Dataset.from_tensor_slices(train_images).shuffle(buffer_size).batch(batch_size)
+    return tf.data.Dataset.from_tensor_slices(train_images).shuffle(buffer_size).batch(batch_size) # BatchDataset
 
 if __name__ == "__main__":
     BUFFER_SIZE = 60000
     BATCH_SIZE = 256
     EPOCHS = 50
+    noise_dim = 100
+    noise = tf.random.normal([BATCH_SIZE, noise_dim])
+    seed = tf.random.normal([16, noise_dim])
+    print(f"noise: {noise.shape} ndim: {noise.ndim}, seed: {seed.shape} ndim: {seed.ndim}")
     discriminator = Discriminator()
     generator = Generator()
     checkpoint_dir = './training_checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "mnist_gan")
     train_dataset = PrepareMNISTData(BUFFER_SIZE, BATCH_SIZE)
-    checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 16, 4, 4)
-    show_image(EPOCHS)
-    CreateGIF("output/mnist_gan.gif")
+    #checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 16, 4, 4)
+    #show_image(EPOCHS)
+    #CreateGIF("output/mnist_gan.gif")

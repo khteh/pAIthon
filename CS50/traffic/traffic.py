@@ -7,6 +7,7 @@ from tensorflow.keras import datasets, layers, models
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import layers, losses, optimizers, regularizers
 """
+https://cs50.harvard.edu/ai/projects/5/traffic/
 https://www.tensorflow.org/install/pip
 $ pipenv run python -m traffic gtsrb/
 $ pipenv run check50 --local ai50/projects/2024/x/traffic
