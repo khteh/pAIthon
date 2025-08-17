@@ -11,7 +11,7 @@ plt.style.use('./data/deeplearning.mplstyle')
 RANDOM_STATE = 55 ## We will pass it to every sklearn call so we ensure reproducibility
 
 # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
-
+# XXX: https://github.com/dmlc/xgboost/issues/11636
 class HeartFailurePrediction():
     _X_train = None
     _X_val = None
