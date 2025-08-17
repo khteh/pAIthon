@@ -118,7 +118,7 @@ class Generator():
     def run(self, input, training: bool):
         return self.model(input, training=training)
 
-    def loss(self, fake):
+    def loss(self, real, fake):
         """
         The generator's loss quantifies how well it was able to trick the discriminator. Intuitively, if the generator is performing well, the discriminator will classify the fake images as real (or 1). Here, compare the discriminators decisions on the generated images to an array of 1s.
         """
@@ -134,6 +134,13 @@ def PrepareMNISTData(buffer_size: int, batch_size: int):
     """
     https://www.tensorflow.org/tutorials/generative/dcgan
     https://www.tensorflow.org/datasets/keras_example
+    https://keras.io/api/datasets/mnist/
+    This is a dataset of 60,000 28x28 grayscale images of the 10 digits, along with a test set of 10,000 images.
+    Training Images (x_train):
+        Shape: (60000, 28, 28)
+        Dimensions: 3 dimensions (number of samples, height, width)
+        Interpretation: 60,000 grayscale images, each 28 pixels by 28 pixels.
+
     Build a training pipeline
     Apply the following transformations:
 
@@ -145,8 +152,11 @@ def PrepareMNISTData(buffer_size: int, batch_size: int):
     - tf.data.Dataset.batch: Batch elements of the dataset after shuffling to get unique batches at each epoch.
     - tf.data.Dataset.prefetch: It is good practice to end the pipeline by prefetching for performance.    
     """
-    (train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data()
+    (train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data() # train_images type: <class 'numpy.ndarray'>, shape: (60000, 28, 28)
+    assert train_images.shape == (buffer_size, 28, 28)
     train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
+    print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
+    #print(train_images[0])
     """
     The original tensors range from 0 to 1, and since the image backgrounds are black, most of the coefficients are equal to 0 when they’re represented using this range.
     Change the range of the coefficients to -1 to 1. With this transformation, the number of elements equal to 0 in the input samples is dramatically reduced, which helps in training the models.

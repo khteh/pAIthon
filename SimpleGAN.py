@@ -3,12 +3,9 @@ import glob, imageio, matplotlib.pyplot as plt, os, PIL, time
 import numpy, math, tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
-import tensorflow_datasets as tfds
-import numpy.lib.recfunctions as reconcile
 import matplotlib.pyplot as plt
-from utiuls.GAN import restore_latest_checkpoint, TrainStep, Train, save_images, show_image, CreateGIF
+from utils.GAN import restore_latest_checkpoint, TrainStep, Train, save_images, show_image, CreateGIF
 from tensorflow.keras import layers, losses, optimizers, regularizers
-from utils.TensorModelPlot import PlotModelHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 """
@@ -21,9 +18,11 @@ GANs consist of two neural networks, one trained to generate data and the other 
 Style transfer using CycleGAN, which can perform a number of convincing style transformations on images
 Generation of human faces with StyleGAN, as demonstrated on the website This Person Does Not Exist
 Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative models.
+
+TODO: WIP to convert from PyTorch used in the tutorial to use Tensorflow
 """
 class Discriminator():
-    _model = None
+    model = None
     _cross_entropy = None
     optimizer = None
     def __init__(self):
@@ -50,7 +49,7 @@ class Discriminator():
         L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
-        self._model = models.Sequential([
+        self.model = models.Sequential([
             layers.Dense(256, input_shape=(2,), activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
             layers.Dropout(0.3),
             layers.Dense(128, input_shape=(256,), activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
@@ -71,7 +70,7 @@ class Discriminator():
         self.optimizer = optimizers.Adam(1e-4)
 
     def run(self, input, training: bool):
-        return self._model(input, training)
+        return self.model(input, training=training)
 
     def loss(self, real, fake):
         """
@@ -83,12 +82,12 @@ class Discriminator():
     
     def UpdateParameters(self, tape, loss):
         # Use the gradient tape to automatically retrieve the gradients of the loss with respect to the trainable variables, dJ/dw.
-        gradients = tape.gradient(loss, self._model.trainable_variables)
+        gradients = tape.gradient(loss, self.model.trainable_variables)
         # Run one step of gradient descent by updating the value of the variable to minimize the loss
-        self.optimizer.apply_gradients(zip(gradients, self._model.trainable_variables))
+        self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
    
 class Generator():
-    _model = None
+    model = None
     _cross_entropy = None
     optimizer = None
 
@@ -104,7 +103,8 @@ class Generator():
         L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
-        self._model = models.Sequential([
+        self.model = models.Sequential([
+            layers.Input(shape=(100,)),
             layers.Dense(16, input_shape=(2,), activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
             layers.Dense(32, input_shape=(16,), activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
             # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
@@ -122,7 +122,7 @@ class Generator():
         self.optimizer = optimizers.Adam(1e-4)
 
     def run(self, input, training: bool):
-        return self._model(input, training)
+        return self.model(input, training = training)
 
     def loss(self, real, fake):
         """
@@ -134,19 +134,34 @@ class Generator():
     
     def UpdateParameters(self, tape, loss):
         # Use the gradient tape to automatically retrieve the gradients of the loss with respect to the trainable variables, dJ/dw.
-        gradients = tape.gradient(loss, self._model.trainable_variables)
+        gradients = tape.gradient(loss, self.model.trainable_variables)
         # Run one step of gradient descent by updating the value of the variable to minimize the loss
-        self.optimizer.apply_gradients(zip(gradients, self._model.trainable_variables))
+        self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
     
 def PrepareTrainingData(size: int, buffer_size: int, batch_size: int):
-    data = numpy.zeroes((size, 2))
+    """
+    The training data is composed of pairs (x₁, x₂) so that x₂ consists of the value of the sine of x₁ for x₁ in the interval from 0 to 2π.
+    PyTorch’ll need a tensor of labels, which are required by PyTorch’s data loader. Since GANs make use of unsupervised learning techniques, the labels can be anything. They won’t be used, after all.
+    """
+    data = numpy.zeros((size, 2))
     data[:,0] = 2 * math.pi * rng.random(size)
-    data[:,1] = math.sin(data[:,0])
-    labels = numpy.zeroes(size)
-    train = [(data[i], labels[i]) for i in range(size)]
-    return tf.data.Dataset.from_tensor_slices(train).shuffle(buffer_size).batch(batch_size)
+    data[:,1] = numpy.sin(data[:,0])
+    data = data.reshape(data.shape[0], 2, 1).astype('float32')
+    #data = tf.convert_to_tensor(data, dtype=tf.float64)
+    print(f"data type: {type(data)}, shape: {data.shape}")
+    #plt.plot(data[:, 0], data[:, 1], ".")
+    #plt.show()
+    """
+    """
+    #labels = tf.zeros((size, 1), dtype=tf.float64)
+    #train = [(data[i], labels[i]) for i in range(size)] # [(array([ 4.74669199, -0.99941171]), np.float64(0.0)), ...]
+    #print(f"train: {train[:10]}")
+    #print(f"train data type: {type(train)}, shape: {train.shape}")
+    return tf.data.Dataset.from_tensor_slices(data).shuffle(buffer_size).batch(batch_size)
+    #return train
 
 if __name__ == "__main__":
+    SIZE = 1024
     BUFFER_SIZE = 1000
     BATCH_SIZE = 32
     EPOCHS = 300
@@ -154,7 +169,7 @@ if __name__ == "__main__":
     generator = Generator()
     checkpoint_dir = './training_checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
-    train_dataset = PrepareTrainingData(BUFFER_SIZE, BATCH_SIZE)
+    train_dataset = PrepareTrainingData(SIZE, BUFFER_SIZE, BATCH_SIZE)
     checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 1, 1, 1)
     show_image(EPOCHS)
     gif = os.path.join(checkpoint_dir, "mnist_gan.gif")

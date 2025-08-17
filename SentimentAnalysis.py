@@ -103,13 +103,11 @@ def CustomEmbeddingLayer(url, path):
             input_dim=len(tokenizer.word_index) + 1, 
             output_dim=100, 
         ),
-        """
-        Low accuracy and high loss. Add a global pooling layer after the embedding layer in the model in order to
-        consider the order of the values in the vectors. Inside the pooling layer, the max values in each dimension
-        will be selected. There are also average pooling layers. The max pooling layer will highlight large values.
-        L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
-        L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
-        """
+        # Low accuracy and high loss. Add a global pooling layer after the embedding layer in the model in order to
+        # consider the order of the values in the vectors. Inside the pooling layer, the max values in each dimension
+        # will be selected. There are also average pooling layers. The max pooling layer will highlight large values.
+        # L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+        # L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
         layers.Conv1D(128, 5, activation='relu'),
         layers.GlobalMaxPool1D(),
         #layers.Flatten(),

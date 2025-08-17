@@ -1,6 +1,9 @@
 import glob, imageio, matplotlib.pyplot as plt, os, PIL, time
 import numpy, math, tensorflow as tf
-
+"""
+https://www.tensorflow.org/tutorials/generative/dcgan
+This "common" function is only tested working with MNISTGAN.
+"""
 def restore_latest_checkpoint(checkpoint, checkpoint_dir):
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
@@ -23,7 +26,7 @@ def TrainStep(images, discriminator, generator, batch_size: int):
       real_output = discriminator.run(images, training=True)
       fake_output = discriminator.run(generated_images, training=True)
 
-      gen_loss = generator.loss(fake_output)
+      gen_loss = generator.loss(real_output, fake_output)
       disc_loss = discriminator.loss(real_output, fake_output)
 
     generator.UpdateParameters(gen_tape, gen_loss)
