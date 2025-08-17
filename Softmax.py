@@ -3,9 +3,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-from IPython.display import display, Markdown, Latex
 from sklearn.datasets import make_blobs
-from matplotlib.widgets import Slider
 from tensorflow.keras import layers, losses, optimizers, regularizers
 """
 SparseCategorialCrossentropy or CategoricalCrossEntropy
@@ -50,8 +48,9 @@ def NNSoftmax(X_train, y_train):
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
     """
+    print(f"\n=== {NNSoftmax.__name__} ===")
     model = Sequential(
-        [ 
+        [
             Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
             Dense(15, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)),
             Dense(4, activation = 'softmax')    # < softmax activation here
@@ -67,8 +66,11 @@ def NNSoftmax(X_train, y_train):
     )
     # Because the softmax is integrated into the output layer, the output is a vector of probabilities.
     p_nonpreferred = model.predict(X_train)
-    print(p_nonpreferred.head())
+    print(f"two example output vectors:\n {p_nonpreferred[:2]}")
     print("largest value", numpy.max(p_nonpreferred), "smallest value", numpy.min(p_nonpreferred))
+    # To select the most likely category, the softmax is not required. One can find the index of the largest output using np.argmax().
+    for i in range(5):
+        print( f"{p_nonpreferred[i]}, category: {numpy.argmax(p_nonpreferred[i])}")
 
 def NNStableSoftmax(X_train, y_train):
     """
@@ -77,6 +79,7 @@ def NNStableSoftmax(X_train, y_train):
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
     """
+    print(f"\n=== {NNStableSoftmax.__name__} ===")
     preferred_model = Sequential(
         [ 
             Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.

@@ -1,4 +1,4 @@
-import numpy, math
+import numpy, math, tensorflow as tf
 
 def sigmoid(z):
     """
@@ -31,4 +31,9 @@ def sigmoid(z):
                     g[r][c] = 1 / (1 + math.exp(-z[r][c]))
             #print(f"z: {i}, result: {result}, g: {g}")
     #return numpy.array(g)
-    return g    
+    return g
+
+if __name__ == "__main__":
+    assert tf.math.sigmoid(123.456) == sigmoid(123.456)
+    input = numpy.array([123.456, 789.012])
+    assert tf.math.sigmoid(input).numpy().all() == sigmoid(input).all()
