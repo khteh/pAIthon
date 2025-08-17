@@ -20,16 +20,15 @@ Generation of human faces with StyleGAN, as demonstrated on the website This Per
 Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative models.
 """
 class Discriminator():
+    """
+    The discriminator is a CNN-based image classifier. It classifies the generated images as real or fake. The model will be trained to output positive values for real images, and negative values for fake images.
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
+    """
     model = None
     _cross_entropy = None
     optimizer = None
     def __init__(self):
-        """
-        The Discriminator
-        The discriminator is a CNN-based image classifier.
-        L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
-        L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
-        """
         self.model = models.Sequential([
                         layers.Input(shape=(28, 28, 1)),
                         layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same'),
@@ -72,17 +71,17 @@ class Discriminator():
         # Run one step of gradient descent by updating the value of the variable to minimize the loss
         self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 class Generator():
+    """
+    The generator will generate handwritten digits resembling the MNIST data.
+    The generator uses tf.keras.layers.Conv2DTranspose (upsampling) layers to produce an image from a seed (random noise). Start with a Dense layer that takes this seed as input, then upsample several times until you reach the desired image size of 28x28x1. 
+    Notice the tf.keras.layers.LeakyReLU activation for each layer, except the output layer which uses tanh since the output coefficients should be in the interval from -1 to 1
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
+    """
     model = None
     _cross_entropy = None
     optimizer = None
     def __init__(self):
-        """
-        The Generator
-        The generator uses tf.keras.layers.Conv2DTranspose (upsampling) layers to produce an image from a seed (random noise). Start with a Dense layer that takes this seed as input, then upsample several times until you reach the desired image size of 28x28x1. 
-        Notice the tf.keras.layers.LeakyReLU activation for each layer, except the output layer which uses tanh since the output coefficients should be in the interval from -1 to 1
-        L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
-        L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
-        """
         self.model = models.Sequential()
         self.model.add(layers.Input(shape=(100,)))
         self.model.add(layers.Dense(7*7*256, use_bias=False, name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
@@ -116,6 +115,9 @@ class Generator():
         self.optimizer = optimizers.Adam(1e-4)
 
     def run(self, input, training: bool):
+        """
+        Upsamples the input.
+        """
         return self.model(input, training=training)
 
     def loss(self, real, fake):
@@ -150,7 +152,7 @@ def PrepareMNISTData(buffer_size: int, batch_size: int):
     - tf.data.Dataset.shuffle: For true randomness, set the shuffle buffer to the full dataset size.
       Note: For large datasets that can't fit in memory, use buffer_size=1000 if your system allows it.
     - tf.data.Dataset.batch: Batch elements of the dataset after shuffling to get unique batches at each epoch.
-    - tf.data.Dataset.prefetch: It is good practice to end the pipeline by prefetching for performance.    
+    - tf.data.Dataset.prefetch: It is good practice to end the pipeline by prefetching for performance.
     """
     (train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data() # train_images type: <class 'numpy.ndarray'>, shape: (60000, 28, 28)
     assert train_images.shape == (buffer_size, 28, 28)

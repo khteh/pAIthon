@@ -19,7 +19,7 @@ Style transfer using CycleGAN, which can perform a number of convincing style tr
 Generation of human faces with StyleGAN, as demonstrated on the website This Person Does Not Exist
 Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative models.
 
-TODO: WIP to convert from PyTorch used in the tutorial to use Tensorflow
+This module tries to convert from PyTorch used in the tutorial to use Tensorflow. However, this will NOT work because it needs dataset of sine wave images to train the Discriminator like how it works in MNISTGAN.py. So, the work in this module is ABORTED.
 """
 class Discriminator():
     model = None
@@ -219,8 +219,8 @@ def PrepareTrainingData(size: int, buffer_size: int, batch_size: int):
     data = data.reshape(data.shape[0], 2, 1).astype('float32')
     #data = tf.convert_to_tensor(data, dtype=tf.float64)
     print(f"data type: {type(data)}, shape: {data.shape}")
-    #plt.plot(data[:, 0], data[:, 1], ".")
-    #plt.show()
+    plt.plot(data[:, 0], data[:, 1], ".")
+    plt.show()
     #labels = tf.zeros((size, 1), dtype=tf.float64)
     #train = [(data[i], labels[i]) for i in range(size)] # [(array([ 4.74669199, -0.99941171]), np.float64(0.0)), ...]
     #print(f"train: {train[:10]}")
