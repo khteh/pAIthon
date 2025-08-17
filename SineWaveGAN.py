@@ -4,7 +4,7 @@ import numpy, math, tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
 import matplotlib.pyplot as plt
-from utils.GAN import restore_latest_checkpoint, TrainStep, Train, save_images, show_image, CreateGIF
+from utils.GAN import show_image, CreateGIF
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
@@ -105,10 +105,10 @@ class Generator():
         """
         self.model = models.Sequential([
             layers.Input(shape=(100,)),
-            layers.Dense(16, input_shape=(2,), activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
-            layers.Dense(32, input_shape=(16,), activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
+            layers.Dense(16, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+            layers.Dense(32, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
             # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
-            layers.Dense(2, input_shape=(32,), name="L3")]) # Linear activation ("pass-through") if not specified
+            layers.Dense(2, name="L3")]) # Linear activation ("pass-through") if not specified
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -137,7 +137,77 @@ class Generator():
         gradients = tape.gradient(loss, self.model.trainable_variables)
         # Run one step of gradient descent by updating the value of the variable to minimize the loss
         self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
-    
+
+# Notice the use of `tf.function`
+# This annotation causes the function to be "compiled".
+# @tf.function decorator to increase performance. Without this decorator our training will take twice as long. If you would like to know more about how to increase performance with @tf.function take a look at the TensorFlow documentation.
+@tf.function
+def TrainStep(images, discriminator, generator, batch_size: int):
+    noise_dim = 100
+    """
+    The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
+    The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
+    """
+    noise = tf.random.normal([batch_size, noise_dim])
+    # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
+    # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
+    with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+      generated_images = generator.run(noise, training=True)
+
+      real_output = discriminator.run(images, training=True)
+      fake_output = discriminator.run(generated_images, training=True)
+
+      gen_loss = generator.loss(real_output, fake_output)
+      disc_loss = discriminator.loss(real_output, fake_output)
+
+    generator.UpdateParameters(gen_tape, gen_loss)
+    # Use the GradientTape to calculate the gradients of the cost with respect to the parameter w: dJ/dw.
+    discriminator.UpdateParameters(disc_tape, disc_loss)
+
+def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch_size: int, num_examples_to_generate: int, image_rows: int, image_cols: int):
+    checkpoint = tf.train.Checkpoint(generator_optimizer = generator.optimizer,
+                                    discriminator_optimizer = discriminator.optimizer,
+                                    generator = generator.model,
+                                    discriminator = discriminator.model)
+    noise_dim = 100
+    #num_examples_to_generate = 16
+    # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
+    seed = tf.random.normal([num_examples_to_generate, noise_dim])
+    """
+    The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
+    The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
+    """
+    for epoch in range(epochs):
+        start = time.time()
+
+        for image_batch in dataset:
+            TrainStep(image_batch, discriminator, generator, batch_size)
+
+        # Produce images for the GIF as you go
+        save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'image_at_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
+
+        # Save the model every 15 epochs
+        if (epoch + 1) % 15 == 0:
+            checkpoint.save(file_prefix = checkpoint_path)
+
+        print(f"Time for epoch {epoch + 1} is {time.time()-start}s")
+
+    # Generate after the final epoch
+    save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epochs}", f'image_at_epoch_{epochs:04d}.png', (image_rows, image_cols))
+    return checkpoint
+
+def save_images(data, title:str, filename: str, dimension):
+    # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
+    #fig = plt.figure(figsize=(4, 4))
+    fig, ax = plt.subplots(1,1)
+    plt.imshow(data[:, :])
+    plt.axis('off')
+    #plt.legend()
+    plt.suptitle(title)
+    plt.savefig(f"output/{filename}")
+    #plt.show()
+    plt.close()
+
 def PrepareTrainingData(size: int, buffer_size: int, batch_size: int):
     """
     The training data is composed of pairs (x₁, x₂) so that x₂ consists of the value of the sine of x₁ for x₁ in the interval from 0 to 2π.
@@ -151,8 +221,6 @@ def PrepareTrainingData(size: int, buffer_size: int, batch_size: int):
     print(f"data type: {type(data)}, shape: {data.shape}")
     #plt.plot(data[:, 0], data[:, 1], ".")
     #plt.show()
-    """
-    """
     #labels = tf.zeros((size, 1), dtype=tf.float64)
     #train = [(data[i], labels[i]) for i in range(size)] # [(array([ 4.74669199, -0.99941171]), np.float64(0.0)), ...]
     #print(f"train: {train[:10]}")
@@ -172,5 +240,4 @@ if __name__ == "__main__":
     train_dataset = PrepareTrainingData(SIZE, BUFFER_SIZE, BATCH_SIZE)
     checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 1, 1, 1)
     show_image(EPOCHS)
-    gif = os.path.join(checkpoint_dir, "mnist_gan.gif")
-    CreateGIF(gif)
+    CreateGIF("output/simple_gan.gif")
