@@ -50,15 +50,15 @@ def OneHotEncoding():
     Tokenizer creates a vector which has the size of the input text/sentence.
     """
     print(f"\n=== {OneHotEncoding.__name__} ===")
-    cities = ['London', 'Berlin', 'Berlin', 'New York', 'London'] # 3 unique words.
-    encoder = LabelEncoder()
-    city_labels = encoder.fit_transform(cities)
-    print(f"Word labels (LabelEncoder): {city_labels}")
-    encoder = OneHotEncoder(sparse_output=False)
-    city_labels = city_labels.reshape((-1,1)) # single column with every word taking a row
-    print(f"Word labels: {city_labels}")
-    city_labels = encoder.fit_transform(city_labels)
-    print(f"Word labels (OneHotEncoder): {city_labels}") # Each vector has the same length as the voacbulary (unique wordss)
+    cities = numpy.array(['London', 'Berlin', 'Berlin', 'New York', 'London']) # 3 unique words.
+    label_encoder = LabelEncoder()
+    result = label_encoder.fit_transform(cities)
+    print(f"Word labels (LabelEncoder): {result}")
+
+    onehot_encoder = OneHotEncoder(sparse_output=False) # Turn categories (non-numerical) into numbers
+    cities1 = cities.reshape((-1,1))
+    result = onehot_encoder.fit_transform(cities1)
+    print(f"Word labels (OneHotEncoder): {result}")
 
 def CustomEmbeddingLayer(url, path):
     print(f"\n=== {CustomEmbeddingLayer.__name__} ===")
