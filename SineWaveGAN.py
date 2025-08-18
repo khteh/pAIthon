@@ -50,11 +50,12 @@ class Discriminator():
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
         self.model = models.Sequential([
-            layers.Dense(256, input_shape=(2,), activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+            layers.Input(shape=(2,)),
+            layers.Dense(256, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
             layers.Dropout(0.3),
-            layers.Dense(128, input_shape=(256,), activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
+            layers.Dense(128, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
             layers.Dropout(0.3),
-            layers.Dense(64, input_shape=(128,), activation='relu', name="L3", kernel_regularizer=regularizers.l2(0.01)),
+            layers.Dense(64, activation='relu', name="L3", kernel_regularizer=regularizers.l2(0.01)),
             layers.Dropout(0.3),
             layers.Dense(1, input_shape=(64,), activation='linear', name="L4")]) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
         """
@@ -109,6 +110,8 @@ class Generator():
             layers.Dense(32, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
             # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
             layers.Dense(2, name="L3")]) # Linear activation ("pass-through") if not specified
+        #print(f"Generator output shape: {self.model.output_shape}")
+        assert self.model.output_shape == (None, 2)
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -184,7 +187,7 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
             TrainStep(image_batch, discriminator, generator, batch_size)
 
         # Produce images for the GIF as you go
-        save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'image_at_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
+        save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'sinewave_gan_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
 
         # Save the model every 15 epochs
         if (epoch + 1) % 15 == 0:
@@ -193,14 +196,16 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
         print(f"Time for epoch {epoch + 1} is {time.time()-start}s")
 
     # Generate after the final epoch
-    save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epochs}", f'image_at_epoch_{epochs:04d}.png', (image_rows, image_cols))
+    save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epochs}", f'sinewave_gan_epoch_{epochs:04d}.png', (image_rows, image_cols))
     return checkpoint
 
 def save_images(data, title:str, filename: str, dimension):
     # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
     #fig = plt.figure(figsize=(4, 4))
+    #print(f"save_images data.shape: {data.shape}, ndim: {data.ndim}")
     fig, ax = plt.subplots(1,1)
-    plt.imshow(data[:, :])
+    #plt.imshow(data[:, :]) # data.shape: (1, 2), ndim: 2 XXX: Should be (1024, 2)
+    plt.plot(data[:, 0], data[:, 1], ".")
     plt.axis('off')
     #plt.legend()
     plt.suptitle(title)
@@ -208,15 +213,15 @@ def save_images(data, title:str, filename: str, dimension):
     #plt.show()
     plt.close()
 
-def PrepareTrainingData(size: int, buffer_size: int, batch_size: int):
+def PrepareTrainingData(buffer_size: int, batch_size: int):
     """
     The training data is composed of pairs (x₁, x₂) so that x₂ consists of the value of the sine of x₁ for x₁ in the interval from 0 to 2π.
     PyTorch’ll need a tensor of labels, which are required by PyTorch’s data loader. Since GANs make use of unsupervised learning techniques, the labels can be anything. They won’t be used, after all.
     """
-    data = numpy.zeros((size, 2))
-    data[:,0] = 2 * math.pi * rng.random(size)
+    data = numpy.zeros((buffer_size, 2))
+    data[:,0] = 2 * math.pi * rng.random(buffer_size)
     data[:,1] = numpy.sin(data[:,0])
-    data = data.reshape(data.shape[0], 2, 1).astype('float32')
+    #data = data.reshape(data.shape[0], 2, 1).astype('float32')
     #data = tf.convert_to_tensor(data, dtype=tf.float64)
     print(f"data type: {type(data)}, shape: {data.shape}")
     plt.plot(data[:, 0], data[:, 1], ".")
@@ -229,15 +234,14 @@ def PrepareTrainingData(size: int, buffer_size: int, batch_size: int):
     #return train
 
 if __name__ == "__main__":
-    SIZE = 1024
-    BUFFER_SIZE = 1000
+    BUFFER_SIZE = 1024
     BATCH_SIZE = 32
     EPOCHS = 300
     discriminator = Discriminator()
     generator = Generator()
-    checkpoint_dir = './training_checkpoints'
+    checkpoint_dir = './checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
-    train_dataset = PrepareTrainingData(SIZE, BUFFER_SIZE, BATCH_SIZE)
-    checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 1, 1, 1)
-    show_image(EPOCHS)
-    CreateGIF("output/simple_gan.gif")
+    train_dataset = PrepareTrainingData(BUFFER_SIZE, BATCH_SIZE)
+    Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 1, 1, 1)
+    show_image(f'output/sinewave_gan_epoch_{EPOCHS:04d}.png')
+    CreateGIF("output/sinewave_gan.gif", 'output/sinewave_gan_epoch_*.png')

@@ -247,7 +247,8 @@ class MNISTGAN():
         # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
         #fig = plt.figure(figsize=(4, 4))
         fig = plt.figure(figsize=dimension)
-        for i in range(data.shape[0]):
+        #print(f"_save_images data.shape: {data.shape}, ndim: {data.ndim}")
+        for i in range(data.shape[0]): # data.shape: (16, 28, 28, 1), ndim: 4
             plt.subplot(4, 4, i+1)
             plt.imshow(data[i, :, :, 0] * 127.5 + 127.5, cmap='gray') # The generator output shape is (, 28, 28, 1)
             plt.axis('off')
