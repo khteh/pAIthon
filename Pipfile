@@ -27,6 +27,7 @@ pydot = "*"
 statsmodels = "*"
 imageio = "*"
 pyvirtualdisplay = "*"
+xgboost = "*"
 
 [dev-packages]
 check50 = "*"
