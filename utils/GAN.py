@@ -7,88 +7,16 @@ This "common" function is only tested working with MNISTGAN.
 def restore_latest_checkpoint(checkpoint, checkpoint_dir):
     checkpoint.restore(tf.train.latest_checkpoint(checkpoint_dir))
 
-# Notice the use of `tf.function`
-# This annotation causes the function to be "compiled".
-# @tf.function decorator to increase performance. Without this decorator our training will take twice as long. If you would like to know more about how to increase performance with @tf.function take a look at the TensorFlow documentation.
-@tf.function
-def TrainStep(images, discriminator, generator, batch_size: int):
-    noise_dim = 100
-    """
-    The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
-    The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
-    """
-    noise = tf.random.normal([batch_size, noise_dim])
-    # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
-    # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
-    with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-      generated_images = generator.run(noise, training=True)
-
-      real_output = discriminator.run(images, training=True)
-      fake_output = discriminator.run(generated_images, training=True)
-
-      gen_loss = generator.loss(real_output, fake_output)
-      disc_loss = discriminator.loss(real_output, fake_output)
-
-    generator.UpdateParameters(gen_tape, gen_loss)
-    # Use the GradientTape to calculate the gradients of the cost with respect to the parameter w: dJ/dw.
-    discriminator.UpdateParameters(disc_tape, disc_loss)
-
-def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch_size: int, num_examples_to_generate: int, image_rows: int, image_cols: int):
-    checkpoint = tf.train.Checkpoint(generator_optimizer = generator.optimizer,
-                                    discriminator_optimizer = discriminator.optimizer,
-                                    generator = generator.model,
-                                    discriminator = discriminator.model)
-    noise_dim = 100
-    #num_examples_to_generate = 16
-    # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
-    seed = tf.random.normal([num_examples_to_generate, noise_dim])
-    """
-    The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
-    The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
-    """
-    for epoch in range(epochs):
-        start = time.time()
-
-        for image_batch in dataset:
-            TrainStep(image_batch, discriminator, generator, batch_size)
-
-        # Produce images for the GIF as you go
-        save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'image_at_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
-
-        # Save the model every 15 epochs
-        if (epoch + 1) % 15 == 0:
-            checkpoint.save(file_prefix = checkpoint_path)
-
-        print(f"Time for epoch {epoch + 1} is {time.time()-start}s")
-
-    # Generate after the final epoch
-    save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epochs}", f'image_at_epoch_{epochs:04d}.png', (image_rows, image_cols))
-    return checkpoint
-
-def save_images(data, title:str, filename: str, dimension):
-    # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
-    #fig = plt.figure(figsize=(4, 4))
-    fig = plt.figure(figsize=dimension)
-    for i in range(data.shape[0]):
-        plt.subplot(4, 4, i+1)
-        plt.imshow(data[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
-        plt.axis('off')
-    #plt.legend()
-    plt.suptitle(title)
-    plt.savefig(f"output/{filename}")
-    #plt.show()
-    plt.close()
-
-def show_image(epoch: int):
+def show_image(path: int):
     # Display a single image using the epoch number
-  return PIL.Image.open(f'output/image_at_epoch_{epoch:04d}.png')
+  return PIL.Image.open(path)
 
-def CreateGIF(anim_file: str):
+def CreateGIF(anim_file: str, input_images: str):
     """
     Use imageio to create an animated gif using the images saved during training.
     """
     with imageio.get_writer(anim_file, mode='I') as writer:
-        filenames = glob.glob('output/image_at_epoch_*.png')
+        filenames = glob.glob(input_images)
         filenames = sorted(filenames)
         for f in filenames:
             image = imageio.imread(f)

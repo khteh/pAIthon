@@ -4,21 +4,9 @@ import numpy, math, tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
 from tensorflow.keras import layers, losses, optimizers, regularizers
-from utils.GAN import restore_latest_checkpoint, TrainStep, Train, save_images, show_image, CreateGIF
+from utils.GAN import restore_latest_checkpoint, show_image, CreateGIF
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
-"""
-https://realpython.com/generative-adversarial-networks/
-https://www.tensorflow.org/tutorials/generative/dcgan
-What Are Generative Adversarial Networks?
-Generative adversarial networks are machine learning systems that can learn to mimic a given distribution of data. They were first proposed in a 2014 NeurIPS paper by deep learning expert Ian Goodfellow and his colleagues.
-
-GANs consist of two neural networks, one trained to generate data and the other trained to distinguish fake data from real data (hence the “adversarial” nature of the model). Although the idea of a structure to generate data isn’t new, when it comes to image and video generation, GANs have provided impressive results such as:
-
-Style transfer using CycleGAN, which can perform a number of convincing style transformations on images
-Generation of human faces with StyleGAN, as demonstrated on the website This Person Does Not Exist
-Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative models.
-"""
 class Discriminator():
     """
     The discriminator is a CNN-based image classifier. It classifies the generated images as real or fake. The model will be trained to output positive values for real images, and negative values for fake images.
@@ -132,43 +120,142 @@ class Generator():
         # Run one step of gradient descent by updating the value of the variable to minimize the loss
         self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
 
-def PrepareMNISTData(buffer_size: int, batch_size: int):
+class MNISTGAN():
     """
+    https://realpython.com/generative-adversarial-networks/
     https://www.tensorflow.org/tutorials/generative/dcgan
-    https://www.tensorflow.org/datasets/keras_example
-    https://keras.io/api/datasets/mnist/
-    This is a dataset of 60,000 28x28 grayscale images of the 10 digits, along with a test set of 10,000 images.
-    Training Images (x_train):
-        Shape: (60000, 28, 28)
-        Dimensions: 3 dimensions (number of samples, height, width)
-        Interpretation: 60,000 grayscale images, each 28 pixels by 28 pixels.
+    What Are Generative Adversarial Networks?
+    Generative adversarial networks are machine learning systems that can learn to mimic a given distribution of data. They were first proposed in a 2014 NeurIPS paper by deep learning expert Ian Goodfellow and his colleagues.
 
-    Build a training pipeline
-    Apply the following transformations:
+    GANs consist of two neural networks, one trained to generate data and the other trained to distinguish fake data from real data (hence the “adversarial” nature of the model). Although the idea of a structure to generate data isn’t new, when it comes to image and video generation, GANs have provided impressive results such as:
 
-    - tf.data.Dataset.map: TFDS provide images of type tf.uint8, while the model expects tf.float32. Therefore, you need to normalize images.
-    - tf.data.Dataset.cache As you fit the dataset in memory, cache it before shuffling for a better performance.
-      Note: Random transformations should be applied after caching.
-    - tf.data.Dataset.shuffle: For true randomness, set the shuffle buffer to the full dataset size.
-      Note: For large datasets that can't fit in memory, use buffer_size=1000 if your system allows it.
-    - tf.data.Dataset.batch: Batch elements of the dataset after shuffling to get unique batches at each epoch.
-    - tf.data.Dataset.prefetch: It is good practice to end the pipeline by prefetching for performance.
+    Style transfer using CycleGAN, which can perform a number of convincing style transformations on images
+    Generation of human faces with StyleGAN, as demonstrated on the website This Person Does Not Exist
+    Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative models.
     """
-    (train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data() # train_images type: <class 'numpy.ndarray'>, shape: (60000, 28, 28)
-    assert train_images.shape == (buffer_size, 28, 28)
-    #print(train_images[5])
-    train_images = train_images.reshape(buffer_size, 28, 28, 1).astype('float32') # This effectively transposes the pixel value (the last dimension) into a single column (28 rows)
-    assert train_images.shape == (buffer_size, 28, 28, 1)
-    #print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
-    #print(train_images[5])
-    #print(train_images[3][5])
-    """
-    The original tensors range from 0 to 1, and since the image backgrounds are black, most of the coefficients are equal to 0 when they’re represented using this range.
-    Change the range of the coefficients to -1 to 1. With this transformation, the number of elements equal to 0 in the input samples is dramatically reduced, which helps in training the models.
-    """
-    train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
-    # Batch and shuffle the data
-    return tf.data.Dataset.from_tensor_slices(train_images).shuffle(buffer_size).batch(batch_size) # BatchDataset
+    _buffer_size: int = None
+    _batch_size: int = None
+    _epochs: int = None
+    _checkpoint_path: str = None
+    _batch_dataset: tf.data.Dataset = None
+    _generator: Generator = None
+    _discriminator: Discriminator = None
+    _checkpoint: tf.train.Checkpoint = None
+    _noise_dim: int = None
+    def __init__(self, buffer_size:int, batch_size:int, epochs:int, checkpoint_path: str):
+        self._buffer_size = buffer_size
+        self._batch_size = batch_size
+        self._epochs = epochs
+        self._noise_dim = 100
+        self._checkpoint_path = checkpoint_path
+        self._generator = Generator()
+        self._discriminator = Discriminator()
+        self._checkpoint = tf.train.Checkpoint(generator_optimizer = self._generator.optimizer,
+                                        discriminator_optimizer = self._discriminator.optimizer,
+                                        generator = self._generator.model,
+                                        discriminator = self._discriminator.model)
+    def PrepareMNISTData(self):
+        """
+        https://www.tensorflow.org/tutorials/generative/dcgan
+        https://www.tensorflow.org/datasets/keras_example
+        https://keras.io/api/datasets/mnist/
+        This is a dataset of 60,000 28x28 grayscale images of the 10 digits, along with a test set of 10,000 images.
+        Training Images (x_train):
+            Shape: (60000, 28, 28)
+            Dimensions: 3 dimensions (number of samples, height, width)
+            Interpretation: 60,000 grayscale images, each 28 pixels by 28 pixels.
+
+        Build a training pipeline
+        Apply the following transformations:
+
+        - tf.data.Dataset.map: TFDS provide images of type tf.uint8, while the model expects tf.float32. Therefore, you need to normalize images.
+        - tf.data.Dataset.cache As you fit the dataset in memory, cache it before shuffling for a better performance.
+        Note: Random transformations should be applied after caching.
+        - tf.data.Dataset.shuffle: For true randomness, set the shuffle buffer to the full dataset size.
+        Note: For large datasets that can't fit in memory, use buffer_size=1000 if your system allows it.
+        - tf.data.Dataset.batch: Batch elements of the dataset after shuffling to get unique batches at each epoch.
+        - tf.data.Dataset.prefetch: It is good practice to end the pipeline by prefetching for performance.
+        """
+        (train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data() # train_images type: <class 'numpy.ndarray'>, shape: (60000, 28, 28)
+        assert train_images.shape == (self._buffer_size, 28, 28)
+        #print(train_images[5])
+        train_images = train_images.reshape(self._buffer_size, 28, 28, 1).astype('float32') # This effectively transposes the pixel value (the last dimension) into a single column (28 rows)
+        assert train_images.shape == (self._buffer_size, 28, 28, 1)
+        #print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
+        #print(train_images[5])
+        #print(train_images[3][5])
+        """
+        The original tensors range from 0 to 1, and since the image backgrounds are black, most of the coefficients are equal to 0 when they’re represented using this range.
+        Change the range of the coefficients to -1 to 1. With this transformation, the number of elements equal to 0 in the input samples is dramatically reduced, which helps in training the models.
+        """
+        train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
+        # Batch and shuffle the data
+        self._batch_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self._buffer_size).batch(self._batch_size) # BatchDataset
+
+    # Notice the use of `tf.function`
+    # This annotation causes the function to be "compiled".
+    # @tf.function decorator to increase performance. Without this decorator our training will take twice as long. If you would like to know more about how to increase performance with @tf.function take a look at the TensorFlow documentation.
+    @tf.function
+    def _TrainStep(self, images):
+        """
+        The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
+        The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
+        """
+        noise = tf.random.normal([self._batch_size, self._noise_dim])
+        # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
+        # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
+        with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+            generated_images = self._generator.run(noise, training=True)
+
+            real_output = self._discriminator.run(images, training=True)
+            fake_output = self._discriminator.run(generated_images, training=True)
+
+            gen_loss = self._generator.loss(real_output, fake_output)
+            disc_loss = self._discriminator.loss(real_output, fake_output)
+
+        self._generator.UpdateParameters(gen_tape, gen_loss)
+        # Use the GradientTape to calculate the gradients of the cost with respect to the parameter w: dJ/dw.
+        self._discriminator.UpdateParameters(disc_tape, disc_loss)
+
+    def Train(self, num_examples_to_generate: int, image_rows: int, image_cols: int):
+        #num_examples_to_generate = 16
+        # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
+        seed = tf.random.normal([num_examples_to_generate, noise_dim])
+        """
+        The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
+        The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
+        """
+        for epoch in range(self._epochs):
+            start = time.time()
+
+            for image_batch in self._batch_dataset:
+                self._TrainStep(image_batch)
+
+            # Produce images for the GIF as you go
+            self._save_images(self._generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'mnist_gan_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
+
+            # Save the model every 15 epochs
+            if (epoch + 1) % 15 == 0:
+                self._checkpoint.save(file_prefix = self._checkpoint_path)
+
+            print(f"Time for epoch {epoch + 1} is {time.time()-start}s")
+
+        # Generate after the final epoch
+        self._save_images(self._generator.run(seed, training=False), f"Generated Image at Epoch {self._epochs}", f'mnist_gan_epoch_{self._epochs:04d}.png', (image_rows, image_cols))
+
+    def _save_images(self, data, title:str, filename: str, dimension):
+        # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
+        #fig = plt.figure(figsize=(4, 4))
+        fig = plt.figure(figsize=dimension)
+        for i in range(data.shape[0]):
+            plt.subplot(4, 4, i+1)
+            plt.imshow(data[i, :, :, 0] * 127.5 + 127.5, cmap='gray') # The generator output shape is (, 28, 28, 1)
+            plt.axis('off')
+        #plt.legend()
+        plt.suptitle(title)
+        plt.savefig(f"output/{filename}")
+        #plt.show()
+        plt.close()
 
 if __name__ == "__main__":
     BUFFER_SIZE = 60000
@@ -178,11 +265,10 @@ if __name__ == "__main__":
     noise = tf.random.normal([BATCH_SIZE, noise_dim])
     seed = tf.random.normal([16, noise_dim])
     print(f"noise: {noise.shape} ndim: {noise.ndim}, seed: {seed.shape} ndim: {seed.ndim}")
-    discriminator = Discriminator()
-    generator = Generator()
-    checkpoint_dir = './training_checkpoints'
+    checkpoint_dir = './checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "mnist_gan")
-    train_dataset = PrepareMNISTData(BUFFER_SIZE, BATCH_SIZE)
-    #checkpoint = Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 16, 4, 4)
-    #show_image(EPOCHS)
-    #CreateGIF("output/mnist_gan.gif")
+    mnistGAN = MNISTGAN(BUFFER_SIZE, BATCH_SIZE, EPOCHS, checkpoint_prefix)
+    mnistGAN.PrepareMNISTData()
+    mnistGAN.Train(16, 4, 4)
+    show_image(f'output/mnist_gan_epoch_{EPOCHS:04d}.png')
+    CreateGIF("output/mnist_gan.gif", 'output/mnist_gan_epoch_*.png')
