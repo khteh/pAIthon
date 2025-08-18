@@ -167,6 +167,9 @@ Rules of thumb: Aim for [-1, 1] input data range. These need to rescale:
 (1) [-100 , 100] : Too large
 (2) [-0.001, 0.001] : Too small
 (3) [98.6, 105]: Too large. Example, Fahrenheight body temperature.
+Notes:
+Feature scaling usually isn't required for your target variable (labels).
+Feature scaling is usually not required with tree-based models (e.g. Random Forest) since they can handle varying features.
 
 Reinforcement Learning:
 Given a set of rewards or penalties, learn what actions to take in the future.
