@@ -1,9 +1,10 @@
 # for array computations and loading data
-import numpy
+import numpy, seaborn
 # for building and training neural networks
 import tensorflow as tf
 # custom functions
-import utils
+import pandas as pd
+import matplotlib.pyplot as plt
 # for building linear regression models and preparing data
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
@@ -15,6 +16,7 @@ from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.activations import sigmoid
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.GPU import InitializeGPU
+from utils.ConfusionMatrix import ConfusionMatrix
 # reduce display precision on numpy arrays
 numpy.set_printoptions(precision=2)
 
@@ -34,7 +36,7 @@ class ClassificationModelEvaluationAndSelection():
 
     _Y_train = None
     _Y_cv = None
-    _y_test = None
+    _Y_test = None
 
     _scaler: StandardScaler = None
     _model: Sequential = None
@@ -135,6 +137,7 @@ class ClassificationModelEvaluationAndSelection():
         To predict 1 only if very confident, use high value of threshold. This results in high precision, low recall
         To predict 1 even when in doubt, use low value of threshold. This results in low precision, high recall
         """
+        print(f"\n=== {self.ModelSelection.__name__} ===")
         # Initialize lists that will contain the errors for each model
         nn_train_error = []
         nn_cv_error = []
@@ -189,14 +192,18 @@ class ClassificationModelEvaluationAndSelection():
         """
         Obtain and publish the generalization error by computing the test set's MSE. As usual, you should transform this data the same way you did with the training and cross validation sets.
         """
+        print(f"\n=== {self.TestDataSetPerformance.__name__} ===")
         # Compute the test MSE
         yhat = self._model.predict(self._X_test_scaled)
         yhat = tf.math.sigmoid(yhat)
         yhat = numpy.where(yhat >= threshold, 1, 0)
         nn_test_error = numpy.mean(yhat != self._Y_test)
+        print(f"_Y_test: {self._Y_test.shape}, yhat: {yhat.shape}")
         print(f"Training Set Classification Error: {self._train_error:.4f}")
         print(f"CV Set Classification Error: {self._cv_error:.4f}")
         print(f"Test Set Classification Error: {nn_test_error:.4f}")
+        ConfusionMatrix(self._Y_test.reshape([1,-1]), yhat.reshape([1,-1]), "Binary Classification")
+
 if __name__ == "__main__":
     model = ClassificationModelEvaluationAndSelection('./data/data_w3_ex2.csv')
     model.ModelSelection(0.5)

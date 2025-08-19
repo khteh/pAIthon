@@ -28,6 +28,7 @@ statsmodels = "*"
 imageio = "*"
 pyvirtualdisplay = "*"
 xgboost = "*"
+seaborn = "*"
 
 [dev-packages]
 check50 = "*"

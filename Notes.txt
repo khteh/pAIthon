@@ -368,6 +368,14 @@ To predict 1 even when in doubt, use low value of threshold. This results in low
 Picking the threshold is not something can be done with cross-validation. It's up to the business needs / use-case.
 To automatically decide on the best learning algorithm without having to manually select between Precision and Recall, choose the algorithm with the highest F1 score.
 F1 score = 2 * PR / (P + R) <= Harmonic mean. A mean calculation which pays attention to the lower value.
+
+Classification model evaluation metrics:
+(1) Accuracy
+(2) Area under ROC (Receiver Operating Characteristics) curve - binary classification models.
+    - Comparison of a model's true-positive rate to false-positive rate at different classification thresholds.
+    - The AUC metric tells you how well your model is at choosing between classes (for example, how well it is at deciding whether someone has heart disease or not). A perfect model will get an AUC score of 1.
+(3) Confusion matrix
+(4) Classification Report
 =========================================================================================================================================================================================================================================
 Decision Tree Learning:
 Decision 1: How to choose what feature to split on at each node?
