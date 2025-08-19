@@ -382,10 +382,15 @@ Regression model evaluation metrics:
 (2) Mean absolute error (MAE)
 (3) Mean squared error (MSE)
 
+Tune model hyperparameters on Evaluation dataset.
 3 ways to adjust hyperparameters:
 (1) Manually
 (2) Randomly with RandomSearchCV
-(3) Exhaustively with GridSearchCV
+(3) Exhaustively with GridSearchCV - Brute force, trying every single combination.
+
+2 ways to save and load models:
+(1) With Python pickle module.
+(2) With joblib module
 =========================================================================================================================================================================================================================================
 Decision Tree Learning:
 Decision 1: How to choose what feature to split on at each node?
