@@ -6,12 +6,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from xgboost import XGBClassifier
 import matplotlib.pyplot as plt
-plt.style.use('./data/deeplearning.mplstyle')
+#plt.style.use('./data/deeplearning.mplstyle')
 
 RANDOM_STATE = 55 ## We will pass it to every sklearn call so we ensure reproducibility
 
 # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
-# XXX: https://github.com/dmlc/xgboost/issues/11636
 class HeartFailurePrediction():
     _X_train = None
     _X_val = None
@@ -188,8 +187,8 @@ class HeartFailurePrediction():
         The model is returned at its last state when training terminated, not its state during the best round. For example, if the model stops at round 26, but the best round was 16, the model's training state at round 26 is returned, not round 16.
         Note that this is different from returning the model's "best" state (from when the evaluation metric was the lowest).
         """
-        self._xgb = XGBClassifier(n_estimators = 500, learning_rate = 0.1,verbosity = 1, random_state = RANDOM_STATE)
-        self._xgb.fit(X_train_fit,y_train_fit, eval_set = [(X_train_eval,y_train_eval)], early_stopping_rounds = 10)
+        self._xgb = XGBClassifier(n_estimators = 500, learning_rate = 0.1,verbosity = 1, random_state = RANDOM_STATE, early_stopping_rounds = 10)
+        self._xgb.fit(X_train_fit,y_train_fit, eval_set = [(X_train_eval,y_train_eval)])
         print(f"Best iteration with lowest evaluation metric: {self._xgb.best_iteration}")
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_val), self._Y_val):.4f}")
 
