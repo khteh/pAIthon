@@ -376,6 +376,16 @@ Classification model evaluation metrics:
     - The AUC metric tells you how well your model is at choosing between classes (for example, how well it is at deciding whether someone has heart disease or not). A perfect model will get an AUC score of 1.
 (3) Confusion matrix
 (4) Classification Report
+
+Regression model evaluation metrics:
+(1) R^2
+(2) Mean absolute error (MAE)
+(3) Mean squared error (MSE)
+
+3 ways to adjust hyperparameters:
+(1) Manually
+(2) Randomly with RandomSearchCV
+(3) Exhaustively with GridSearchCV
 =========================================================================================================================================================================================================================================
 Decision Tree Learning:
 Decision 1: How to choose what feature to split on at each node?
