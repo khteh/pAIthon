@@ -50,7 +50,7 @@ class Discriminator():
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
         self.model = models.Sequential([
-            layers.Input(shape=(2,)),
+            layers.Input(shape=(1,2)),
             layers.Dense(256, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
             layers.Dropout(0.3),
             layers.Dense(128, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
@@ -91,7 +91,6 @@ class Generator():
     model = None
     _cross_entropy = None
     optimizer = None
-
     def __init__(self):
         """
         self.model = nn.Sequential(
@@ -104,12 +103,16 @@ class Generator():
         L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
-        self.model = models.Sequential([
-            layers.Input(shape=(100,)),
-            layers.Dense(16, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
-            layers.Dense(32, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
-            # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
-            layers.Dense(2, name="L3")]) # Linear activation ("pass-through") if not specified
+        self.model = models.Sequential()
+        self.model.add(layers.Input(shape=(100,)))
+        self.model.add(layers.Dense(16, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
+        print(f"L1 output shape: {self.model.output_shape}")
+        self.model.add(layers.Dense(32, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)))
+        print(f"L2 output shape: {self.model.output_shape}")
+        # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+        # The output will consist of a vector with two elements that can be any value ranging from negative infinity to infinity, which will represent (x̃₁, x̃₂).
+        self.model.add(layers.Dense(2, name="L3")) # Linear activation ("pass-through") if not specified
+        print(f"L3 output shape: {self.model.output_shape}")
         #print(f"Generator output shape: {self.model.output_shape}")
         assert self.model.output_shape == (None, 2)
         """
@@ -202,7 +205,7 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
 def save_images(data, title:str, filename: str, dimension):
     # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
     #fig = plt.figure(figsize=(4, 4))
-    #print(f"save_images data.shape: {data.shape}, ndim: {data.ndim}")
+    print(f"save_images data.shape: {data.shape}, ndim: {data.ndim}")
     fig, ax = plt.subplots(1,1)
     #plt.imshow(data[:, :]) # data.shape: (1, 2), ndim: 2 XXX: Should be (1024, 2)
     plt.plot(data[:, 0], data[:, 1], ".")
@@ -221,17 +224,10 @@ def PrepareTrainingData(buffer_size: int, batch_size: int):
     data = numpy.zeros((buffer_size, 2))
     data[:,0] = 2 * math.pi * rng.random(buffer_size)
     data[:,1] = numpy.sin(data[:,0])
-    #data = data.reshape(data.shape[0], 2, 1).astype('float32')
-    #data = tf.convert_to_tensor(data, dtype=tf.float64)
-    print(f"data type: {type(data)}, shape: {data.shape}")
-    plt.plot(data[:, 0], data[:, 1], ".")
-    plt.show()
-    #labels = tf.zeros((size, 1), dtype=tf.float64)
-    #train = [(data[i], labels[i]) for i in range(size)] # [(array([ 4.74669199, -0.99941171]), np.float64(0.0)), ...]
-    #print(f"train: {train[:10]}")
-    #print(f"train data type: {type(train)}, shape: {train.shape}")
+    data = data.reshape(buffer_size, 1, 2).astype('float32') # This effectively transposes the pixel value (the last dimension) into a single column (28 rows)
+    assert data.shape == (buffer_size, 1, 2)
+    print(f"data type: {type(data)}, shape: {data.shape}") # data type: <class 'numpy.ndarray'>, shape: (1024, 2)
     return tf.data.Dataset.from_tensor_slices(data).shuffle(buffer_size).batch(batch_size)
-    #return train
 
 if __name__ == "__main__":
     BUFFER_SIZE = 1024
@@ -242,6 +238,7 @@ if __name__ == "__main__":
     checkpoint_dir = './checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
     train_dataset = PrepareTrainingData(BUFFER_SIZE, BATCH_SIZE)
+    print(f"train_dataset: {train_dataset.element_spec}") # train_dataset: TensorSpec(shape=(None, 2), dtype=tf.float64, name=None)
     Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 1, 1, 1)
     show_image(f'output/sinewave_gan_epoch_{EPOCHS:04d}.png')
     CreateGIF("output/sinewave_gan.gif", 'output/sinewave_gan_epoch_*.png')
