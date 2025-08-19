@@ -1,4 +1,4 @@
-import numpy, tensorflow as tf
+import numpy, math, tensorflow as tf
 from pathlib import Path
 from utils.GPU import InitializeGPU
 import numpy.lib.recfunctions as reconcile
@@ -20,6 +20,10 @@ def oneDArray(n: int):
     print(f"=== {oneDArray.__name__} ===")
     one = numpy.array(range(n))
     print(f"{one} shape: {one.shape}\n")
+    pi = numpy.full(len(one), math.pi)
+    print(f"{pi} shape: {pi.shape}\n")
+    assert pi.shape == one.shape
+    assert numpy.all(pi == math.pi)
     one = numpy.arange(n) # numpy.arange() creates an array of consecutive, equally-spaced values within a given range
     print(f"{one} shape: {one.shape}\n")
     print(f"index-0 of shape: {one.shape[0]}, index--1 of shape: {one.shape[-1]}")
