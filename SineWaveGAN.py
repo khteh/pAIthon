@@ -105,7 +105,7 @@ class Generator():
         """
         self.model = models.Sequential()
         self.model.add(layers.Input(shape=(100,)))
-        self.model.add(layers.Dense(16, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
+        self.model.add(layers.Dense(16, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01), use_bias=False)) # Decrease to fix high bias; Increase to fix high variance.
         print(f"Generator L1 output shape: {self.model.output_shape}")
         self.model.add(layers.Dense(32, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)))
         print(f"Generator L2 output shape: {self.model.output_shape}")
