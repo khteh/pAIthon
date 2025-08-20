@@ -57,7 +57,7 @@ class Discriminator():
             layers.Dropout(0.3),
             layers.Dense(64, activation='relu', name="L3", kernel_regularizer=regularizers.l2(0.01)),
             layers.Dropout(0.3),
-            layers.Dense(1, input_shape=(64,), activation='linear', name="L4")]) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+            layers.Dense(1, activation='linear', name="L4")]) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
