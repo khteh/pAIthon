@@ -186,7 +186,7 @@ class NeuralNetworkModelEvaluationAndSelection():
             # Setup the loss and optimizer
             model.compile(
                 loss='mse',
-                optimizer=tf.keras.optimizers.Adam(learning_rate=rate),
+                optimizer=tf.keras.optimizers.Adam(learning_rate=rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
             )
 
             print(f"Training {model.name}...")

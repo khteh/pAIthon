@@ -79,7 +79,7 @@ class HandWrittenDigitsNN():
         )
         self._model.compile(
             loss=tf.keras.losses.BinaryCrossentropy(),
-            optimizer=tf.keras.optimizers.Adam(0.001),
+            optimizer=tf.keras.optimizers.Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
         )
         self._model.fit(
             self._X, self._Y, epochs=20

@@ -6,7 +6,7 @@ from pyvirtualdisplay import Display
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.losses import MSE
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.losses import MSE
@@ -73,7 +73,7 @@ class ReinforcementLearning():
             ])
 
         ### START CODE HERE ### 
-        self._optimizer=tf.keras.optimizers.Adam(learning_rate=self.ALPHA)
+        self._optimizer=tf.keras.optimizers.Adam(learning_rate=self.ALPHA) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 
     def compute_loss(self, experiences, gamma):
         """ 

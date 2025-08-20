@@ -151,7 +151,7 @@ class ClassificationModelEvaluationAndSelection():
             # Setup the loss and optimizer
             model.compile(
                 loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-                optimizer=tf.keras.optimizers.Adam(learning_rate=0.01),
+                optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
             )
             print(f"Training {model.name}...")
 

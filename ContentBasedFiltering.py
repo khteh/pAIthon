@@ -163,7 +163,7 @@ class ContentBasedFiltering():
     def _train_model(self):
         tf.random.set_seed(1)
         cost_fn = tf.keras.losses.MeanSquaredError()
-        opt = keras.optimizers.Adam(learning_rate=0.01)
+        opt = keras.optimizers.Adam(learning_rate=0.01) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
         self._model.compile(optimizer=opt, loss=cost_fn)        
         tf.random.set_seed(1)
         self._model.fit([self._user_train[:, self._u_s:], self._item_train[:, self._i_s:]], self._y_train, epochs=30)

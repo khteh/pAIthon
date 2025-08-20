@@ -135,7 +135,7 @@ class MovieRecommendation():
         self._b = tf.Variable(tf.random.normal((1, self._num_users),   dtype=tf.float64),  name='b')
         print(f"W: {self._W.shape}, X: {self._X.shape}, b: {self._b.shape}, R: {self._R.shape}, Ynorm: {self._Ynorm.shape}")
         # Instantiate an optimizer.
-        self._optimizer = keras.optimizers.Adam(learning_rate=1e-1)
+        self._optimizer = keras.optimizers.Adam(learning_rate=1e-1) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 
     def _cofi_cost_func_v(self):
         """
