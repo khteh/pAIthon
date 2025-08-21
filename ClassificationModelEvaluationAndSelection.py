@@ -16,6 +16,7 @@ from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.activations import sigmoid
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.GPU import InitializeGPU
+from utils.Plots import plot_bc_dataset
 from utils.ConfusionMatrix import ConfusionMatrix
 # reduce display precision on numpy arrays
 numpy.set_printoptions(precision=2)
@@ -60,7 +61,7 @@ class ClassificationModelEvaluationAndSelection():
         data = numpy.loadtxt(path, delimiter=',')
 
         # Split the inputs and outputs into separate arrays
-        x_bc = data[:,:-1]
+        x_bc = data[:,:-1] # "bc" stands for binary classification
         y_bc = data[:,-1]
 
         # Convert y into 2-D because the commands later will require it (x is already 2-D)
@@ -84,6 +85,7 @@ class ClassificationModelEvaluationAndSelection():
         print(f"the shape of the cross validation set (target) is: {self._Y_cv.shape}\n")
         print(f"the shape of the test set (input) is: {self._X_test.shape}")
         print(f"the shape of the test set (target) is: {self._Y_test.shape}")
+        plot_bc_dataset(x_bc, y_bc, "x1 vs. x2")
 
     def ScaleData(self):
         # Scale the features

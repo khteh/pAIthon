@@ -32,6 +32,9 @@ def plot_train_cv_mses(degrees, train_mses, cv_mses, title):
     plt.show()
 
 def plot_bc_dataset(x, y, title):
+    """
+    Plot binary classification dataset
+    """
     for i in range(len(y)):
         marker = 'x' if y[i] == 1 else 'o'
         c = 'r' if y[i] == 1 else 'b'
@@ -43,4 +46,20 @@ def plot_bc_dataset(x, y, title):
     y_1 = mlines.Line2D([], [], color='b', marker='o', markersize=12, linestyle='None', label='y=0')
     plt.title(title)
     plt.legend(handles=[y_0, y_1])
+    plt.show()
+
+def plot_roc_curve(tpr, fpr):
+    """
+    Plot an ROC curve given the true-positive and false-positive rates of a model.
+    sklearn.metrics.RocCurveDisplay provides this functionality
+    """
+    # Plot ROC curve
+    plt.plot(fpr, tpr, color="red", label="ROC")
+    # Plot a line with no predictive power (baseline)
+    plt.plot([0, 1], [0, 1], color="blue", linestyle="--", label="Guessing")
+    # Customize the plot
+    plt.xlabel("False-Positive Rate (fpr)")
+    plt.ylabel("True-Positive Rate (tpr)")
+    plt.title("Receiver Operating Characteristics (ROC)) curve")
+    plt.legend()
     plt.show()
