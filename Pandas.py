@@ -180,7 +180,7 @@ def DataFrameArithmetic():
     print(data)
     print("\nTotal score of each individual (sorted):")
     print(f"data.index[-1]: {data.index[-1]}")
-    data = data.sort_values(by=['C++', 'C#'], ascending=[False, False]) # Tie-breaks in C++ scores between Jana and Nori
+    data.sort_values(by=['C++', 'C#'], ascending=[False, False], inplace=True) # Tie-breaks in C++ scores between Jana and Nori
     print(f"data.index[-1]: {data.index[-1]}")
     # Add a row for the totals of each skill. Adding here will disrupt the data table due to reordering of data.index[-1]
     #data.loc[data.index[-1] + 1] = numpy.sum(data[weights.index] * weights) 
