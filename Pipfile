@@ -29,6 +29,7 @@ imageio = "*"
 pyvirtualdisplay = "*"
 xgboost = "*"
 seaborn = "*"
+tensorflow-hub = "*"
 
 [dev-packages]
 check50 = "*"
