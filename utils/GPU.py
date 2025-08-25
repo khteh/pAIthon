@@ -1,4 +1,4 @@
-import numpy, tensorflow as tf
+import tensorflow as tf
 # Hide GPU from visible devices
 def InitializeGPU():
     """
