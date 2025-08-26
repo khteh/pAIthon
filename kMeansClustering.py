@@ -144,10 +144,11 @@ class kMeansClustering():
     def kMeansImageCompression(self, path: str):
         print(f"\n=== {self.kMeansImageCompression.__name__} ===")
         # Load an image of a bird
+        # https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imread.html
         self._original_img = plt.imread(path)
         # Visualizing the image
         #plt.imshow(self._original_img)
-        # Shape of original_img is: (128, 128, 3)
+        # Shape of original_img is: (128, 128, 3) (M, N, 4) (height, width, RGB+Apha)
         print("Shape of original_img is:", self._original_img.shape)
 
         # Divide by 255 so that all values are in the range 0 - 1 (not needed for PNG files)

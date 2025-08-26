@@ -3,9 +3,8 @@ import numpy as np
 from pathlib import Path
 import tensorflow as tf
 from utils.GPU import InitializeGPU
-from tensorflow.keras import datasets, layers, models
 from sklearn.model_selection import train_test_split
-from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras import layers, losses, optimizers, regularizers, models
 """
 https://cs50.harvard.edu/ai/projects/5/traffic/
 https://www.tensorflow.org/install/pip
@@ -124,7 +123,7 @@ def get_model():
     It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.
     More stable and accurate results can be obtained if the sigmoid/softmax and loss are combined during training.
     In the preferred organization the final layer has a linear activation. For historical reasons, the outputs in this form are referred to as *logits*. The loss function has an additional argument: `from_logits = True`. This informs the loss function that the sigmoid/softmax operation should be included in the loss calculation. This allows for an optimized implementation.
-    logit = z. from_logits=True gives Tensorflow more flexibility in terms of how to compute this and whether or not it wnts to compyte g(z) explicitly. TensorFlow will compute z as an intermediate value, but it can rearrange terms to make this become computed more accurately with a little but less numerical roundoff error.
+    logit = z. from_logits=True gives Tensorflow more flexibility in terms of how to compute this and whether or not it wants to compute g(z) explicitly. TensorFlow will compute z as an intermediate value, but it can rearrange terms to make this become computed more accurately with a little but less numerical roundoff error.
 
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
@@ -147,7 +146,7 @@ def get_model():
     CategoricalCrossEntropy: Expects the target value of an example to be one-hot encoded where the value at the target index is 1 while the other N-1 entries are zero. An example with 10 potential target values, where the target is 2 would be [0,0,1,0,0,0,0,0,0,0].    
     """
     model.compile(optimizer='adam', # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-                loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/CategoricalCrossentropy
+                loss=losses.CategoricalCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/CategoricalCrossentropy
                 metrics=['accuracy'])
     return model
 """

@@ -521,3 +521,5 @@ Q(w,b) = Qnew(w_new, b_new)
 W = 0.01 * Wnew + 0.99 * W
 B = 0.01 * Bnew + 0.99 * B
 0.01 and 0.99 adds up to 1 and are the hyperparameters which control how aggressively or gradually the training updates the NN parameters.
+
+In machine learning, logits are the raw, unnormalized scores or outputs from a neural network's final layer before an activation function like softmax or sigmoid is applied.

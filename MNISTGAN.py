@@ -37,9 +37,9 @@ class Discriminator():
         It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.
         More stable and accurate results can be obtained if the sigmoid/softmax and loss are combined during training.
         In the preferred organization the final layer has a linear activation. For historical reasons, the outputs in this form are referred to as *logits*. The loss function has an additional argument: `from_logits = True`. This informs the loss function that the sigmoid/softmax operation should be included in the loss calculation. This allows for an optimized implementation.
-        logit = z. from_logits=True gives Tensorflow more flexibility in terms of how to compute this and whether or not it wnts to compyte g(z) explicitly. TensorFlow will compute z as an intermediate value, but it can rearrange terms to make this become computed more accurately with a little but less numerical roundoff error.
+        logit = z. from_logits=True gives Tensorflow more flexibility in terms of how to compute this and whether or not it wants to compute g(z) explicitly. TensorFlow will compute z as an intermediate value, but it can rearrange terms to make this become computed more accurately with a little but less numerical roundoff error.
         """
-        self._cross_entropy = losses.BinaryCrossentropy(from_logits=True) # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) 
+        self._cross_entropy = losses.BinaryCrossentropy(from_logits=True) # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X))
         self.optimizer = optimizers.Adam(1e-4) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 
     def run(self, input, training: bool):
@@ -52,7 +52,7 @@ class Discriminator():
         real_loss = self._cross_entropy(tf.ones_like(real), real)
         fake_loss = self._cross_entropy(tf.zeros_like(fake), fake)
         return real_loss + fake_loss
-    
+
     def UpdateParameters(self, tape, loss):
         # Use the gradient tape to automatically retrieve the gradients of the loss with respect to the trainable variables, dJ/dw.
         gradients = tape.gradient(loss, self.model.trainable_variables)
@@ -97,7 +97,7 @@ class Generator():
         It is crucial to match the from_logits setting with the model's output activation to ensure correct loss calculation and effective training.
         More stable and accurate results can be obtained if the sigmoid/softmax and loss are combined during training.
         In the preferred organization the final layer has a linear activation. For historical reasons, the outputs in this form are referred to as *logits*. The loss function has an additional argument: `from_logits = True`. This informs the loss function that the sigmoid/softmax operation should be included in the loss calculation. This allows for an optimized implementation.
-        logit = z. from_logits=True gives Tensorflow more flexibility in terms of how to compute this and whether or not it wnts to compyte g(z) explicitly. TensorFlow will compute z as an intermediate value, but it can rearrange terms to make this become computed more accurately with a little but less numerical roundoff error.
+        logit = z. from_logits=True gives Tensorflow more flexibility in terms of how to compute this and whether or not it wants to compute g(z) explicitly. TensorFlow will compute z as an intermediate value, but it can rearrange terms to make this become computed more accurately with a little but less numerical roundoff error.
         """
         self._cross_entropy = losses.BinaryCrossentropy(from_logits=True) # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) 
         self.optimizer = optimizers.Adam(1e-4) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
@@ -177,9 +177,14 @@ class MNISTGAN():
         - tf.data.Dataset.prefetch: It is good practice to end the pipeline by prefetching for performance.
         """
         (train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data() # train_images type: <class 'numpy.ndarray'>, shape: (60000, 28, 28)
+        #print(f"train_images type: {type(train_images)}")
         assert train_images.shape == (self._buffer_size, 28, 28)
-        #print(train_images[5])
-        train_images = train_images.reshape(self._buffer_size, 28, 28, 1).astype('float32') # This effectively transposes the pixel value (the last dimension) into a single column (28 rows)
+        #print("train_images: ")
+        #print(train_images[10])
+        # https://www.tensorflow.org/api_docs/python/tf/io/decode_jpeg
+        # Reshape the ndarray to (Height, Width, channels=1). 1-channel since it is a grayscale image.
+        # This effectively transposes the pixel value (the last dimension) into a single column (28 rows)
+        train_images = train_images.reshape(self._buffer_size, 28, 28, 1).astype('float32')
         assert train_images.shape == (self._buffer_size, 28, 28, 1)
         #print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
         #print(train_images[5])
@@ -190,7 +195,8 @@ class MNISTGAN():
         """
         train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
         # Batch and shuffle the data
-        self._batch_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self._buffer_size).batch(self._batch_size) # BatchDataset
+        self._batch_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self._buffer_size).batch(self._batch_size) # Batch dataset: TensorSpec(shape=(None, 28, 28, 1), dtype=tf.float32, name=None). shape[0] = None is the batch size. None because it is flexible.
+        #print(f"Batch dataset: {self._batch_dataset.element_spec}")
 
     # Notice the use of `tf.function`
     # This annotation causes the function to be "compiled".
