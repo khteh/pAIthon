@@ -5,6 +5,8 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.losses import SparseCategoricalCrossentropy
+from tensorflow.keras.optimizers import Adam
 from utils.lab_utils_multiclass_TF import *
 
 numpy.set_printoptions(precision=2)
@@ -56,8 +58,8 @@ class MulticlassClassification():
         )
         # Setting from_logits=True as an argument to the loss function specifies that the output activation was linear rather than a softmax.
         model.compile(
-            loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-            optimizer=tf.keras.optimizers.Adam(0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+            loss=SparseCategoricalCrossentropy(from_logits=True),
+            optimizer=Adam(0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
         )
         model.fit(
             self._X_train,self._Y_train,

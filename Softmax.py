@@ -5,6 +5,8 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from sklearn.datasets import make_blobs
 from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.losses import SparseCategoricalCrossentropy
+from tensorflow.keras.optimizers import Adam
 """
 SparseCategorialCrossentropy or CategoricalCrossEntropy
 Tensorflow has two potential formats for target values and the selection of the loss defines which is expected.
@@ -57,8 +59,8 @@ def NNSoftmax(X_train, y_train):
         ]
     )
     model.compile(
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(),
-        optimizer=tf.keras.optimizers.Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+        loss=SparseCategoricalCrossentropy(),
+        optimizer=Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
     )
     model.fit(
         X_train,y_train,
@@ -88,8 +90,8 @@ def NNStableSoftmax(X_train, y_train):
         ]
     )
     preferred_model.compile(
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),  #<-- Note
-        optimizer=tf.keras.optimizers.Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+        loss=SparseCategoricalCrossentropy(from_logits=True),  #<-- Note
+        optimizer=Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
     )
     preferred_model.fit(
         X_train,y_train,

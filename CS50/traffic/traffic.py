@@ -5,6 +5,8 @@ import tensorflow as tf
 from utils.GPU import InitializeGPU
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import layers, losses, optimizers, regularizers, models
+from tensorflow.keras.losses import CategoricalCrossentropy
+from tensorflow.keras.optimizers import Adam
 """
 https://cs50.harvard.edu/ai/projects/5/traffic/
 https://www.tensorflow.org/install/pip
@@ -145,8 +147,8 @@ def get_model():
     SparseCategorialCrossentropy: expects the target to be an integer corresponding to the index. For example, if there are 10 potential target values, y would be between 0 and 9.
     CategoricalCrossEntropy: Expects the target value of an example to be one-hot encoded where the value at the target index is 1 while the other N-1 entries are zero. An example with 10 potential target values, where the target is 2 would be [0,0,1,0,0,0,0,0,0,0].    
     """
-    model.compile(optimizer='adam', # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-                loss=losses.CategoricalCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/CategoricalCrossentropy
+    model.compile(optimizer=Adam(0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                loss=CategoricalCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/CategoricalCrossentropy
                 metrics=['accuracy'])
     return model
 """

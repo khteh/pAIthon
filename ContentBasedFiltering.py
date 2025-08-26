@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.layers import Dense, Input, Layer
 from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 import tabulate
 pd.set_option("display.precision", 1)
 @saving.register_keras_serializable()
@@ -162,7 +163,7 @@ class ContentBasedFiltering():
 
     def _train_model(self):
         tf.random.set_seed(1)
-        cost_fn = tf.keras.losses.MeanSquaredError()
+        cost_fn = MeanSquaredError()
         opt = keras.optimizers.Adam(learning_rate=0.01) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
         self._model.compile(optimizer=opt, loss=cost_fn)        
         tf.random.set_seed(1)

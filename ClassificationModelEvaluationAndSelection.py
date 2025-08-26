@@ -15,6 +15,7 @@ from tensorflow.keras import Sequential
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.activations import sigmoid
 from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.optimizers import Adam
 from utils.GPU import InitializeGPU
 from utils.Plots import plot_bc_dataset
 from utils.ConfusionMatrix import ConfusionMatrix
@@ -152,8 +153,8 @@ class ClassificationModelEvaluationAndSelection():
             
             # Setup the loss and optimizer
             model.compile(
-                loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-                optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                loss=BinaryCrossentropy(from_logits=True),
+                optimizer=Adam(learning_rate=0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
             )
             print(f"Training {model.name}...")
 

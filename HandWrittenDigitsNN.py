@@ -3,6 +3,8 @@ import tensorflow as tf
 from pathlib import Path
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
+from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
+from tensorflow.keras.optimizers import Adam
 import matplotlib.pyplot as plt
 from utils.GPU import InitializeGPU
 from utils import *
@@ -45,7 +47,7 @@ class HandWrittenDigitsNN():
 
     def VisualizeData(self):
         m, n = self._X.shape
-        fig, axes = plt.subplots(8,8, figsize=(8,8)) # figsize = (width, height)
+        fig, axes = plt.subplots(8,8, figsize=(10, 10)) # figsize = (width, height)
         fig.tight_layout(pad=0.1)
         for i,ax in enumerate(axes.flat):
             # Select random indices
@@ -78,8 +80,8 @@ class HandWrittenDigitsNN():
             ], name = "my_model" 
         )
         self._model.compile(
-            loss=tf.keras.losses.BinaryCrossentropy(),
-            optimizer=tf.keras.optimizers.Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+            loss=BinaryCrossentropy(),
+            optimizer=Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
         )
         self._model.fit(
             self._X, self._Y, epochs=20
@@ -102,7 +104,7 @@ class HandWrittenDigitsNN():
         # The following code compares the predictions vs the labels for a random sample of 64 digits. This takes a moment to run.
         m, n = self._X.shape
 
-        fig, axes = plt.subplots(8,8, figsize=(8,8)) # figsize = (width, height)
+        fig, axes = plt.subplots(8,8, figsize=(10, 10)) # figsize = (width, height)
         fig.tight_layout(pad=0.1,rect=[0, 0.03, 1, 0.92]) #[left, bottom, right, top]
 
         for i,ax in enumerate(axes.flat):

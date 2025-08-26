@@ -9,6 +9,8 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
+from tensorflow.keras.optimizers import Adam
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import tensorflow as tf
 import tensorflow.keras.models as models
@@ -122,8 +124,8 @@ def CustomEmbeddingLayer(url, path):
     More stable and accurate results can be obtained if the sigmoid/softmax and loss are combined during training.
     In the preferred organization the final layer has a linear activation. For historical reasons, the outputs in this form are referred to as *logits*. The loss function has an additional argument: `from_logits = True`. This informs the loss function that the sigmoid/softmax operation should be included in the loss calculation. This allows for an optimized implementation.
     """
-    model.compile(optimizer='adam', # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-                loss=tf.keras.losses.BinaryCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
+    model.compile(optimizer=Adam(0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                loss=BinaryCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
                 metrics=['accuracy'])
     # Epochs and batches
     # In the fit statement above, the number of epochs was set to 10. This specifies that the entire data set should be applied during training 10 times. During training, you see output describing the progress of training that looks like this:
@@ -219,8 +221,8 @@ def SentimentAnalysis(url, path):
     More stable and accurate results can be obtained if the sigmoid/softmax and loss are combined during training.
     In the preferred organization the final layer has a linear activation. For historical reasons, the outputs in this form are referred to as *logits*. The loss function has an additional argument: `from_logits = True`. This informs the loss function that the sigmoid/softmax operation should be included in the loss calculation. This allows for an optimized implementation.
     """
-    model.compile(optimizer='adam', # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-                loss=tf.keras.losses.BinaryCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
+    model.compile(optimizer=Adam(0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                loss=BinaryCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/BinaryCrossentropy
                 metrics=['accuracy'])
     # Epochs and batches
     # In the fit statement above, the number of epochs was set to 10. This specifies that the entire data set should be applied during training 10 times. During training, you see output describing the progress of training that looks like this:

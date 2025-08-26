@@ -9,7 +9,6 @@ from tensorflow.keras.losses import MSE
 from tensorflow.keras.optimizers import Adam # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Input
-from tensorflow.keras.losses import MSE
 from tensorflow.keras import layers, losses, optimizers, regularizers
 
 # XXX: I have NOT tested this file because installation of swig gymnasium[box2d] failed. Will return to this when I have the time. 
