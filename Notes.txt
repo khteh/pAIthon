@@ -113,6 +113,7 @@ Overfitting (High variance):
 - More data is likely to help.
 - One of the causes is data leakage - some of test data leak into training data.
 - Example: Training dataset performance: 93%, Test dataset performance: 99%
+Note: Overfitting is sometimes a good thing to begin with. It means the model is learning.
 
 High bias AND high variance:
 - J(train) is high; J(cv) higher than J(train)

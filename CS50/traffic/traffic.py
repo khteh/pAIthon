@@ -38,7 +38,7 @@ def main(model_path):
         model = tf.keras.models.load_model(model_path)
     else:
         # Get a compiled neural network
-        model = get_model()
+        model = build_model()
         # Fit model on training data
 
         # Epochs and batches
@@ -113,7 +113,7 @@ def load_data(data_dir):
     print(f"{len(images)} images; {len(labels)} labels")
     return (images, labels)
 
-def get_model():
+def build_model():
     """
     Returns a compiled convolutional neural network model. Assume that the
     `input_shape` of the first layer is `(IMG_WIDTH, IMG_HEIGHT, 3)`.
@@ -133,8 +133,8 @@ def get_model():
     model = models.Sequential([
     layers.Conv2D(64, (3, 3), activation='softmax', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
     layers.MaxPooling2D((2, 2)),
-    layers.Flatten(),
-    layers.Dense(64, activation='softmax', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+    layers.Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
+    layers.Dense(64, activation='softmax', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
     layers.Dropout(0.5),
     layers.Dense(64, activation='softmax', name="L2", kernel_regularizer=regularizers.l2(0.01)),
     layers.Dropout(0.5),

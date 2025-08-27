@@ -55,7 +55,7 @@ class ReinforcementLearning():
         self._q_network = Sequential([
             ### START CODE HERE ###
             Input(shape=(self._state_size)),
-            Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+            Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)), # Densely connected, or fully connected
             Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
             Dense(self._num_actions, activation = 'linear')
             ### END CODE HERE ### 

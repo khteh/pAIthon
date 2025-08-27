@@ -10,3 +10,9 @@ https://cs50.harvard.edu/ai/2024/
 
 - `pipenv run python -m <module>`
 - Some keras (NN) models are saved and retrieved from `models/` folder.
+
+## Model Diagnostics
+
+### Tensorboard
+
+- `pipenv run tensorboard --logdir <path>`

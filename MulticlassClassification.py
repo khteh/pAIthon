@@ -52,7 +52,7 @@ class MulticlassClassification():
         tf.random.set_seed(1234)  # applied to achieve consistent results
         model = Sequential(
             [
-                Dense(2, activation = 'relu',   name = "L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+                Dense(2, activation = 'relu',   name = "L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
                 Dense(4, activation = 'linear', name = "L2")  # Linear activation ("pass-through") if not specified
             ]
         )

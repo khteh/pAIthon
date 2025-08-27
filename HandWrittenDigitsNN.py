@@ -73,7 +73,7 @@ class HandWrittenDigitsNN():
             [               
                 tf.keras.Input(shape=(400,)),    #specify input size
                 ### START CODE HERE ### 
-                Dense(25, input_dim=400, activation='sigmoid', name="L1"),
+                Dense(25, input_dim=400, activation='sigmoid', name="L1"), # Densely connected, or fully connected
                 Dense(15, input_dim=25, activation='sigmoid', name="L2"),
                 Dense(1, input_dim=15, activation='sigmoid', name="L3"),
                 ### END CODE HERE ### 

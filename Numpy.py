@@ -2,7 +2,9 @@ import numpy, math, tensorflow as tf
 from pathlib import Path
 from utils.GPU import InitializeGPU
 import numpy.lib.recfunctions as reconcile
+from numpy.random import Generator, PCG64DXSM
 import matplotlib.pyplot as plt
+rng = Generator(PCG64DXSM())
 """
 https://numpy.org/doc/stable/user/basics.indexing.html
 Numpy main data type is ndarray
@@ -43,6 +45,36 @@ def twoDArray(n: int):
     aggregate0 = numpy.sum(numbers, axis=0) # Each column collapsed into a single row
     aggregate1 = numpy.sum(numbers, axis=1) # Each row collapsed into a single column
     print(f"Aggregates axis-0: {aggregate0}, axis-1: {aggregate1}")
+
+def Matrix():
+    print(f"\n=== {Matrix.__name__} ===")
+    #vector indexing operations on matrices
+    a = numpy.arange(6).reshape(-1, 2)   #reshape is a convenient way to create matrices
+    print(f"a.shape: {a.shape}, \na= {a}")
+
+    #access an element
+    print(f"\na[2,0].shape:   {a[2, 0].shape}, a[2,0] = {a[2, 0]},     type(a[2,0]) = {type(a[2, 0])} Accessing an element returns a scalar\n")
+
+    #access a row
+    print(f"a[2].shape:   {a[2].shape}, a[2]   = {a[2]}, type(a[2])   = {type(a[2])}")
+
+    #vector 2-D slicing operations
+    a = numpy.arange(20).reshape(-1, 10)
+    print(f"a = \n{a}")
+
+    #access 5 consecutive elements (start:stop:step)
+    print("a[0, 2:7:1] = ", a[0, 2:7:1], ",  a[0, 2:7:1].shape =", a[0, 2:7:1].shape, "a 1-D array")
+
+    #access 5 consecutive elements (start:stop:step) in two rows
+    print("a[:, 2:7:1] = \n", a[:, 2:7:1], ",  a[:, 2:7:1].shape =", a[:, 2:7:1].shape, "a 2-D array")
+
+    # access all elements
+    print("a[:,:] = \n", a[:,:], ",  a[:,:].shape =", a[:,:].shape)
+
+    # access all elements in one row (very common usage)
+    print("a[1,:] = ", a[1,:], ",  a[1,:].shape =", a[1,:].shape, "a 1-D array")
+    # same as
+    print("a[1]   = ", a[1],   ",  a[1].shape   =", a[1].shape, "a 1-D array")
 
 def multiDArray(i:int, j: int, k:int):
     """
@@ -328,10 +360,68 @@ def VectorProperties():
     assert numpy.sum(v2 * v3) == v2 @ v3 > 0
     assert 0 == v1 @ v2 # Orthogonal OR Unrelated
 
+def Polynomial():
+    print(f"\n=== {Polynomial.__name__} ===")
+    x = numpy.array([66, 5, 15, 2, 500])
+    c = numpy.array([3000, 200 , -50, 5000, 100])
+    # @ operator = numpy.matmul (matrix multiplication)
+    print(f"x @ c: {x @ c}, numpy.dot(x, c): {numpy.dot(x, c)}")
+    x = numpy.array([[66, 5, 15, 2, 500], 
+              [21, 3, 50, 1, 100]])
+    print(f"x @ c: {x @ c}, numpy.dot(x, c): {numpy.dot(x, c)}")
+
+def kMin(n): #N minimum (index) values in a numpy array
+    print(f"\n=== {kMin.__name__} ===")
+    # https://stackoverflow.com/questions/16817948/i-have-need-the-n-minimum-index-values-in-a-numpy-array
+    arr = numpy.array([1, 4, 2, 5, 3])
+    indices = arr.argsort()[:n] # Sort the array
+    print(f"arr: {arr}, tmp: {indices}")
+
+def VectorSlicing():
+    print(f"\n=== {VectorSlicing.__name__} ===")
+    #vector slicing operations
+    a = numpy.arange(10)
+    print(f"a         = {a}")
+
+    #access 5 consecutive elements (start:stop:step)
+    c = a[2:7:1];     print("a[2:7:1] = ", c)
+
+    # access 3 elements separated by two 
+    c = a[2:7:2];     print("a[2:7:2] = ", c)
+
+    # access all elements index 3 and above
+    c = a[3:];        print("a[3:]    = ", c)
+
+    # access all elements below index 3
+    c = a[:3];        print("a[:3]    = ", c)
+
+    # access all elements
+    c = a[:];         print("a[:]     = ", c)
+
+def RandomTests():
+    print(f"\n=== {RandomTests.__name__} ===")
+    data = numpy.arange(0, 10, 1)
+    print(f"data: {data}")
+    print(f"data (reversed): {data[::-1]}")
+
+    data = rng.standard_normal(100)
+    print(f"data: {data}")
+    indices = data.argsort()
+    print(f"Sorted indices: {indices}")
+    print(f"Sorted data: {data[indices]}")
+    print(f"min: [{numpy.argmin(data)}] {numpy.min(data)}, max: [{numpy.argmax(data)}] {numpy.max(data)}")
+    top10_indices = indices[-10:]
+    print(f"Top-10 indices: {top10_indices}")
+    print(f"Top-10 data: {data[top10_indices]}")
+    top10_descending_indices = top10_indices[::-1]
+    print(f"Top-10 indices (descending): {top10_descending_indices}")
+    print(f"Top-10 data  (descending): {data[top10_descending_indices]}")
+
 if __name__ == "__main__":
     InitializeGPU()
     oneDArray(10)
     twoDArray(30)
+    Matrix()
     multiDArray(3,4,5)
     AdvancedIndexing()
     Broadcasting()
@@ -356,3 +446,7 @@ if __name__ == "__main__":
     VectorOperations("data/full_portfolio.csv")
     Tensors()
     VectorProperties()
+    VectorSlicing()
+    Polynomial()
+    kMin(3)
+    RandomTests()

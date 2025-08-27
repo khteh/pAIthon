@@ -53,7 +53,7 @@ def NNSoftmax(X_train, y_train):
     print(f"\n=== {NNSoftmax.__name__} ===")
     model = Sequential(
         [
-            Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+            Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
             Dense(15, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)),
             Dense(4, activation = 'softmax')    # < softmax activation here
         ]

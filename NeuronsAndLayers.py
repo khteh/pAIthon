@@ -29,7 +29,7 @@ def LinearRegressionModel():
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
     """       
-    linear_layer = tf.keras.layers.Dense(units=1, activation = 'linear', name="L1", kernel_regularizer=regularizers.l2(0.01)) # Decrease to fix high bias; Increase to fix high variance.
+    linear_layer = tf.keras.layers.Dense(units=1, activation = 'linear', name="L1", kernel_regularizer=regularizers.l2(0.01)) # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
     w, b = linear_layer.get_weights()
     # There are no weights as the weights are not yet instantiated. 
     print(f"weights: {w}")

@@ -51,7 +51,7 @@ class Discriminator():
         """
         self.model = models.Sequential([
             layers.Input(shape=(1,2)),
-            layers.Dense(256, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+            layers.Dense(256, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
             layers.Dropout(0.3),
             layers.Dense(128, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
             layers.Dropout(0.3),

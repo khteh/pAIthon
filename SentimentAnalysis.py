@@ -112,8 +112,8 @@ def CustomEmbeddingLayer(url, path):
         # L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
         layers.Conv1D(128, 5, activation='relu'),
         layers.GlobalMaxPool1D(),
-        #layers.Flatten(),
-        layers.Dense(10, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+        #layers.Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
+        layers.Dense(10, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
         layers.Dense(1, activation='linear', name="L2") # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
     ]) 
     """
