@@ -417,6 +417,15 @@ def RandomTests():
     print(f"Top-10 indices (descending): {top10_descending_indices}")
     print(f"Top-10 data  (descending): {data[top10_descending_indices]}")
 
+def ShapeTests():
+    print(f"\n=== {ShapeTests.__name__} ===")
+    a = numpy.ndarray((2,2))
+    assert (2,2) == a.shape
+    print(f"a.shape: {a.shape}")
+    a = a.reshape((1,)+ a.shape)
+    assert (1,2,2) == a.shape
+    print(f"a.shape: {a.shape}")
+
 if __name__ == "__main__":
     InitializeGPU()
     oneDArray(10)
@@ -450,3 +459,4 @@ if __name__ == "__main__":
     Polynomial()
     kMin(3)
     RandomTests()
+    ShapeTests()
