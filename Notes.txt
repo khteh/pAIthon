@@ -317,12 +317,13 @@ playground.tensorflow.org
 Image Convolution: Applying a filter that adds each pixel value of an image to it's neighbours, weighted according to a kernel matrix.
                   - Extracts features from input. Output is a feature map
 Pooling: reducing the size of an input by sampling from regions in the input
-(1) Max-pooling: pooling by choosing the maximum vallue in each region
+(1) Max-pooling: pooling by choosing the maximum value in each region
 Convolutional NN: NN that uses convolution, usually for analyzing images (i.e., Image Convolution + Pooling in a NN)
                 - Training is done to figure out what's the best filters for the input image
                 - Models how human look at images
 Input image -> [Convolution (calculates filters) -> Pooling (Summarize and reduces the size of inputs)] -> Flattening (Feeds into the inputs of NN)
 [Convolution -> Pooling] can be applied multiple times before Flattening. Early layers of this to discover low-level features (Edges, Curves, Shapes); later layers to discover high-level features (objects, person, face, etc)
+Note: In a convnet, the higher up a layer is, the more specialized it is. The first few layers in a convnet learn very simple and generic features, which generalize to almost all types of images. But as you go higher up, the features are increasingly specific to the dataset that the model is trained on.
 
 Feed-forward NN: Good for classification. 1:1 mapping from input to output -Single-valued output.
 Recurrent NN: Output from the NN is fed to it's input for future calculation. It maintains some states. Good for dealing with sequences of data, both input and/or output. N:N mapping from input to output - Output sequence of values.
