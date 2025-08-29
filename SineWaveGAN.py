@@ -153,12 +153,11 @@ class Generator():
 # @tf.function decorator to increase performance. Without this decorator our training will take twice as long. If you would like to know more about how to increase performance with @tf.function take a look at the TensorFlow documentation.
 @tf.function
 def TrainStep(images, discriminator, generator, batch_size: int, samples: int):
-    noise_dim = samples
     """
     The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
     The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
     """
-    noise = tf.random.normal([batch_size, noise_dim, 2])
+    noise = rng.random([batch_size, samples, 2]) # (batch_size, 1024, 2)
     # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
     # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
@@ -180,7 +179,7 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
                                     generator = generator.model,
                                     discriminator = discriminator.model)
     # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
-    seed = tf.random.normal([1, samples, 2])
+    seed = rng.random([1, samples, 2])
     """
     The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
     The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
@@ -198,7 +197,7 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
         if (epoch + 1) % 15 == 0:
             checkpoint.save(file_prefix = checkpoint_path)
 
-        print(f"Time for epoch {epoch + 1} is {time.time()-start}s")
+        print(f"Epoch {epoch + 1} : {time.time()-start}s")
 
     # Generate after the final epoch
     save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epochs}", f'sinewave_gan_epoch_{epochs:04d}.png')
@@ -215,15 +214,29 @@ def save_images(data, title:str, filename: str):
     #plt.show()
     plt.close()
 
+def GenerateSingleSineWave(samples: int):
+    # Generate some random samples
+    numpy.random.seed(1234)
+    x_values = numpy.random.uniform(low=0, high=(2 * math.pi), size=samples)
+    plt.plot(x_values)    
+    plt.show()
+    # Create a noisy sinewave with these values
+    y_values = numpy.sin(x_values) + (0.1 * numpy.random.randn(x_values.shape[0]))
+    plt.plot(x_values, y_values, '.')
+    plt.show()
+
 def PrepareTrainingData(dataset_size: int, samples: int, batch_size: int):
     """
     The training data is composed of pairs (x₁, x₂) so that x₂ consists of the value of the sine of x₁ for x₁ in the interval from 0 to 2π.
     PyTorch’ll need a tensor of labels, which are required by PyTorch’s data loader. Since GANs make use of unsupervised learning techniques, the labels can be anything. They won’t be used, after all.
     """
+    numpy.random.seed(1234)
     dataset = numpy.empty((dataset_size, samples, 2))
     for i in range(dataset_size):
-        dataset[i, :, 0] = 2 * math.pi * rng.random(samples)
-        dataset[i, :, 1] = numpy.sin(dataset[i, :, 0])
+        #dataset[i, :, 0] = 2 * math.pi * rng.random(samples)
+        #dataset[i, :, 1] = numpy.sin(dataset[i, :, 0])
+        dataset[i, :, 0] = numpy.random.uniform(low=0, high=(2 * math.pi), size=samples)
+        dataset[i, :, 1] = numpy.sin(dataset[i, :, 0]) + (0.1 * numpy.random.randn(dataset[i, :, 0].shape[0]))
     # Check the sine wave dataset
     #plt.plot(dataset[0, :, 0], dataset[0, :, 1], ".")
     #plt.show()
@@ -235,17 +248,31 @@ def PrepareTrainingData(dataset_size: int, samples: int, batch_size: int):
     print(f"dataset type: {type(dataset)}, shape: {dataset.shape}") # <class 'numpy.ndarray'>, shape: (10000, 1024, 2)
     return tf.data.Dataset.from_tensor_slices(tf.constant(dataset)).shuffle(dataset_size).batch(batch_size) # train_dataset: TensorSpec(shape=(None, 2), dtype=tf.float64, name=None)
 
+def CheckNoise(batch_size: int, samples: int):
+    print(f"\n=== {CheckNoise.__name__} ===")
+    noise = rng.random([batch_size, samples, 2]) # (batch_size, 1024, 2)
+    print(f"noise: {noise.shape}, {noise.ndim}")
+    print(noise[0])
+    plt.plot(noise[0, :, 0], noise[0, :, 1], ".")
+    plt.show()
+    plt.plot(noise[batch_size//2, :, 0], noise[batch_size//2, :, 1], ".")
+    plt.show()
+    plt.plot(noise[batch_size-1, :, 0], noise[batch_size-1, :, 1], ".")
+    plt.show()
+
 if __name__ == "__main__":
     NUM_SINE_WAVES = 10000
     SAMPLES = 1024
     BATCH_SIZE = 32
-    EPOCHS = 300
+    EPOCHS = 500
     Path("output/SineWaveGAN").mkdir(parents=True, exist_ok=True)
     Path("output/SineWaveGAN").is_dir()
     discriminator = Discriminator(SAMPLES)
     generator = Generator(SAMPLES)
     checkpoint_dir = './checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
+    #GenerateSingleSineWave(SAMPLES)
+    #CheckNoise(BATCH_SIZE, SAMPLES)
     train_dataset = PrepareTrainingData(NUM_SINE_WAVES, SAMPLES, BATCH_SIZE)
     print(f"train_dataset: {train_dataset.element_spec}") # train_dataset: TensorSpec(shape=(None, 2), dtype=tf.float64, name=None)
     Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, SAMPLES)

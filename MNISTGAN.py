@@ -210,7 +210,7 @@ class MNISTGAN():
         The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
         The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
         """
-        noise = tf.random.normal([self._batch_size, self._noise_dim])
+        noise = rng.random([self._batch_size, self._noise_dim])
         #print(f"noise: {noise.shape}")
         # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
         # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
@@ -230,7 +230,7 @@ class MNISTGAN():
     def Train(self, num_examples_to_generate: int, image_rows: int, image_cols: int):
         #num_examples_to_generate = 16
         # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
-        seed = tf.random.normal([num_examples_to_generate, self._noise_dim])
+        seed = rng.random([num_examples_to_generate, self._noise_dim])
         print(f"seed: {seed.shape}")
         """
         The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
@@ -249,7 +249,7 @@ class MNISTGAN():
             if (epoch + 1) % 15 == 0:
                 self._checkpoint.save(file_prefix = self._checkpoint_path)
 
-            print(f"Time for epoch {epoch + 1} is {time.time()-start}s")
+            print(f"Epoch {epoch + 1} : {time.time()-start}s")
 
         # Generate after the final epoch
         self._save_images(self._generator.run(seed, training=False), f"Generated Image at Epoch {self._epochs}", f'mnist_gan_epoch_{self._epochs:04d}.png', (image_rows, image_cols))
