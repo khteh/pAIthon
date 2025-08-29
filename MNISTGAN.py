@@ -210,6 +210,7 @@ class MNISTGAN():
         The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
         """
         noise = tf.random.normal([self._batch_size, self._noise_dim])
+        #print(f"noise: {noise.shape}")
         # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
         # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
@@ -228,7 +229,8 @@ class MNISTGAN():
     def Train(self, num_examples_to_generate: int, image_rows: int, image_cols: int):
         #num_examples_to_generate = 16
         # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
-        seed = tf.random.normal([num_examples_to_generate, noise_dim])
+        seed = tf.random.normal([num_examples_to_generate, self._noise_dim])
+        print(f"seed: {seed.shape}")
         """
         The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
         The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
@@ -255,7 +257,7 @@ class MNISTGAN():
         # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
         #fig = plt.figure(figsize=(4, 4))
         fig = plt.figure(figsize=dimension)
-        #print(f"_save_images data.shape: {data.shape}, ndim: {data.ndim}")
+        #print(f"_save_images data.shape: {data.shape}, ndim: {data.ndim}") # data.shape: (16, 28, 28, 1), ndim: 4
         for i in range(data.shape[0]): # data.shape: (16, 28, 28, 1), ndim: 4
             plt.subplot(4, 4, i+1)
             plt.imshow(data[i, :, :, 0] * 127.5 + 127.5, cmap='gray') # The generator output shape is (, 28, 28, 1)
@@ -270,10 +272,6 @@ if __name__ == "__main__":
     BUFFER_SIZE = 60000
     BATCH_SIZE = 256
     EPOCHS = 50
-    noise_dim = 100
-    noise = tf.random.normal([BATCH_SIZE, noise_dim])
-    seed = tf.random.normal([16, noise_dim])
-    print(f"noise: {noise.shape} ndim: {noise.ndim}, seed: {seed.shape} ndim: {seed.ndim}")
     checkpoint_dir = './checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "mnist_gan")
     mnistGAN = MNISTGAN(BUFFER_SIZE, BATCH_SIZE, EPOCHS, checkpoint_prefix)
