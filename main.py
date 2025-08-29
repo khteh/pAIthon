@@ -1,4 +1,5 @@
 import numpy
+from pathlib import Path
 from utils.UniVariatePlot import UniVariatePlot
 portnames = ["PAN", "AMS", "CAS", "NYC", "HEL"]
 D = [
@@ -99,10 +100,15 @@ def univariate_plot():
     y_train = numpy.array([300.0, 500.0])
     UniVariatePlot(x_train, y_train, [], 0.0, "Housing Prices", 'Price (in 1000s of dollars)', 'Size (1000 sqft)')
 
+def PathlibMkdirTest():
+    Path("output/SineWaveGAN").mkdir(parents=True, exist_ok=True)
+    Path("output/SineWaveGAN").is_dir()
+
 if __name__ == "__main__":
     sort_dict_by_tuple_values()
     permutations([0], list(range(1, len(portnames)))) # This will start the recursion with 0 ("PAN") as the first stop
     print(' '.join([portnames[i] for i in bestroute]) + " %.1f kg" % smallest)
     testZip()
     matrix_sums()
+    PathlibMkdirTest()
     #univariate_plot() This blocks

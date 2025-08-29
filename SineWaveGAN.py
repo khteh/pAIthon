@@ -22,10 +22,11 @@ Structures that generate data, including GANs, are considered generative models 
 This module tries to convert from PyTorch used in the tutorial to use Tensorflow. However, this will NOT work because it needs dataset of sine wave images to train the Discriminator like how it works in MNISTGAN.py. So, the work in this module is ABORTED.
 """
 class Discriminator():
+    _samples: int = None
     model = None
     _cross_entropy = None
     optimizer = None
-    def __init__(self):
+    def __init__(self, samples: int):
         """
         Multilayer Perceptron NN defined in a sequential way using models.Sequential()
         The input is two-dimensional, and the first hidden layer is composed of 256 neurons with ReLU activation.
@@ -49,8 +50,9 @@ class Discriminator():
         L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
+        self._samples = samples
         self.model = models.Sequential([
-            layers.Input(shape=(1,2)),
+            layers.Input(shape=(self._samples, 2)),
             layers.Dense(256, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
             layers.Dropout(0.3),
             layers.Dense(128, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
@@ -88,10 +90,11 @@ class Discriminator():
         self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
    
 class Generator():
+    _samples: int = None
     model = None
     _cross_entropy = None
     optimizer = None
-    def __init__(self):
+    def __init__(self, samples: int):
         """
         self.model = nn.Sequential(
             nn.Linear(2, 16),
@@ -103,8 +106,9 @@ class Generator():
         L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
+        self._samples = samples
         self.model = models.Sequential()
-        self.model.add(layers.Input(shape=(100,)))
+        self.model.add(layers.Input(shape=(samples,2)))
         self.model.add(layers.Dense(16, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01), use_bias=False)) # Decrease to fix high bias; Increase to fix high variance.
         print(f"Generator L1 output shape: {self.model.output_shape}")
         self.model.add(layers.Dense(32, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)))
@@ -113,8 +117,8 @@ class Generator():
         # The output will consist of a vector with two elements that can be any value ranging from negative infinity to infinity, which will represent (x̃₁, x̃₂).
         self.model.add(layers.Dense(2, name="L3")) # Linear activation ("pass-through") if not specified
         print(f"Generator L3 output shape: {self.model.output_shape}")
-        #print(f"Generator output shape: {self.model.output_shape}")
-        assert self.model.output_shape == (None, 2)
+        print(f"Generator output shape: {self.model.output_shape}")
+        assert self.model.output_shape == (None, self._samples, 2)
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -148,37 +152,35 @@ class Generator():
 # This annotation causes the function to be "compiled".
 # @tf.function decorator to increase performance. Without this decorator our training will take twice as long. If you would like to know more about how to increase performance with @tf.function take a look at the TensorFlow documentation.
 @tf.function
-def TrainStep(images, discriminator, generator, batch_size: int):
-    noise_dim = 100
+def TrainStep(images, discriminator, generator, batch_size: int, samples: int):
+    noise_dim = samples
     """
     The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
     The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
     """
-    noise = tf.random.normal([batch_size, noise_dim])
+    noise = tf.random.normal([batch_size, noise_dim, 2])
     # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
     # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-      generated_images = generator.run(noise, training=True)
+        generated_images = generator.run(noise, training=True)
+        #print(f"generated_images: {type(generated_images)}, {generated_images.shape}") # <class 'tensorflow.python.framework.ops.SymbolicTensor'>, (1024, 2)
+        real_output = discriminator.run(images, training=True)
+        fake_output = discriminator.run(generated_images, training=True)
 
-      real_output = discriminator.run(images, training=True)
-      fake_output = discriminator.run(generated_images, training=True)
-
-      gen_loss = generator.loss(real_output, fake_output)
-      disc_loss = discriminator.loss(real_output, fake_output)
+        gen_loss = generator.loss(real_output, fake_output)
+        disc_loss = discriminator.loss(real_output, fake_output)
 
     generator.UpdateParameters(gen_tape, gen_loss)
     # Use the GradientTape to calculate the gradients of the cost with respect to the parameter w: dJ/dw.
     discriminator.UpdateParameters(disc_tape, disc_loss)
 
-def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch_size: int, num_examples_to_generate: int, image_rows: int, image_cols: int):
+def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch_size: int, samples: int):
     checkpoint = tf.train.Checkpoint(generator_optimizer = generator.optimizer,
                                     discriminator_optimizer = discriminator.optimizer,
                                     generator = generator.model,
                                     discriminator = discriminator.model)
-    noise_dim = 100
-    #num_examples_to_generate = 16
     # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
-    seed = tf.random.normal([num_examples_to_generate, noise_dim])
+    seed = tf.random.normal([1, samples, 2])
     """
     The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
     The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
@@ -187,10 +189,10 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
         start = time.time()
 
         for image_batch in dataset:
-            TrainStep(image_batch, discriminator, generator, batch_size)
+            TrainStep(image_batch, discriminator, generator, batch_size, samples)
 
         # Produce images for the GIF as you go
-        save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'sinewave_gan_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
+        save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'sinewave_gan_epoch_{epoch+1:04d}.png')
 
         # Save the model every 15 epochs
         if (epoch + 1) % 15 == 0:
@@ -199,46 +201,53 @@ def Train(dataset, epochs: int, discriminator, generator, checkpoint_path, batch
         print(f"Time for epoch {epoch + 1} is {time.time()-start}s")
 
     # Generate after the final epoch
-    save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epochs}", f'sinewave_gan_epoch_{epochs:04d}.png', (image_rows, image_cols))
+    save_images(generator.run(seed, training=False), f"Generated Image at Epoch {epochs}", f'sinewave_gan_epoch_{epochs:04d}.png')
     return checkpoint
 
-def save_images(data, title:str, filename: str, dimension):
+def save_images(data, title:str, filename: str):
     # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
-    #fig = plt.figure(figsize=(4, 4))
-    print(f"save_images data.shape: {data.shape}, ndim: {data.ndim}")
-    fig, ax = plt.subplots(1,1)
-    #plt.imshow(data[:, :]) # data.shape: (1, 2), ndim: 2 XXX: Should be (1024, 2)
-    plt.plot(data[:, 0], data[:, 1], ".")
-    plt.axis('off')
+    #print(f"save_images data.shape: {data.shape}, ndim: {data.ndim}") # data.shape: (1, 1024, 2), ndim: 3
+    plt.plot(data[0, :, 0], data[0, :, 1], ".")
+    #plt.axis('off')
     #plt.legend()
     plt.suptitle(title)
-    plt.savefig(f"output/{filename}")
+    plt.savefig(f"output/SineWaveGAN/{filename}")
     #plt.show()
     plt.close()
 
-def PrepareTrainingData(buffer_size: int, batch_size: int):
+def PrepareTrainingData(dataset_size: int, samples: int, batch_size: int):
     """
     The training data is composed of pairs (x₁, x₂) so that x₂ consists of the value of the sine of x₁ for x₁ in the interval from 0 to 2π.
     PyTorch’ll need a tensor of labels, which are required by PyTorch’s data loader. Since GANs make use of unsupervised learning techniques, the labels can be anything. They won’t be used, after all.
     """
-    data = numpy.zeros((buffer_size, 2))
-    data[:,0] = 2 * math.pi * rng.random(buffer_size)
-    data[:,1] = numpy.sin(data[:,0])
-    data = data.reshape(buffer_size, 1, 2).astype('float32') # This effectively transposes the pixel value (the last dimension) into a single column (28 rows)
-    assert data.shape == (buffer_size, 1, 2)
-    print(f"data type: {type(data)}, shape: {data.shape}") # data type: <class 'numpy.ndarray'>, shape: (1024, 2)
-    return tf.data.Dataset.from_tensor_slices(data).shuffle(buffer_size).batch(batch_size)
+    dataset = numpy.empty((dataset_size, samples, 2))
+    for i in range(dataset_size):
+        dataset[i, :, 0] = 2 * math.pi * rng.random(samples)
+        dataset[i, :, 1] = numpy.sin(dataset[i, :, 0])
+    # Check the sine wave dataset
+    #plt.plot(dataset[0, :, 0], dataset[0, :, 1], ".")
+    #plt.show()
+    #plt.plot(dataset[dataset_size//2, :, 0], dataset[dataset_size//2, :, 1], ".")
+    #plt.show()
+    #plt.plot(dataset[dataset_size-1, :, 0], dataset[dataset_size-1, :, 1], ".")
+    #plt.show()
+    assert dataset.shape == (dataset_size, samples, 2)
+    print(f"dataset type: {type(dataset)}, shape: {dataset.shape}") # <class 'numpy.ndarray'>, shape: (10000, 1024, 2)
+    return tf.data.Dataset.from_tensor_slices(tf.constant(dataset)).shuffle(dataset_size).batch(batch_size) # train_dataset: TensorSpec(shape=(None, 2), dtype=tf.float64, name=None)
 
 if __name__ == "__main__":
-    BUFFER_SIZE = 1024
+    NUM_SINE_WAVES = 10000
+    SAMPLES = 1024
     BATCH_SIZE = 32
     EPOCHS = 300
-    discriminator = Discriminator()
-    generator = Generator()
+    Path("output/SineWaveGAN").mkdir(parents=True, exist_ok=True)
+    Path("output/SineWaveGAN").is_dir()
+    discriminator = Discriminator(SAMPLES)
+    generator = Generator(SAMPLES)
     checkpoint_dir = './checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
-    train_dataset = PrepareTrainingData(BUFFER_SIZE, BATCH_SIZE)
+    train_dataset = PrepareTrainingData(NUM_SINE_WAVES, SAMPLES, BATCH_SIZE)
     print(f"train_dataset: {train_dataset.element_spec}") # train_dataset: TensorSpec(shape=(None, 2), dtype=tf.float64, name=None)
-    Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, 1, 1, 1)
-    show_image(f'output/sinewave_gan_epoch_{EPOCHS:04d}.png')
-    CreateGIF("output/sinewave_gan.gif", 'output/sinewave_gan_epoch_*.png')
+    Train(train_dataset, EPOCHS, discriminator, generator, checkpoint_prefix, BATCH_SIZE, SAMPLES)
+    show_image(f'output/SineWaveGAN/sinewave_gan_epoch_{EPOCHS:04d}.png')
+    CreateGIF("output/SineWaveGAN/sinewave_gan.gif", 'output/SineWaveGAN/sinewave_gan_epoch_*.png')

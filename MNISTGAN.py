@@ -7,6 +7,7 @@ from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.GAN import restore_latest_checkpoint, show_image, CreateGIF
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
+# https://www.tensorflow.org/tutorials/generative/dcgan
 class Discriminator():
     """
     The discriminator is a CNN-based image classifier. It classifies the generated images as real or fake. The model will be trained to output positive values for real images, and negative values for fake images.
@@ -277,5 +278,7 @@ if __name__ == "__main__":
     mnistGAN = MNISTGAN(BUFFER_SIZE, BATCH_SIZE, EPOCHS, checkpoint_prefix)
     mnistGAN.PrepareMNISTData()
     mnistGAN.Train(16, 4, 4)
+    Path("output/MNISTGAN").mkdir(parents=True, exist_ok=True)
+    Path("output/MNISTGAN").is_dir()
     show_image(f'output/MNISTGAN/mnist_gan_epoch_{EPOCHS:04d}.png')
     CreateGIF("output/MNISTGAN/mnist_gan.gif", 'output/MNISTGAN/mnist_gan_epoch_*.png')
