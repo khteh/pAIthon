@@ -157,7 +157,7 @@ def TrainStep(images, discriminator, generator, batch_size: int, samples: int):
     The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
     The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
     """
-    noise = rng.random([batch_size, samples, 2]) # (batch_size, 1024, 2)
+    noise = rng.random([100, samples, 2]) # (batch_size, 1024, 2)
     # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
     # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
@@ -214,17 +214,6 @@ def save_images(data, title:str, filename: str):
     #plt.show()
     plt.close()
 
-def GenerateSingleSineWave(samples: int):
-    # Generate some random samples
-    numpy.random.seed(1234)
-    x_values = numpy.random.uniform(low=0, high=(2 * math.pi), size=samples)
-    plt.plot(x_values)    
-    plt.show()
-    # Create a noisy sinewave with these values
-    y_values = numpy.sin(x_values) + (0.1 * numpy.random.randn(x_values.shape[0]))
-    plt.plot(x_values, y_values, '.')
-    plt.show()
-
 def PrepareTrainingData(dataset_size: int, samples: int, batch_size: int):
     """
     The training data is composed of pairs (x₁, x₂) so that x₂ consists of the value of the sine of x₁ for x₁ in the interval from 0 to 2π.
@@ -271,7 +260,6 @@ if __name__ == "__main__":
     generator = Generator(SAMPLES)
     checkpoint_dir = './checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
-    #GenerateSingleSineWave(SAMPLES)
     #CheckNoise(BATCH_SIZE, SAMPLES)
     train_dataset = PrepareTrainingData(NUM_SINE_WAVES, SAMPLES, BATCH_SIZE)
     print(f"train_dataset: {train_dataset.element_spec}") # train_dataset: TensorSpec(shape=(None, 2), dtype=tf.float64, name=None)
