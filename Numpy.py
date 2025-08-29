@@ -278,6 +278,8 @@ def HierarchicalDataAnalysis(companies, prices):
     plt.title("Tech Share Valuation")
     plt.legend()
     #plt.show() This blocks
+    plt.clf()
+    plt.cla()
     
 def Tensors():
     """
@@ -417,6 +419,20 @@ def RandomTests():
     print(f"Top-10 indices (descending): {top10_descending_indices}")
     print(f"Top-10 data  (descending): {data[top10_descending_indices]}")
 
+def NoisySineWave(samples: int):
+    print(f"\n=== {NoisySineWave.__name__} ===")
+    # Generate some random samples
+    #numpy.random.seed(1234)
+    x_values = numpy.random.uniform(low=0, high=(2 * math.pi), size=samples)
+    plt.plot(x_values)
+    plt.title("Noisy Sine Wave X values")
+    plt.show()
+    # Create a noisy sinewave with these values
+    y_values = numpy.sin(x_values) + (0.1 * numpy.random.randn(x_values.shape[0]))
+    plt.plot(x_values, y_values, '.')
+    plt.title("Noisy Sine Wave")
+    plt.show()
+
 def ShapeTests():
     print(f"\n=== {ShapeTests.__name__} ===")
     a = numpy.ndarray((2,2))
@@ -460,3 +476,4 @@ if __name__ == "__main__":
     kMin(3)
     RandomTests()
     ShapeTests()
+    NoisySineWave(1024)
