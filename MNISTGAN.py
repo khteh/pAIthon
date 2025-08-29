@@ -264,7 +264,7 @@ class MNISTGAN():
             plt.axis('off')
         #plt.legend()
         plt.suptitle(title)
-        plt.savefig(f"output/{filename}")
+        plt.savefig(f"output/MNISTGAN/{filename}")
         #plt.show()
         plt.close()
 
@@ -277,5 +277,5 @@ if __name__ == "__main__":
     mnistGAN = MNISTGAN(BUFFER_SIZE, BATCH_SIZE, EPOCHS, checkpoint_prefix)
     mnistGAN.PrepareMNISTData()
     mnistGAN.Train(16, 4, 4)
-    show_image(f'output/mnist_gan_epoch_{EPOCHS:04d}.png')
-    CreateGIF("output/mnist_gan.gif", 'output/mnist_gan_epoch_*.png')
+    show_image(f'output/MNISTGAN/mnist_gan_epoch_{EPOCHS:04d}.png')
+    CreateGIF("output/MNISTGAN/mnist_gan.gif", 'output/MNISTGAN/mnist_gan_epoch_*.png')
