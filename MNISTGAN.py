@@ -177,7 +177,8 @@ class MNISTGAN():
         - tf.data.Dataset.prefetch: It is good practice to end the pipeline by prefetching for performance.
         """
         (train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data() # train_images type: <class 'numpy.ndarray'>, shape: (60000, 28, 28)
-        #print(f"train_images type: {type(train_images)}")
+        #print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
+        #print(train_images[0])
         assert train_images.shape == (self._buffer_size, 28, 28)
         #print("train_images: ")
         #print(train_images[10])
@@ -186,8 +187,9 @@ class MNISTGAN():
         # This effectively transposes the pixel value (the last dimension) into a single column (28 rows)
         train_images = train_images.reshape(self._buffer_size, 28, 28, 1).astype('float32')
         assert train_images.shape == (self._buffer_size, 28, 28, 1)
+        #print("After reshape:")
         #print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
-        #print(train_images[5])
+        #print(train_images[0])
         #print(train_images[3][5])
         """
         The original tensors range from 0 to 1, and since the image backgrounds are black, most of the coefficients are equal to 0 when they’re represented using this range.
