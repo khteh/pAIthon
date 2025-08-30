@@ -5,6 +5,7 @@ import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.GAN import restore_latest_checkpoint, show_image, CreateGIF
+from utils.GPU import InitializeGPU
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 # https://www.tensorflow.org/tutorials/generative/dcgan
@@ -155,6 +156,7 @@ class MNISTGAN():
                                         discriminator_optimizer = self._discriminator.optimizer,
                                         generator = self._generator.model,
                                         discriminator = self._discriminator.model)
+        #InitializeGPU()
     def PrepareMNISTData(self):
         """
         https://www.tensorflow.org/tutorials/generative/dcgan
@@ -178,6 +180,7 @@ class MNISTGAN():
         - tf.data.Dataset.prefetch: It is good practice to end the pipeline by prefetching for performance.
         """
         (train_images, train_labels), (_, _) = tf.keras.datasets.mnist.load_data() # train_images type: <class 'numpy.ndarray'>, shape: (60000, 28, 28)
+        #self._ShowMNISTImages(train_images)
         #print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
         #print(train_images[0])
         assert train_images.shape == (self._buffer_size, 28, 28)
@@ -201,6 +204,12 @@ class MNISTGAN():
         self._batch_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self._buffer_size).batch(self._batch_size) # Batch dataset: TensorSpec(shape=(None, 28, 28, 1), dtype=tf.float32, name=None). shape[0] = None is the batch size. None because it is flexible.
         #print(f"Batch dataset: {self._batch_dataset.element_spec}")
 
+    def _ShowMNISTImages(self, images):
+        fig, axes = plt.subplots(3,3,figsize=(5,5))
+        for i, ax in enumerate(axes.flat):
+            ax.imshow(images[rng.choice(len(images))])
+            ax.set_axis_off()
+        plt.show()
     # Notice the use of `tf.function`
     # This annotation causes the function to be "compiled".
     # @tf.function decorator to increase performance. Without this decorator our training will take twice as long. If you would like to know more about how to increase performance with @tf.function take a look at the TensorFlow documentation.
@@ -231,7 +240,7 @@ class MNISTGAN():
         #num_examples_to_generate = 16
         # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
         seed = rng.random([num_examples_to_generate, self._noise_dim])
-        print(f"seed: {seed.shape}")
+        #print(f"seed: {seed.shape}")
         """
         The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
         The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.

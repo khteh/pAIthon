@@ -3,7 +3,7 @@ from pathlib import Path
 from utils.GPU import InitializeGPU
 import numpy.lib.recfunctions as reconcile
 from numpy.random import Generator, PCG64DXSM
-import matplotlib.pyplot as plt
+import matplotlib, matplotlib.pyplot as plt
 rng = Generator(PCG64DXSM())
 """
 https://numpy.org/doc/stable/user/basics.indexing.html
@@ -421,16 +421,45 @@ def RandomTests():
 
 def NoisySineWave(samples: int):
     print(f"\n=== {NoisySineWave.__name__} ===")
-    # Generate some random samples
-    #numpy.random.seed(1234)
-    x_values = numpy.random.uniform(low=0, high=(2 * math.pi), size=samples)
+    x_values = rng.uniform(low=0, high=(2 * math.pi), size=samples)
     plt.plot(x_values)
-    plt.title("Noisy Sine Wave X values")
+    plt.title("X Axis")
     plt.show()
     # Create a noisy sinewave with these values
-    y_values = numpy.sin(x_values) + (0.1 * numpy.random.randn(x_values.shape[0]))
-    plt.plot(x_values, y_values, '.')
+    y_values = numpy.sin(x_values) + (0.1 * rng.standard_normal(x_values.shape[0]))
+    plt.plot(x_values, y_values, '.')    
     plt.title("Noisy Sine Wave")
+    plt.show()
+
+def NoisySineWaveNoise(samples: int):
+    print(f"\n=== {NoisySineWaveNoise.__name__} ===")
+    # Generate some random samples
+    fig, axes = plt.subplots(3, 3, figsize=(16,16)) # figsize = (width, height)
+    print(f"ax type: {type(axes)}, {axes.shape}")
+    for i, ax in enumerate(axes.flat):
+        x_values = rng.uniform(low=0, high=(2 * math.pi), size=samples)
+        #print(f"x_values.shape: {x_values.shape}")
+        multiplier = rng.uniform(low=0.1, high=0.9)
+        y_values = multiplier * rng.standard_normal(x_values.shape[0]) # standard Normal distribution (mean=0, stdev=1).
+        # Display the label above the image
+        ax.set_title(f"Multiplier: {multiplier}")
+        ax.plot(x_values, y_values, '.')
+    fig.suptitle("Noise")
+    plt.show()
+
+def NoisySineWaves(samples: int):
+    print(f"\n=== {NoisySineWaves.__name__} ===")
+    # Generate some random samples
+    fig, axes = plt.subplots(3, 3, figsize=(16,16)) # figsize = (width, height)
+    print(f"ax type: {type(axes)}, {axes.shape}")
+    for i, ax in enumerate(axes.flat):
+        x_values = rng.uniform(low=0, high=(2 * math.pi), size=samples)
+        multiplier = 0.1 if not i else rng.uniform(low=0.1, high=0.9)
+        y_values = numpy.sin(x_values) + (multiplier * rng.standard_normal(x_values.shape[0])) # standard Normal distribution (mean=0, stdev=1).
+        # Display the label above the image
+        ax.set_title(f"Multiplier: {multiplier}")
+        ax.plot(x_values, y_values, '.')
+    fig.suptitle("Noisy Sine Wave")
     plt.show()
 
 def ShapeTests():
@@ -477,3 +506,5 @@ if __name__ == "__main__":
     RandomTests()
     ShapeTests()
     NoisySineWave(1024)
+    NoisySineWaveNoise(1024)
+    NoisySineWaves(1024)
