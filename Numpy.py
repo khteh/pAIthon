@@ -3,7 +3,7 @@ from pathlib import Path
 from utils.GPU import InitializeGPU
 import numpy.lib.recfunctions as reconcile
 from numpy.random import Generator, PCG64DXSM
-import matplotlib, matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 rng = Generator(PCG64DXSM())
 """
 https://numpy.org/doc/stable/user/basics.indexing.html
