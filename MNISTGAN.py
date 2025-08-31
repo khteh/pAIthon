@@ -184,17 +184,11 @@ class MNISTGAN():
         #print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
         #print(train_images[0])
         assert train_images.shape == (self._buffer_size, 28, 28)
-        #print("train_images: ")
-        #print(train_images[10])
         # https://www.tensorflow.org/api_docs/python/tf/io/decode_jpeg
         # Reshape the ndarray to (Height, Width, channels=1). 1-channel since it is a grayscale image.
         # This effectively transposes the pixel value (the last dimension) into a single column (28 rows)
         train_images = train_images.reshape(self._buffer_size, 28, 28, 1).astype('float32')
         assert train_images.shape == (self._buffer_size, 28, 28, 1)
-        #print("After reshape:")
-        #print(f"train_images type: {type(train_images)}, shape: {train_images.shape}")
-        #print(train_images[0])
-        #print(train_images[3][5])
         """
         The original tensors range from 0 to 1, and since the image backgrounds are black, most of the coefficients are equal to 0 when they’re represented using this range.
         Change the range of the coefficients to -1 to 1. With this transformation, the number of elements equal to 0 in the input samples is dramatically reduced, which helps in training the models.
