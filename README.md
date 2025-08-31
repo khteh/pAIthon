@@ -16,3 +16,7 @@ https://cs50.harvard.edu/ai/2024/
 ### Tensorboard
 
 - `pipenv run tensorboard --logdir <path>`
+
+## MNIST GAN
+
+![MNIST GAN](./mnist_gan.gif?raw=true "MNIST GAN")

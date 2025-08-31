@@ -275,7 +275,7 @@ class MNISTGAN():
 if __name__ == "__main__":
     BUFFER_SIZE = 60000
     BATCH_SIZE = 256
-    EPOCHS = 50
+    EPOCHS = 100
     checkpoint_dir = './checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "mnist_gan")
     mnistGAN = MNISTGAN(BUFFER_SIZE, BATCH_SIZE, EPOCHS, checkpoint_prefix)
