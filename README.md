@@ -20,3 +20,7 @@ https://cs50.harvard.edu/ai/2024/
 ## MNIST GAN
 
 ![MNIST GAN](./mnist_gan.gif?raw=true "MNIST GAN")
+
+## Sine Wave GAN
+
+![Sine Wave GAN](./sinewave_gan.gif?raw=true "Sine Wave GAN")
