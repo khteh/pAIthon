@@ -20,21 +20,7 @@ class Discriminator():
         The input is two-dimensional, and the first hidden layer is composed of 256 neurons with ReLU activation.
         The second and third hidden layers are composed of 128 and 64 neurons, respectively, with ReLU activation.
         The output is composed of a single neuron with sigmoidal activation to represent a probability.
-        Pytorch:
-        self.model = nn.Sequential(
-            nn.Linear(2, 256),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(64, 1),
-            nn.Sigmoid(),
-        )
-        https://stackoverflow.com/questions/66626700/difference-between-tensorflows-tf-keras-layers-dense-and-pytorchs-torch-nn-lin
+
         L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.
         """
