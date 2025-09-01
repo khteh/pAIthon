@@ -23,4 +23,5 @@ https://cs50.harvard.edu/ai/2024/
 
 ## Sine Wave GAN
 
-![Sine Wave GAN](./sinewave_gan.gif?raw=true "Sine Wave GAN")
+- https://medium.com/@khteh/sine-wave-generative-adversarial-network-gan-8858bf5c867a
+  ![Sine Wave GAN](./sinewave_gan.gif?raw=true "Sine Wave GAN")
