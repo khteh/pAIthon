@@ -26,8 +26,8 @@ def LinearRegressionModel():
     The function implemented by a neuron with no activation is the same as linear regression:
     f_w_b(x) = numpy.dot(w, x) + b
     We can define a layer with one neuron or unit and compare it to the familiar linear regression function.
-    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
-    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
     """       
     linear_layer = tf.keras.layers.Dense(units=1, activation = 'linear', name="L1", kernel_regularizer=regularizers.l2(0.01)) # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
     w, b = linear_layer.get_weights()
@@ -79,8 +79,8 @@ def LogisticNeuron():
     ax.legend(fontsize=12)
     plt.show()
     """
-    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
-    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
     """
     model = Sequential(
         [

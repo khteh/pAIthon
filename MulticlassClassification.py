@@ -45,8 +45,8 @@ class MulticlassClassification():
         Below is an example of how to construct this network in Tensorflow. Notice the output layer uses a linear rather than a softmax activation. 
         While it is possible to include the softmax in the output layer, it is more numerically stable if linear outputs are passed to the loss function during training. 
         If the model is used to predict probabilities, the softmax can be applied at that point.
-        L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
-        L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
+        L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
+        L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
         """
         classes = 4
         tf.random.set_seed(1234)  # applied to achieve consistent results

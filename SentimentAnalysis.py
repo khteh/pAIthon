@@ -108,8 +108,8 @@ def CustomEmbeddingLayer(url, path):
         # Low accuracy and high loss. Add a global pooling layer after the embedding layer in the model in order to
         # consider the order of the values in the vectors. Inside the pooling layer, the max values in each dimension
         # will be selected. There are also average pooling layers. The max pooling layer will highlight large values.
-        # L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
-        # L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
+        # L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
+        # L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
         layers.Conv1D(128, 5, activation='relu'),
         layers.GlobalMaxPool1D(),
         #layers.Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
@@ -204,8 +204,8 @@ def SentimentAnalysis(url, path):
     accuracy = accuracy_score(y_test, y_pred)
     print(f"LogisticRegression: {len(sentences)} sentences, train shape: {x_train.shape}, score: {score}, accuracy: {accuracy}")
     """
-    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection.
-    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero.      
+    L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
+    L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
     """
     model = models.Sequential([
         layers.Input(shape=(x_train.shape[1],)),  # Specify the input shape. https://keras.io/guides/sequential_model/#specifying-the-input-shape-in-advance
