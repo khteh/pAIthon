@@ -4,7 +4,7 @@ import numpy, math, tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
 from tensorflow.keras import layers, losses, optimizers, regularizers
-from utils.GAN import restore_latest_checkpoint, show_image, CreateGIF
+from utils.Image import ShowImage, CreateGIF
 from utils.GPU import InitializeGPU
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
@@ -272,6 +272,11 @@ class MNISTGAN():
         plt.savefig(f"output/MNISTGAN/{filename}")
         #plt.show()
         plt.close()
+    def restore_latest_checkpoint(self):
+        """
+        https://www.tensorflow.org/tutorials/generative/dcgan
+        """
+        self._checkpoint.restore(tf.train.latest_checkpoint(self._checkpoint_path))
 
 if __name__ == "__main__":
     BUFFER_SIZE = 60000
@@ -284,5 +289,5 @@ if __name__ == "__main__":
     mnistGAN.Train(16, 4, 4)
     Path("output/MNISTGAN").mkdir(parents=True, exist_ok=True)
     Path("output/MNISTGAN").is_dir()
-    show_image(f'output/MNISTGAN/mnist_gan_epoch_{EPOCHS:04d}.png')
+    ShowImage(f'output/MNISTGAN/mnist_gan_epoch_{EPOCHS:04d}.png')
     CreateGIF("output/MNISTGAN/mnist_gan.gif", 'output/MNISTGAN/mnist_gan_epoch_*.png')

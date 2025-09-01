@@ -1,10 +1,10 @@
 from pathlib import Path
-import glob, imageio, matplotlib.pyplot as plt, os, PIL, time
+import glob, imageio, matplotlib.pyplot as plt, os, time
 import numpy, math, tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
 import matplotlib.pyplot as plt
-from utils.GAN import show_image, CreateGIF
+from utils.Image import CreateGIF, ShowImage
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.GPU import InitializeGPU
 from numpy.random import Generator, PCG64DXSM
@@ -249,5 +249,5 @@ if __name__ == "__main__":
     #sinewaveGAN = SineWaveGAN(NUM_SINE_WAVES, BATCH_SIZE, SAMPLES, EPOCHS, checkpoint_prefix)
     #sinewaveGAN.PrepareTrainingData()
     #sinewaveGAN.Train()
-    #show_image(f'output/SineWaveGAN/sinewave_gan_epoch_{EPOCHS:04d}.png')
+    ShowImage(f'output/SineWaveGAN/sinewave_gan_epoch_{EPOCHS:04d}.png')
     CreateGIF("output/SineWaveGAN/sinewave_gan.gif", 'output/SineWaveGAN/sinewave_gan_epoch_*.png')

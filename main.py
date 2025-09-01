@@ -82,6 +82,7 @@ def matrix_sums():
     print(f"rows: {row_totals}, cols: {col_totals}, diag1: {diag1}, diag2: {diag2}")
 
 def sort_dict_by_tuple_values():
+    print(f"\n=== {sort_dict_by_tuple_values.__name__} ===")
     result = {
         "a": (0,10),
         "b": (10,5),
@@ -96,11 +97,13 @@ def sort_dict_by_tuple_values():
         print(f"{k}: {v}")
 
 def univariate_plot():
+    print(f"\n=== {univariate_plot.__name__} ===")
     x_train = numpy.array([1.0, 2.0])
     y_train = numpy.array([300.0, 500.0])
     UniVariatePlot(x_train, y_train, [], 0.0, "Housing Prices", 'Price (in 1000s of dollars)', 'Size (1000 sqft)')
 
 def PathlibMkdirTest():
+    print(f"\n=== {PathlibMkdirTest.__name__} ===")
     Path("output/SineWaveGAN").mkdir(parents=True, exist_ok=True)
     Path("output/SineWaveGAN").is_dir()
 
