@@ -109,7 +109,9 @@ def CustomEmbeddingLayer(url, path):
         # consider the order of the values in the vectors. Inside the pooling layer, the max values in each dimension
         # will be selected. There are also average pooling layers. The max pooling layer will highlight large values.
         # L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
+        #                            Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
         # L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
+        #                            Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
         layers.Conv1D(128, 5, activation='relu'),
         layers.GlobalMaxPool1D(),
         #layers.Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
@@ -205,7 +207,9 @@ def SentimentAnalysis(url, path):
     print(f"LogisticRegression: {len(sentences)} sentences, train shape: {x_train.shape}, score: {score}, accuracy: {accuracy}")
     """
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
+                               Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
+                               Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
     """
     model = models.Sequential([
         layers.Input(shape=(x_train.shape[1],)),  # Specify the input shape. https://keras.io/guides/sequential_model/#specifying-the-input-shape-in-advance

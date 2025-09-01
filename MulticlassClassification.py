@@ -46,7 +46,9 @@ class MulticlassClassification():
         While it is possible to include the softmax in the output layer, it is more numerically stable if linear outputs are passed to the loss function during training. 
         If the model is used to predict probabilities, the softmax can be applied at that point.
         L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
+                                   Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
         L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
+                                   Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
         """
         classes = 4
         tf.random.set_seed(1234)  # applied to achieve consistent results
