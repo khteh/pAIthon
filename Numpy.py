@@ -503,16 +503,16 @@ def Padding(data, pad: int):
     print ("data.shape =\n", data.shape)
     print ("data_padded.shape =\n", data_padded.shape)
     print ("data[1,1] =\n", data[1, 1])
+    print ("data_padded[0] =\n", data_padded[0])
     print ("data_padded[1,1] =\n", data_padded[1, 1])
-    assert (data_padded[1,1] == 0).all()
-    plt.clf()
-    plt.cla()
+    print ("data_padded[2,2] =\n", data_padded[2, 2])
+    assert (data_padded[0,1] == 0).all()
     fig, ax = plt.subplots(1, 2)
     ax[0].set_title('data')
     ax[0].imshow(data[0, :, :, 0])
     ax[1].set_title('Padded data')
     ax[1].imshow(data_padded[0, :, :, 0])
-    plt.show()
+    #plt.show()
 
 def conv_single_step():
     """
@@ -541,7 +541,7 @@ def conv_single_step():
     # YOUR CODE STARTS HERE
     Z = a_slice_prev * W
     Z = numpy.sum(Z)
-    Z += float(b)
+    Z += b[0,0,0]
     print("Z =", Z)
     # YOUR CODE ENDS HERE
     assert (type(Z) == numpy.float64), "You must cast the output to numpy float 64"
