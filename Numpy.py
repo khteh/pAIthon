@@ -367,10 +367,16 @@ def Polynomial():
     x = numpy.array([66, 5, 15, 2, 500])
     c = numpy.array([3000, 200 , -50, 5000, 100])
     # @ operator = numpy.matmul (matrix multiplication)
-    print(f"x @ c: {x @ c}, numpy.dot(x, c): {numpy.dot(x, c)}")
+    matmul = x @ c
+    dotproduct = numpy.dot(x, c)
+    print(f"x @ c: {matmul}, numpy.dot(x, c): {dotproduct}")
+    assert (matmul == dotproduct).all()
     x = numpy.array([[66, 5, 15, 2, 500], 
               [21, 3, 50, 1, 100]])
-    print(f"x @ c: {x @ c}, numpy.dot(x, c): {numpy.dot(x, c)}")
+    matmul = x @ c
+    dotproduct = numpy.dot(x, c)
+    print(f"x @ c: {matmul}, numpy.dot(x, c): {dotproduct}")
+    assert (matmul == dotproduct).all()
 
 def kMin(n): #N minimum (index) values in a numpy array
     print(f"\n=== {kMin.__name__} ===")
