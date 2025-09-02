@@ -16,7 +16,8 @@ CategoricalCrossEntropy: Expects the target/label value of an example to be one-
 """
 def softmax(z):
     """
-    Compupte the softmax of z
+    Compupte the softmax of z.
+    Softmax is for multi-class classification, transforming outputs into a probability distribution where probabilities sum to one and are dependent on each other. Softmax is essentially a generalized version of Sigmoid.
 
     Args:
         z (ndarray): A scalar, numpy array of any size.

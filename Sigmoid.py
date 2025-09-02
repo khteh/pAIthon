@@ -2,7 +2,8 @@ import numpy, math, tensorflow as tf
 
 def sigmoid(z):
     """
-    Compute the sigmoid of z
+    Compute the sigmoid of z. 
+    Sigmoid is for binary or multi-label classification, producing independent probabilities for each class.
 
     Args:
         z (ndarray): A scalar, numpy array of any size.
