@@ -573,12 +573,13 @@ Nc[l] = filter#
 Each filter: f[l] x f[l] x Nc[l-1]
 Activations: a[l] -> Nh[l] x Nw[l] x Nc[l]
 Weights: f[l] x f[l] x Nc[l-1] x Nc[l]
-bias: Nc[l]
+bias: Nc[l]; The bias vector is b, where each filter has its own (single) bias.
 
 Input:  Nh[l-1] x Nw[l-1] x Nc[l-1]
 Output: Nh[l] x Nw[l] x Nc[l]
-Nh[l] = floor(((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1)
-Nw[l] = floor(((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1)
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1
+Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1
+Nc[l] = Filter#
 
 One property of convolution network is that the number of parameters are independent of the size of the input. This reduces overfitting.
 
@@ -593,8 +594,8 @@ Input: 256x256 grayscale image
 Filter: 128 3x3
   Each filter: 3x3x1 = 9
 Activations:
-Nh[l] = floor(((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1) = floor((256 - 3) + 1) = 254
-Nw[l] = floor(((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1) = floor((256 - 3) + 1) = 254
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(256 - 3) + 1 = 254
+Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(256 - 3) + 1 = 254
 254x254 = 64516
 Weights: 3x3x1x128 = 1152
 Bias: Nc[l] = 128
@@ -604,8 +605,8 @@ Input: 256x256 RGB
 Filter: 128 7x7
   Each filter: 7x7x3 = 147
 Activations:
-Nh[l] = floor(((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1) = floor((256 - 7) + 1) = 250
-Nw[l] = floor(((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1) = floor((256 - 7) + 1) = 250
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(256 - 7) + 1 = 250
+Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(256 - 7) + 1 = 250
 250*250*128 = 8000000
 Weights: 7x7x3x 128 = 18816
 Bias: Nc[l] = 128
@@ -614,20 +615,20 @@ This hidden layer has 18816 + 128 = 18944 parameters
 Example output volume calculation:
 Input: 121x121x16
 Filter: 32 4x4 s:3 p:0
-Nh[l] = floor(((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1) = floor((121 - 4)/3 + 1) = 40
-Nw[l] = floor(((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1) = floor((121 - 4)/3 + 1) = 40
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(121 - 4)/3 + 1 = 40
+Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(121 - 4)/3 + 1 = 40
 Output volume = Nh[l] x Nw[l] x Nc[l] = 40 * 40 * 32 = 51200
 
 Input: 128x128x12
 Max Pooling: filter size:4, stride: 4
-Nh[l] = floor(((n+2p-f) / s) + 1) = 32
-Nw[l] = floor(((n+2p-f) / s) + 1) = 32
+Nh[l] = floor((n+2p-f) / s) + 1 = 32
+Nw[l] = floor((n+2p-f) / s) + 1 = 32
 Output volume = Nh[l] x Nw[l] x Nc[l] = 32 x 32 x 12
 
 Input: 66x66x21
 Max Pooling: filter size:3, stride: 3
-Nh[l] = floor(((n+2p-f) / s) + 1) = 32
-Nw[l] = floor(((n+2p-f) / s) + 1) = 32
+Nh[l] = floor((n+2p-f) / s) + 1 = 32
+Nw[l] = floor((n+2p-f) / s) + 1 = 32
 Output volume = Nh[l] x Nw[l] x Nc[l] = 22 x 22 x 21
 
 Typically in Convolutional NN, the size of the data will reduce deeper into the NN while the filter# will increase.
