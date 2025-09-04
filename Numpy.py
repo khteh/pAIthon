@@ -1,4 +1,5 @@
 import numpy, math, tensorflow as tf
+from math import floor
 from pathlib import Path
 from utils.GPU import InitializeGPU
 import numpy.lib.recfunctions as reconcile
@@ -477,76 +478,6 @@ def ShapeTests():
     assert (1,2,2) == a.shape
     print(f"a.shape: {a.shape}")
 
-def Padding(data, pad: int):
-    """
-    Pad with zeros all images of the dataset X. The padding is applied to the height and width of an image, 
-    as illustrated in Figure 1.
-    
-    Argument:
-    X -- python numpy array of shape (m, n_H, n_W, n_C) representing a batch of m images
-    pad -- integer, amount of padding around each image on vertical and horizontal dimensions
-    
-    Returns:
-    X_pad -- padded image of shape (m, n_H + 2 * pad, n_W + 2 * pad, n_C)
-    """
-    print(f"\n=== {Padding.__name__} ===")
-    print(f"X.shape: {data.shape}, pad: {pad}")
-    for x in data:
-        print(f"x.shape: {x.shape}")
-    data_padded = numpy.empty((data.shape[0], data.shape[1]+2*pad, data.shape[2]+2*pad, data.shape[3]))
-    print(f"data_padded.shape: {data_padded.shape}")
-    for x in data_padded:
-        print(f"x_pad.shape: {x.shape}")
-    for i, image in enumerate(data):
-        print(f"image: {image.shape}")
-        data_padded[i] = numpy.pad(image, ((pad, pad), (pad,pad), (0,0)), mode='constant', constant_values=(0,0))
-    print ("data.shape =\n", data.shape)
-    print ("data_padded.shape =\n", data_padded.shape)
-    print ("data[1,1] =\n", data[1, 1])
-    print ("data_padded[0] =\n", data_padded[0])
-    print ("data_padded[1,1] =\n", data_padded[1, 1])
-    print ("data_padded[2,2] =\n", data_padded[2, 2])
-    assert (data_padded[0,1] == 0).all()
-    fig, ax = plt.subplots(1, 2)
-    ax[0].set_title('data')
-    ax[0].imshow(data[0, :, :, 0])
-    ax[1].set_title('Padded data')
-    ax[1].imshow(data_padded[0, :, :, 0])
-    #plt.show()
-
-def conv_single_step():
-    """
-    Apply one filter defined by parameters W on a single slice (a_slice_prev) of the output activation 
-    of the previous layer.
-    
-    Arguments:
-    a_slice_prev -- slice of input data of shape (f, f, n_C_prev)
-    W -- Weight parameters contained in a window - matrix of shape (f, f, n_C_prev)
-    b -- Bias parameters contained in a window - matrix of shape (1, 1, 1)
-    
-    Returns:
-    Z -- a scalar value, the result of convolving the sliding window (W, b) on a slice x of the input data
-    """
-    print(f"\n=== {conv_single_step.__name__} ===")
-    a_slice_prev = numpy.random.randn(4, 4, 3)
-    W = numpy.random.randn(4, 4, 3)
-    b = numpy.random.randn(1, 1, 1)
-    #(≈ 3 lines of code)
-    # Element-wise product between a_slice_prev and W. Do not add the bias yet.
-    # s = None
-    # Sum over all entries of the volume s.
-    # Z = None
-    # Add bias b to Z. Cast b to a float() so that Z results in a scalar value.
-    # Z = None
-    # YOUR CODE STARTS HERE
-    Z = a_slice_prev * W
-    Z = numpy.sum(Z)
-    Z += b[0,0,0]
-    print("Z =", Z)
-    # YOUR CODE ENDS HERE
-    assert (type(Z) == numpy.float64), "You must cast the output to numpy float 64"
-    #assert numpy.isclose(Z, -6.999089450680221), "Wrong value" This needs np.random.seed(). Otherwise it will fail as every run will have a random value
-
 if __name__ == "__main__":
     InitializeGPU()
     oneDArray(10)
@@ -581,9 +512,6 @@ if __name__ == "__main__":
     kMin(3)
     RandomTests()
     ShapeTests()
-    #NoisySineWave(1024)
-    #NoisySineWaveNoise(1024)
-    #NoisySineWaves(1024)
-    data = numpy.random.randn(4, 3, 3, 2)
-    Padding(data, 3)
-    conv_single_step()
+    NoisySineWave(1024)
+    NoisySineWaveNoise(1024)
+    NoisySineWaves(1024)
