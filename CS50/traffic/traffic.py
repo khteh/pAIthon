@@ -133,15 +133,16 @@ def build_model():
                                Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
     """
     model = models.Sequential([
-    layers.Conv2D(64, (3, 3), activation='softmax', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
-    layers.MaxPooling2D((2, 2)),
-    layers.Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
-    layers.Dense(64, activation='softmax', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
-    layers.Dropout(0.5),
-    layers.Dense(64, activation='softmax', name="L2", kernel_regularizer=regularizers.l2(0.01)),
-    layers.Dropout(0.5),
-    # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
-    layers.Dense(NUM_CATEGORIES, name="L3")]) # Linear activation ("pass-through") if not specified
+                    layers.Conv2D(64, (3, 3), activation='softmax', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
+                    layers.MaxPooling2D((2, 2)),
+                    layers.Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
+                    layers.Dense(64, activation='softmax', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+                    layers.Dropout(0.5),
+                    layers.Dense(64, activation='softmax', name="L2", kernel_regularizer=regularizers.l2(0.01)),
+                    layers.Dropout(0.5),
+                    # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+                    layers.Dense(NUM_CATEGORIES, name="L3") # Linear activation ("pass-through") if not specified
+            ])
     """
     SparseCategorialCrossentropy or CategoricalCrossEntropy
     Tensorflow has two potential formats for target values and the selection of the loss defines which is expected.
@@ -150,7 +151,7 @@ def build_model():
     CategoricalCrossEntropy: Expects the target value of an example to be one-hot encoded where the value at the target index is 1 while the other N-1 entries are zero. An example with 10 potential target values, where the target is 2 would be [0,0,1,0,0,0,0,0,0,0].    
     """
     model.compile(optimizer=Adam(0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-                loss=CategoricalCrossentropy(from_logits=True), # https://www.tensorflow.org/api_docs/python/tf/keras/losses/CategoricalCrossentropy
+                loss=CategoricalCrossentropy(from_logits=True),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification. CategoricalCrossEntropy is used here as the labels are provided as integers representing each class.
                 metrics=['accuracy'])
     return model
 """

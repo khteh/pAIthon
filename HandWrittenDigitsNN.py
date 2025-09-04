@@ -73,14 +73,14 @@ class HandWrittenDigitsNN():
             [               
                 tf.keras.Input(shape=(400,)),    #specify input size
                 ### START CODE HERE ### 
-                Dense(25, input_dim=400, activation='sigmoid', name="L1"), # Densely connected, or fully connected
-                Dense(15, input_dim=25, activation='sigmoid', name="L2"),
-                Dense(1, input_dim=15, activation='sigmoid', name="L3"),
+                Dense(25, activation='sigmoid', name="L1"), # Densely connected, or fully connected
+                Dense(15, activation='sigmoid', name="L2"),
+                Dense(1, name="L3"),
                 ### END CODE HERE ### 
             ], name = "my_model" 
         )
         self._model.compile(
-            loss=BinaryCrossentropy(),
+            loss=BinaryCrossentropy(from_logits=True),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to sigmoid activation which is typically used for binary classification
             optimizer=Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
         )
         self._model.fit(

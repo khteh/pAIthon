@@ -6,7 +6,14 @@ import numpy.lib.recfunctions as reconcile
 from numpy.random import Generator, PCG64DXSM
 import matplotlib.pyplot as plt
 rng = Generator(PCG64DXSM())
-
+"""
+A convolution extracts features from an input image by taking the dot product between the input data and a 3D array of weights (the filter).
+The 2D output of the convolution is called the feature map
+A convolution layer is where the filter slides over the image and computes the dot product
+This transforms the input volume into an output volume of different size
+Zero padding helps keep more information at the image borders, and is helpful for building deeper networks, because you can build a CONV layer without shrinking the height and width of the volumes
+Pooling layers gradually reduce the height and width of the input by sliding a 2D window over each specified region, then summarizing the features in that region
+"""
 def Padding(data, pad: int):
     """
     Pad with zeros all images of the dataset X. The padding is applied to the height and width of an image, 
@@ -140,7 +147,7 @@ def conv_forward(A_prev, W, b, hparams):
                 for c in range(n_C): # loop over channels (= #filters) of the output volume
                     # Use the corners to define the (3D) slice of a_prev_pad (See Hint above the cell). (≈1 line)
                     a_slice_prev = a_prev_pad[vstart:vend, hstart:hend, :]
-                    #print(f"a_slice_prev.shape: {a_slice_prev.shape}")
+                    print(f"a_slice_prev.shape: {a_slice_prev.shape}")
                     # Convolve the (3D) slice with the correct filter W and bias b, to get back one output neuron. (≈3 line)
                     weights = W[:,:,:, c]
                     biases = b[:,:,:, c]
@@ -158,12 +165,69 @@ def conv_forward(A_prev, W, b, hparams):
     cache = (A_prev, W, b, hparams)
     return Z, cache
 
-if __name__ == "__main__":
-    data = numpy.random.randn(4, 3, 3, 2)
-    Padding(data, 3)
-    conv_single_step()
+def pool_forward(A_prev, hparameters, mode = "max"):
+    """
+    Implements the forward pass of the pooling layer
     
-    numpy.random.seed(1)
+    Arguments:
+    A_prev -- Input data, numpy array of shape (m, n_H_prev, n_W_prev, n_C_prev)
+    hparameters -- python dictionary containing "f" and "stride"
+    mode -- the pooling mode you would like to use, defined as a string ("max" or "average")
+    
+    Returns:
+    A -- output of the pool layer, a numpy array of shape (m, n_H, n_W, n_C)
+    cache -- cache used in the backward pass of the pooling layer, contains the input and hparameters 
+    """
+    
+    # Retrieve dimensions from the input shape
+    (m, n_H_prev, n_W_prev, n_C_prev) = A_prev.shape
+    
+    # Retrieve hyperparameters from "hparameters"
+    f = hparameters["f"]
+    stride = hparameters["stride"]
+    
+    # Define the dimensions of the output
+    n_H = int(1 + (n_H_prev - f) / stride)
+    n_W = int(1 + (n_W_prev - f) / stride)
+    n_C = n_C_prev
+    
+    # Initialize output matrix A
+    A = numpy.zeros((m, n_H, n_W, n_C))              
+    
+    for i in range(m):                         # loop over the training examples
+        vstart = 0
+        for h in range(n_H):                     # loop on the vertical axis of the output volume
+            # Find the vertical start and end of the current "slice" (≈2 lines)
+            # vstart = None
+            vend = vstart + f
+            hstart = 0
+            for w in range(n_W):                 # loop on the horizontal axis of the output volume
+                # Find the vertical start and end of the current "slice" (≈2 lines)
+                # horiz_start = None
+                hend = hstart + f
+                
+                for c in range (n_C):            # loop over the channels of the output volume
+                    # Use the corners to define the current slice on the ith training example of A_prev, channel c. (≈1 line)
+                    a_prev_slice = A_prev[i, vstart:vend, hstart:hend, c]
+                    #print(f"a_prev_slice: {a_prev_slice.shape}")
+                    # Compute the pooling operation on the slice. 
+                    # Use an if statement to differentiate the modes. 
+                    # Use numpy.max and numpy.mean.
+                    if mode == "max":
+                        A[i, h, w, c] = numpy.max(a_prev_slice)
+                    elif mode == "average":
+                        A[i, h, w, c] = numpy.mean(a_prev_slice)
+                hstart += stride
+            vstart += stride
+  
+    # Store the input and hparameters in "cache" for pool_backward()
+    cache = (A_prev, hparameters)
+    
+    # Making sure your output shape is correct
+    assert(A.shape == (m, n_H, n_W, n_C))
+    return A, cache
+
+def conv_forward_test():
     A_prev = numpy.random.randn(2, 5, 7, 4)
     W = numpy.random.randn(3, 3, 4, 8)
     b = numpy.random.randn(1, 1, 1, 8)
@@ -176,4 +240,27 @@ if __name__ == "__main__":
     cache_0_1_2_3 = cache_conv[0][1][2][3]
     print("Z's mean =\n", z_mean)
     print("Z[0,2,1] =\n", z_0_2_1)
-    print("cache_conv[0][1][2][3] =\n", cache_0_1_2_3)        
+    print("cache_conv[0][1][2][3] =\n", cache_0_1_2_3)
+
+def pool_forward_test():
+    # Case 1: stride of 1
+    print("CASE 1:\n")
+    numpy.random.seed(1)
+    A_prev_case_1 = numpy.random.randn(2, 5, 5, 3)
+    hparameters_case_1 = {"stride" : 1, "f": 3}
+
+    A, cache = pool_forward(A_prev_case_1, hparameters_case_1, mode = "max")
+    print("mode = max")
+    print("A.shape = " + str(A.shape))
+    print("A[1, 1] =\n", A[1, 1])
+    A, cache = pool_forward(A_prev_case_1, hparameters_case_1, mode = "average")
+    print("mode = average")
+    print("A.shape = " + str(A.shape))
+    print("A[1, 1] =\n", A[1, 1])
+
+if __name__ == "__main__":
+    data = numpy.random.randn(4, 3, 3, 2)
+    Padding(data, 3)
+    conv_single_step()
+    conv_forward_test()
+    pool_forward_test()

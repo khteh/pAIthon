@@ -153,7 +153,7 @@ class ClassificationModelEvaluationAndSelection():
             
             # Setup the loss and optimizer
             model.compile(
-                loss=BinaryCrossentropy(from_logits=True),
+                loss=BinaryCrossentropy(from_logits=True),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to sigmoid activation which is typically used for binary classification
                 optimizer=Adam(learning_rate=0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
             )
             print(f"Training {model.name}...")

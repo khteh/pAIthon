@@ -58,11 +58,11 @@ def NNSoftmax(X_train, y_train):
         [
             Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
             Dense(15, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)),
-            Dense(4, activation = 'softmax')    # < softmax activation here
+            Dense(4)   # Linear activation ("pass-through") if not specified
         ]
     )
     model.compile(
-        loss=SparseCategoricalCrossentropy(),
+        loss=SparseCategoricalCrossentropy(), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
         optimizer=Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
     )
     model.fit(
@@ -91,11 +91,11 @@ def NNStableSoftmax(X_train, y_train):
         [ 
             Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
             Dense(15, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)),
-            Dense(4, activation = 'linear')   #<-- Note
+            Dense(4, activation = 'linear') # Linear activation ("pass-through") if not specified
         ]
     )
     preferred_model.compile(
-        loss=SparseCategoricalCrossentropy(from_logits=True),  #<-- Note
+        loss=SparseCategoricalCrossentropy(from_logits=True),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
         optimizer=Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
     )
     preferred_model.fit(
