@@ -648,6 +648,12 @@ Pooling:
 (2) Hyperparameters: f and s
 (3) No parameters to learn. Gradient descent does not learn change anything of it in this layer.
 (4) Padding. Usually not used with Max pooling.
+(5) Reduces/Shrinks Nh[l] and Nw[l]
+
+1x1 convolution:
+- To shrink channel#, use 1x1 filter. Example: (28,28,192) -> (28,28,32) can be achieved by a convolution layer of 32 x (1,1,192) filters with ReLU activation. This 1x1 conv filter is also called the bottleneck layer. 
+- When implemented within reason, this bottleneck layer helps reduce computational costs significantly by shrinking down the representation size significantly without affecting the performance of the NN.
+- One of the key ideas in Inception Network.
 
 Benefits of Convolutional layers:
 (1) Parameter sharing
@@ -657,3 +663,63 @@ Benefits of Convolutional layers:
 These benefits result in:
 (1) Allow convolutional NN to be trained with smaller training datasets and less susceptible to overfitting.
 (2) Good at capturing translation invariance. For example, input dataset shifted a few pixels but the same features are detected.
+
+Residual Network:
+- In a plain NN, as the networks gets deeper, the optimization algorithm (gradient descent, etc), has a much harder time in training. The training gets worse when the networks is too deep.
+- ResNet helps mitigate this vanishing and exploding gradient problem.
+- Residual function is easy for the residual block to learn. For example, adding a residual block at the end of a large NN with output a[l],
+  a[l+2] = g(z[l+2] + a[l]) = g(W[l+2]*a[l+1] + b[l+2] + a[l])   a[l] is the residual connection.
+  When L2 regularization is applied, W[l+2] is shrunk. For the sake of argument, when W[l+2] and b[l+2] is almost zero, and with ReLU activation, a[l+2] reduces to g(a[l]) = a[l]
+- So, adding a residual block does not only hurt performance, it helps the network to learn at least the identity function. Sometimes, this block learns something useful.
+- For the addition of the residual connection to work, "Same" convolution is used or apply a weight matrix, Ws to the residual connection. Ws could be weights that are learnt or a fix matrix that implements zero paddings that takes a[l] and zero pads it to the same dimension as z[l+2].
+
+Inception Network:
+- Consists of the same inception module repeated along the network.
+- Name originates from Hollywood movie Inception. Meme: https://knowyourmeme.com/memes/we-need-to-go-deeper
+
+Computaional Cost = #filter params x #filter positions x #filters
+Example: 
+Input: 6x6x3 (RGB)
+Filter: 3x3x3 (Nc has to match)
+Stride: 1
+Activations:
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(6 - 3) + 1 = 4
+Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(6 - 3) + 1 = 4
+1 filter: (3 * 3 * 3) * (4 * 4)
+5 filters: (3 * 3 * 3) * (4 * 4) * 5 = 2160
+
+Depthwise separable convolution reduces the computaional costs by 2 steps:
+(1) Depthwise convolution.
+    - Apply a single filter to the input. This results in a Nh x Nw x 1 output.
+(2) Pointwise convolution.
+    - Apply 1x1xNc' filter to the output from (1). This produces the final Nh x Nw x Nc' output.
+- It reduces the computaional costs to (1/Nc' + 1/f^2) of the conventional convolution. For example, Nc'=512, f=3 will result in ~10 times cheaper.
+- This is the core of MobileNet.
+MobileNet v2:
+- Bottleneck layer consists of 3 convolution layers and 1 residual connection (ResNet):
+(1) Expansion - Use 1x1xNc' to expand the dimension
+(2) Depthwise convolution
+(3) Pointwise convolution - Projects back to smaller representation.
+- (1) and (2) allows the NN to learn richer functions.
+- (3) helps reduces memory footprint.
+
+MobileNetv2 Bottleneck block. Input: nxnx5, 30 expansion filters, 20 projection filters. How many parameters in the complete block?
+Expansion: (1x1x5) * 30 = 150
+Depthwise: nxnx30 -> 3x3x30 = 270
+Pointwise: (1x1x30) * 20 = 600
+Total: 1020 
+
+EfficientNet:
+- 3 ways to scale up or down depending on the device computational resource constraints:
+(1) Resolution of the input. r
+(2) Depth of the NN. d
+(3) Make the layers wider. w
+
+Transfer Learning:
+- Usually used in computer vision applications.
+(1) Freeze all layers except the final softmax activation to cater to different classification.
+    - Precompute the layers activation using custom inputs and save the feature vectors for prediction.
+    - Use this if having small dataset.
+(2) Freeze fewer early layers, train later layers. Or replace the last few layers.
+    - Use this if having larger dataset.
+(3) Retrain the whole NN if having large dataset.
