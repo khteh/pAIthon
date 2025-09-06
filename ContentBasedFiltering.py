@@ -170,9 +170,6 @@ class ContentBasedFiltering():
         self._model.summary()
         self._train_model(learning_rate)
         self._evaluate_model()
-        if self._model_path:
-            self._model.save(self._model_path)
-            print(f"Model saved to {self._model_path}.")
 
     def _train_model(self, learning_rate):
         tf.random.set_seed(1)
@@ -181,6 +178,9 @@ class ContentBasedFiltering():
         self._model.compile(optimizer=opt, loss=cost_fn)        
         tf.random.set_seed(1)
         self._model.fit([self._user_train[:, self._u_s:], self._item_train[:, self._i_s:]], self._y_train, epochs=30)
+        if self._model_path:
+            self._model.save(self._model_path)
+            print(f"Model saved to {self._model_path}.")
 
     def _evaluate_model(self):
         self._model.evaluate([self._user_test[:, self._u_s:], self._item_test[:, self._i_s:]], self._y_test)

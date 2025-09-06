@@ -103,18 +103,17 @@ class SignsLanguageDigits():
                 metrics=['accuracy']
             )
         self._model.summary()
-        if self._model_path:
-            self._model.save(self._model_path)
-            print(f"Model saved to {self._model_path}.")
 
     def TrainEvaluate(self, rebuild: bool, epochs:int, batch_size:int):
         if self._model and not rebuild:
             return
-        train_dataset = tf.data.Dataset.from_tensor_slices((self._X_train, self._Y_train)).batch(64)
-        validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_test, self._Y_test)).batch(64)
-        history = self._model.fit(train_dataset, epochs=100, validation_data=validation_dataset)
-        print(f"history: {history.history}")
-        PlotModelHistory("CNN", history)
+        train_dataset = tf.data.Dataset.from_tensor_slices((self._X_train, self._Y_train)).batch(batch_size)
+        validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_test, self._Y_test)).batch(batch_size)
+        history = self._model.fit(train_dataset, epochs=epochs, validation_data=validation_dataset)
+        PlotModelHistory("Signs Language multi-class classifier", history)
+        if self._model_path:
+            self._model.save(self._model_path)
+            print(f"Model saved to {self._model_path}.")
 
 if __name__ == "__main__":
     """

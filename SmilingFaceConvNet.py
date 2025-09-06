@@ -5,6 +5,7 @@ from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.optimizers import Adam
 from utils.GPU import InitializeGPU
+from utils.TensorModelPlot import PlotModelHistory
 class SmilingFaceConvNet():
     """
     A convolution NN which determines if the people in the input images are smiling.
@@ -93,13 +94,15 @@ class SmilingFaceConvNet():
                 metrics=['accuracy']
             )
         self._model.summary()
-        if self._model_path:
-            self._model.save(self._model_path)
-            print(f"Model saved to {self._model_path}.")
 
     def TrainEvaluate(self, rebuild:bool, epochs:int, batch_size:int):
         if self._model and rebuild:
-            self._model.fit(self._X_train, self._Y_train, epochs=epochs, batch_size=batch_size)
+            history = self._model.fit(self._X_train, self._Y_train, epochs=epochs, batch_size=batch_size)
+            print(f"history: {history.history}")
+            PlotModelHistory("Smiling face binary classifier", history)
+            if self._model_path:
+                self._model.save(self._model_path)
+                print(f"Model saved to {self._model_path}.")
         self._model.evaluate(self._X_test, self._Y_test)
 
 if __name__ == "__main__":

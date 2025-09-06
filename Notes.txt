@@ -524,7 +524,7 @@ B = 0.01 * Bnew + 0.99 * B
 In machine learning, logits are the raw, unnormalized scores or outputs from a neural network's final layer before an activation function like softmax or sigmoid is applied.
 Binary Classification uses Sigmoid activation function and BinaryCrossEntropy loss function.
 Multi-class Classification uses Softmax activation function and CategoricalCrossEntropy loss function.
-
+================================================================================================================================================================================
 Convolution:
 Vertical edge detection filter: [[1, 0, -1],
                                  [1, 0, -1],
@@ -665,13 +665,17 @@ These benefits result in:
 (2) Good at capturing translation invariance. For example, input dataset shifted a few pixels but the same features are detected.
 
 Residual Network:
-- In a plain NN, as the networks gets deeper, the optimization algorithm (gradient descent, etc), has a much harder time in training. The training gets worse when the networks is too deep.
+- In a plain NN, as the networks gets deeper, the optimization algorithm (gradient descent, etc), has a much harder time in training. The training gets worse when the network gets deeper.
 - ResNet helps mitigate this vanishing and exploding gradient problem.
-- Residual function is easy for the residual block to learn. For example, adding a residual block at the end of a large NN with output a[l],
+- Identity function is easy for the residual block to learn. For example, adding a residual block at the end of a large NN with output a[l],
   a[l+2] = g(z[l+2] + a[l]) = g(W[l+2]*a[l+1] + b[l+2] + a[l])   a[l] is the residual connection.
   When L2 regularization is applied, W[l+2] is shrunk. For the sake of argument, when W[l+2] and b[l+2] is almost zero, and with ReLU activation, a[l+2] reduces to g(a[l]) = a[l]
 - So, adding a residual block does not only hurt performance, it helps the network to learn at least the identity function. Sometimes, this block learns something useful.
 - For the addition of the residual connection to work, "Same" convolution is used or apply a weight matrix, Ws to the residual connection. Ws could be weights that are learnt or a fix matrix that implements zero paddings that takes a[l] and zero pads it to the same dimension as z[l+2].
+- Very deep "plain" networks don't work in practice because vanishing gradients make them hard to train.
+- Skip connections help address the Vanishing Gradient problem. They also make it easy for a ResNet block to learn an identity function.
+- There are two main types of blocks: The identity block and the convolutional block.
+- Very deep Residual Networks are built by stacking these blocks together.    
 
 Inception Network:
 - Consists of the same inception module repeated along the network.
@@ -723,3 +727,33 @@ Transfer Learning:
 (2) Freeze fewer early layers, train later layers. Or replace the last few layers.
     - Use this if having larger dataset.
 (3) Retrain the whole NN if having large dataset.
+
+Object Detection:
+Sliding Windows Detection Algorithm - Computationally expansive due to sequential calculation of the parameters.
+Convolution implementation of the sliding windows - One single forward pass through the NN computes all the windows due to the property of convolution which is parameter sharing.
+- It works by turning the last Dense / fully-connected layers into convolution layers.
+Intersection over Union
+- Used to evaluate the accuracy of object localization.
+- size(intersection box) / size(union box)
+- "Correct" if >= threshold (e.g: 0.5)
+Non-max suppression algorithm:
+- Discard all boxes with Pc <= 0.6
+- For each of the remaining boxes,
+  - Pick the box with the higest Pc as the prediction.
+  - Discard any box with IoU >= 0.5 with the prediction box. This discards the overlapping bounding boxes.
+- Use this for each object class that the NN is setup to predict.
+
+Anchor Boxes:
+- Used to detect multiple objects in the same grid cell.
+- Detected object is assigned to a grid cell that contains the object's midpoint and anchor box for the grid cell with highest IoU with the object's shape. (grid cell, anchor box)
+
+Training dataset anatomy:
+- vertical grid cells x horizontal grid cells x #anchors x (5 + #classes). 5: (Pc, bx, by, bh, bw)
+
+Semantic Segmentation & U-Net:
+- The YOLO (You Only Look Once) algorithm shrinks the Nh and Nw. This reduces the spatial information.
+- Assign every single pixel to a class.
+Transpose Convolution:
+- Output dimension is greater than the input dimension.
+- Apply the filter on the padded output.
+- Convolve input with the filter, fill the element-wise multiplication result in the respective output cell. Ignore the pad cells. For any overlapping cell, due to stride, add the cell values.

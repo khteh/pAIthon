@@ -3,6 +3,12 @@ plt.style.use('ggplot')
 
 def PlotModelHistory(title, history):
     print(f"\n=== {PlotModelHistory.__name__} ===")
+    if "accuracy" not in history.history:
+        print("No accuracy metric in history!")
+        return
+    if "val_accuracy" not in history.history:
+        print("No val_accuracy metric in history!")
+        return   
     acc = history.history['accuracy']
     val_acc = history.history['val_accuracy']
     loss = history.history['loss']
