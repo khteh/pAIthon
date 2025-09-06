@@ -25,9 +25,11 @@ class MovieRecommendation():
     _movieList: list = None
     _movieList_df: pd.DataFrame = None
     _my_ratings: list = None
-    def __init__(self, path, num_features:int, lambda_: float = 1):
+    _learning_rate:float = None
+    def __init__(self, path, num_features:int, learning_rate: float, lambda_: float = 1):
         self._data_path = path
         self._num_features = num_features
+        self._learning_rate = learning_rate
         self._lambda = lambda_
         self.PrepareData()
 
@@ -135,7 +137,7 @@ class MovieRecommendation():
         self._b = tf.Variable(tf.random.normal((1, self._num_users),   dtype=tf.float64),  name='b')
         print(f"W: {self._W.shape}, X: {self._X.shape}, b: {self._b.shape}, R: {self._R.shape}, Ynorm: {self._Ynorm.shape}")
         # Instantiate an optimizer.
-        self._optimizer = keras.optimizers.Adam(learning_rate=1e-1) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+        self._optimizer = keras.optimizers.Adam(learning_rate=self._learning_rate) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 
     def _cofi_cost_func_v(self):
         """
@@ -223,6 +225,6 @@ class MovieRecommendation():
         self._movieList_df.loc[ix[:300]].loc[filter].sort_values("mean rating", ascending=False)
 
 if __name__ == "__main__":
-    movie_recommendation = MovieRecommendation('./data/small_movie_list.csv', 100, 1)
+    movie_recommendation = MovieRecommendation('./data/small_movie_list.csv', 100, 1e-1, 1)
     movie_recommendation.BuildModel()
     movie_recommendation.Recommendations()

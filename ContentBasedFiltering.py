@@ -1,4 +1,4 @@
-import csv, numpy, pickle
+import argparse, csv, numpy, pickle
 import numpy.ma as ma
 import pandas as pd
 import tensorflow as tf
@@ -135,7 +135,7 @@ class ContentBasedFiltering():
         print(f"movie/item test data shape: {self._item_test.shape}")
         self._pprint_train(self._user_train, self._user_features, self._uvs, self._u_s, maxcount=5)
 
-    def BuildModels(self, rebuild: bool = False):
+    def BuildModels(self, rebuild: bool = False, learning_rate:float = 0.01):
         if self._model and not rebuild:
             return
         num_outputs = 32
@@ -168,16 +168,16 @@ class ContentBasedFiltering():
         # specify the inputs and output of the model
         self._model = tf.keras.Model([input_user, input_item], output)
         self._model.summary()
-        self._train_model()
+        self._train_model(learning_rate)
         self._evaluate_model()
         if self._model_path:
             self._model.save(self._model_path)
             print(f"Model saved to {self._model_path}.")
 
-    def _train_model(self):
+    def _train_model(self, learning_rate):
         tf.random.set_seed(1)
         cost_fn = MeanSquaredError()
-        opt = keras.optimizers.Adam(learning_rate=0.01) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+        opt = keras.optimizers.Adam(learning_rate=learning_rate) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
         self._model.compile(optimizer=opt, loss=cost_fn)        
         tf.random.set_seed(1)
         self._model.fit([self._user_train[:, self._u_s:], self._item_train[:, self._i_s:]], self._y_train, epochs=30)
@@ -414,8 +414,16 @@ class ContentBasedFiltering():
         return ofeatures
 
 if __name__ == "__main__":
+    """
+    https://docs.python.org/3/library/argparse.html
+    'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
+    """
+    parser = argparse.ArgumentParser(description='Content-based filtering recommendation system')
+    parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
+    args = parser.parse_args()
+
     contentBasedFiltering = ContentBasedFiltering("models/ContentBasedFiltering.keras")
-    contentBasedFiltering.BuildModels()
+    contentBasedFiltering.BuildModels(args.retrain, 0.01)
     contentBasedFiltering.PredictExistingUser()
     user = {
         "id": 1234,

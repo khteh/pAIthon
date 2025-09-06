@@ -1,4 +1,4 @@
-import numpy, logging, warnings
+import argparse, numpy, logging, warnings
 import tensorflow as tf
 from pathlib import Path
 from tensorflow.keras.models import Sequential
@@ -132,6 +132,13 @@ class HandWrittenDigitsNN():
         plt.show()
 
 if __name__ == "__main__":
+    """
+    https://docs.python.org/3/library/argparse.html
+    'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
+    """
+    parser = argparse.ArgumentParser(description='Hand written digits binary classifier')
+    parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
+    args = parser.parse_args()
     handwritten = HandWrittenDigitsNN("models/HandwrittenDigits.keras")
-    handwritten.BuildModel()
+    handwritten.BuildModel(parser.retrain)
     handwritten.Predict()

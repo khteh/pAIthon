@@ -256,7 +256,7 @@ def single_variate_binary_classification_statsmodels():
     print(f"confusion matrix: {confusion}")
     ShowConfusionMatrix(confusion)
     print("summary():")
-    print(model.summary())
+    print(model.summary()) # This needs print
     print("summary2():")
     print(model.summary2())
 

@@ -135,7 +135,7 @@ class ClassificationModelEvaluationAndSelection():
         )
         self._models = [model_1, model_2, model_3]
 
-    def ModelSelection(self, threshold: float = 0.5):
+    def ModelSelection(self, threshold: float = 0.5, learning_rate: float = 0.01):
         """
         To predict 1 only if very confident, use high value of threshold. This results in high precision, low recall
         To predict 1 even when in doubt, use low value of threshold. This results in low precision, high recall
@@ -154,7 +154,7 @@ class ClassificationModelEvaluationAndSelection():
             # Setup the loss and optimizer
             model.compile(
                 loss=BinaryCrossentropy(from_logits=True),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to sigmoid activation which is typically used for binary classification
-                optimizer=Adam(learning_rate=0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                optimizer=Adam(learning_rate=learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
             )
             print(f"Training {model.name}...")
 
@@ -209,5 +209,5 @@ class ClassificationModelEvaluationAndSelection():
 
 if __name__ == "__main__":
     model = ClassificationModelEvaluationAndSelection('./data/data_w3_ex2.csv')
-    model.ModelSelection(0.5)
+    model.ModelSelection(0.5, 0.01)
     model.TestDataSetPerformance(0.5)

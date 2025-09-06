@@ -107,6 +107,13 @@ def PathlibMkdirTest():
     Path("output/SineWaveGAN").mkdir(parents=True, exist_ok=True)
     Path("output/SineWaveGAN").is_dir()
 
+def TupleArithmetic():
+    print(f"\n=== {TupleArithmetic.__name__} ===")
+    t1 = (1,2,3)
+    t2 = t1 + (4,)
+    assert (1,2,3,4) == t2
+    print(t2)
+
 if __name__ == "__main__":
     sort_dict_by_tuple_values()
     permutations([0], list(range(1, len(portnames)))) # This will start the recursion with 0 ("PAN") as the first stop
@@ -115,3 +122,4 @@ if __name__ == "__main__":
     matrix_sums()
     PathlibMkdirTest()
     #univariate_plot() This blocks
+    TupleArithmetic()

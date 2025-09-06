@@ -1,27 +1,28 @@
-import math, numpy
-import h5py
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import imread
-import scipy
-from PIL import Image
-import pandas as pd
+import argparse, numpy, h5py
 import tensorflow as tf
-from tensorflow.python.framework import ops
+from pathlib import Path
 from tensorflow.keras.losses import CategoricalCrossentropy
-from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras import layers
 from tensorflow.keras.optimizers import Adam
 from utils.TensorModelPlot import PlotModelHistory
 from utils.GPU import InitializeGPU
 class SignsLanguageDigits():
+    """
+    A convolution NN which differentiates among 6 sign language digits.
+    """
     _X_train: numpy.array = None
     _Y_train: numpy.array = None
     _X_test: numpy.array = None
     _Y_test: numpy.array = None
-
     _model: tf.keras.Sequential = None
-    def __init__(self):
+    _model_path:str = None
+    def __init__(self, path):
         InitializeGPU()
+        self._model_path = path
         self.PrepareData()
+        if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
+            print(f"Using saved model {self._model_path}...")
+            self._model = tf.keras.models.load_model(self._model_path)
 
     def PrepareData(self):
         train_dataset = h5py.File('data/train_signs.h5', "r")
@@ -60,7 +61,7 @@ class SignsLanguageDigits():
         self._Y_train = self._Y_train.T
         self._Y_test = self._Y_test.T
         
-    def BuildModel(self):
+    def BuildModel(self, rebuild: bool = False, learning_rate:float = 0.01):
         """
         Implements the forward propagation for the model:
         CONV2D -> RELU -> MAXPOOL -> CONV2D -> RELU -> MAXPOOL -> FLATTEN -> DENSE
@@ -75,6 +76,8 @@ class SignsLanguageDigits():
         Returns:
         model -- TF Keras model (object containing the information for the entire training process) 
         """
+        if self._model and not rebuild:
+            return
         self._model = tf.keras.Sequential([
                 layers.Input(shape=(64,64,3)),
                 ## CONV2D: 8 filters 4x4, stride of 1, padding 'SAME'
@@ -96,12 +99,17 @@ class SignsLanguageDigits():
             ])
         self._model.compile(
                 loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
-                optimizer=Adam(learning_rate=0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                optimizer=Adam(learning_rate=learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                 metrics=['accuracy']
             )
         self._model.summary()
+        if self._model_path:
+            self._model.save(self._model_path)
+            print(f"Model saved to {self._model_path}.")
 
-    def TrainEvaluate(self, epochs:int, batch_size:int):
+    def TrainEvaluate(self, rebuild: bool, epochs:int, batch_size:int):
+        if self._model and not rebuild:
+            return
         train_dataset = tf.data.Dataset.from_tensor_slices((self._X_train, self._Y_train)).batch(64)
         validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_test, self._Y_test)).batch(64)
         history = self._model.fit(train_dataset, epochs=100, validation_data=validation_dataset)
@@ -109,6 +117,14 @@ class SignsLanguageDigits():
         PlotModelHistory("CNN", history)
 
 if __name__ == "__main__":
-    signs = SignsLanguageDigits()
-    signs.BuildModel()
-    signs.TrainEvaluate(100, 64)
+    """
+    https://docs.python.org/3/library/argparse.html
+    'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
+    """
+    parser = argparse.ArgumentParser(description='Signs Language multi-class classifier')
+    parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
+    args = parser.parse_args()
+
+    signs = SignsLanguageDigits("models/SignsLanguageDigits.keras")
+    signs.BuildModel(args.retrain, 0.01)
+    signs.TrainEvaluate(args.retrain, 100, 64)

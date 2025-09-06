@@ -80,19 +80,19 @@ class Generator():
         self.model = models.Sequential()
         self.model.add(layers.Input(shape=(100,)))
         self.model.add(layers.Dense(7*7*256, name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
-        self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence, and potentially improve generalization performance.
+        self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         self.model.add(layers.LeakyReLU())
         self.model.add(layers.Reshape((7, 7, 256)))
         assert self.model.output_shape == (None, 7, 7, 256)  # Note: None is the batch size
 
         self.model.add(layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same'))
         assert self.model.output_shape == (None, 7, 7, 128)
-        self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence, and potentially improve generalization performance.
+        self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         self.model.add(layers.LeakyReLU())
 
         self.model.add(layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same'))
         assert self.model.output_shape == (None, 14, 14, 64)
-        self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence, and potentially improve generalization performance.
+        self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         self.model.add(layers.LeakyReLU())
 
         self.model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', activation='tanh'))
