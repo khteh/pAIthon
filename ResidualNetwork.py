@@ -1,14 +1,6 @@
-import math, numpy
-import h5py
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import imread
-import scipy
-import scipy.misc
-from PIL import Image
-import pandas as pd
+import argparse
 import tensorflow as tf
-from tensorflow.python.framework import ops
-from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
+from pathlib import Path
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.applications.resnet_v2 import ResNet50V2
@@ -18,13 +10,11 @@ from tensorflow.keras import layers
 from tensorflow.keras.layers import Input, Add, Dense, Activation, ZeroPadding2D, Flatten, Conv2D, AveragePooling2D, MaxPooling2D, GlobalMaxPooling2D
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.losses import CategoricalCrossentropy
-from resnets_utils import *
 from tensorflow.keras.initializers import random_uniform, glorot_uniform, constant, identity
 from tensorflow.python.framework.ops import EagerTensor
-from matplotlib.pyplot import imshow
 from utils.GPU import InitializeGPU
 
-# convolutional_block_output1 = [[[[0.,         0.,         0.6442667,  0.,         0.13945118, 0.78498244],
+# _convolutional_block_output1 = [[[[0.,         0.,         0.6442667,  0.,         0.13945118, 0.78498244],
 #                                  [0.01695363, 0.,         0.7052939,  0.,         0.27986753, 0.67453355]],
 #                                 [[0.,         0.,         0.6702033,  0. ,        0.18277727, 0.7506114 ],
 #                                  [0.,         0.,         0.68768525, 0. ,        0.25753927, 0.6794529 ]]],
@@ -37,7 +27,7 @@ from utils.GPU import InitializeGPU
 #                                 [[0.,         3.1125813,  0.,        4.9924607,  0.,         0.        ],
 #                                  [0.,         3.1193442,  0.,        4.0456157,  0.,         0.        ]]]]
 
-# convolutional_block_output2 = [[[[0.0000000e+00, 2.4476275e+00, 1.8830043e+00, 2.1259236e-01, 1.9220030e+00, 0.0000000e+00],
+# _convolutional_block_output2 = [[[[0.0000000e+00, 2.4476275e+00, 1.8830043e+00, 2.1259236e-01, 1.9220030e+00, 0.0000000e+00],
 #                                  [0.0000000e+00, 2.1546977e+00, 1.6514317e+00, 0.0000000e+00, 1.7889941e+00, 0.0000000e+00]],
 #                                 [[0.0000000e+00, 1.8540058e+00, 1.3404746e+00, 0.0000000e+00, 1.0688392e+00, 0.0000000e+00],
 #                                  [0.0000000e+00, 1.6571904e+00, 1.1809819e+00, 0.0000000e+00, 9.4837922e-01, 0.0000000e+00]]],
@@ -230,6 +220,7 @@ ResNet50_summary =[['InputLayer', [(None, 64, 64, 3)], 0],
 
 class ResidualNetwork50():
     _model: Model = None
+    _model_path:str = None
     _input_shape = None
     _classes: int = None
     _learning_rate: float = None
@@ -257,13 +248,17 @@ class ResidualNetwork50():
     The 'flatten' layer doesn't have any hyperparameters.
     The Fully Connected (Dense) layer reduces its input to the number of classes using a softmax activation.    
     """
-    def __init__(self, input_shape, classes:int, learning_rate:float):
+    def __init__(self, path:str, input_shape, classes:int, learning_rate:float):
         InitializeGPU()
+        self._model_path = path
         self._input_shape = input_shape
         self._classes = classes
         self._learning_rate = learning_rate
+        if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
+            print(f"Using saved model {self._model_path}...")
+            self._model = tf.keras.models.load_model(self._model_path)
 
-    def identity_block(self, X, f, filters, initializer=random_uniform):
+    def _identity_block(self, X, f, filters, initializer=random_uniform):
         """
         Implementation of the identity block as defined in Figure 4
         
@@ -307,7 +302,7 @@ class ResidualNetwork50():
 
         return X
 
-    def convolutional_block(self, X, f, filters, s = 2, initializer=glorot_uniform):
+    def _convolutional_block(self, X, f, filters, s = 2, initializer=glorot_uniform):
         """
         Implementation of the convolutional block as defined in Figure 4
         
@@ -361,7 +356,7 @@ class ResidualNetwork50():
         
         return X
     
-    def BuildModel(self):
+    def BuildModel(self, rebuild:bool = False):
         """
         Stage-wise implementation of the architecture of the popular ResNet50:
         CONV2D -> BATCHNORM -> RELU -> MAXPOOL -> CONVBLOCK -> IDBLOCK*2 -> CONVBLOCK -> IDBLOCK*3
@@ -374,7 +369,8 @@ class ResidualNetwork50():
         Returns:
         model -- a Model() instance in Keras
         """
-        tf.keras.backend.set_learning_phase(True)
+        if self._model and not rebuild:
+            return
         # Define the input as a tensor with shape input_shape
         X_input = Input(self._input_shape)
         
@@ -388,9 +384,9 @@ class ResidualNetwork50():
         X = MaxPooling2D((3, 3), strides=(2, 2))(X)
 
         # Stage 2
-        X = self.convolutional_block(X, f = 3, filters = [64, 64, 256], s = 1)
-        X = self.identity_block(X, 3, [64, 64, 256])
-        X = self.identity_block(X, 3, [64, 64, 256])
+        X = self._convolutional_block(X, f = 3, filters = [64, 64, 256], s = 1)
+        X = self._identity_block(X, 3, [64, 64, 256])
+        X = self._identity_block(X, 3, [64, 64, 256])
 
         ### START CODE HERE
         
@@ -398,32 +394,32 @@ class ResidualNetwork50():
         # Make sure you don't miss adding any required parameter
         
         ## Stage 3 (≈4 lines)
-        # `convolutional_block` with correct values of `f`, `filters` and `s` for this stage
-        X = self.convolutional_block(X, f = 3, filters = [128, 128, 512], s = 2)
+        # `_convolutional_block` with correct values of `f`, `filters` and `s` for this stage
+        X = self._convolutional_block(X, f = 3, filters = [128, 128, 512], s = 2)
         
-        # the 3 `identity_block` with correct values of `f` and `filters` for this stage
-        X = self.identity_block(X, 3, [128, 128, 512])
-        X = self.identity_block(X, 3, [128, 128, 512])
-        X = self.identity_block(X, 3, [128, 128, 512])
+        # the 3 `_identity_block` with correct values of `f` and `filters` for this stage
+        X = self._identity_block(X, 3, [128, 128, 512])
+        X = self._identity_block(X, 3, [128, 128, 512])
+        X = self._identity_block(X, 3, [128, 128, 512])
         
         # Stage 4 (≈6 lines)
-        # add `convolutional_block` with correct values of `f`, `filters` and `s` for this stage
-        X = self.convolutional_block(X, f = 3, filters = [256, 256, 1024], s = 2)
+        # add `_convolutional_block` with correct values of `f`, `filters` and `s` for this stage
+        X = self._convolutional_block(X, f = 3, filters = [256, 256, 1024], s = 2)
         
-        # the 5 `identity_block` with correct values of `f` and `filters` for this stage
-        X = self.identity_block(X, 3, [256, 256, 1024])
-        X = self.identity_block(X, 3, [256, 256, 1024])
-        X = self.identity_block(X, 3, [256, 256, 1024])
-        X = self.identity_block(X, 3, [256, 256, 1024])
-        X = self.identity_block(X, 3, [256, 256, 1024])
+        # the 5 `_identity_block` with correct values of `f` and `filters` for this stage
+        X = self._identity_block(X, 3, [256, 256, 1024])
+        X = self._identity_block(X, 3, [256, 256, 1024])
+        X = self._identity_block(X, 3, [256, 256, 1024])
+        X = self._identity_block(X, 3, [256, 256, 1024])
+        X = self._identity_block(X, 3, [256, 256, 1024])
 
         # Stage 5 (≈3 lines)
-        # add `convolutional_block` with correct values of `f`, `filters` and `s` for this stage
-        X = self.convolutional_block(X, f = 3, filters = [512, 512, 2048], s = 2)
+        # add `_convolutional_block` with correct values of `f`, `filters` and `s` for this stage
+        X = self._convolutional_block(X, f = 3, filters = [512, 512, 2048], s = 2)
         
-        # the 2 `identity_block` with correct values of `f` and `filters` for this stage
-        X = self.identity_block(X, 3, [512, 512, 2048])
-        X = self.identity_block(X, 3, [512, 512, 2048])
+        # the 2 `_identity_block` with correct values of `f` and `filters` for this stage
+        X = self._identity_block(X, 3, [512, 512, 2048])
+        X = self._identity_block(X, 3, [512, 512, 2048])
 
         # AVGPOOL (≈1 line). Use "X = AveragePooling2D()(X)"
         X = AveragePooling2D()(X)
@@ -441,6 +437,18 @@ class ResidualNetwork50():
                 metrics=['accuracy']
             )
         self._model.summary()
+        if self._model_path:
+            self._model.save(self._model_path)
+            print(f"Model saved to {self._model_path}.")
     
 if __name__ == "__main__":
-    resnet50 = ResidualNetwork50((64, 64, 3), 6, 0.00015)
+    """
+    https://docs.python.org/3/library/argparse.html
+    'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
+    """
+    parser = argparse.ArgumentParser(description='Signs Language multi-class classifier')
+    parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
+    args = parser.parse_args()
+
+    resnet50 = ResidualNetwork50("models/ResidualNetwork50.keras", (64, 64, 3), 6, 0.00015)
+    resnet50.BuildModel(args.retrain)

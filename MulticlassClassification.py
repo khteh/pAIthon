@@ -21,9 +21,9 @@ class MulticlassClassification():
     _X_train = None
     _Y_train = None
     def __init__(self):
-        self.PrepareData()
+        self._prepare_data()
 
-    def PrepareData(self):
+    def _prepare_data(self):
         # make 4-class dataset for classification
         classes = 4
         m = 100

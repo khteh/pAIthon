@@ -19,12 +19,12 @@ class SignsLanguageDigits():
     def __init__(self, path):
         InitializeGPU()
         self._model_path = path
-        self.PrepareData()
+        self._prepare_data()
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._model = tf.keras.models.load_model(self._model_path)
 
-    def PrepareData(self):
+    def _prepare_data(self):
         train_dataset = h5py.File('data/train_signs.h5', "r")
         self._X_train = numpy.array(train_dataset["train_set_x"][:]) # your train set features
         self._Y_train = numpy.array(train_dataset["train_set_y"][:]) # your train set labels

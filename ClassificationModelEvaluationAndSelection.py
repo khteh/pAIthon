@@ -53,11 +53,11 @@ class ClassificationModelEvaluationAndSelection():
 
     def __init__(self, path):
         InitializeGPU()
-        self.PrepareData(path)
-        self.ScaleData()
+        self._prepare_data(path)
+        self._scale_data()
 
-    def PrepareData(self, path: str):
-        print(f"\n=== {self.PrepareData.__name__} ===")
+    def _prepare_data(self, path: str):
+        print(f"\n=== {self._prepare_data.__name__} ===")
         # Load the dataset from a text file
         data = numpy.loadtxt(path, delimiter=',')
 
@@ -88,9 +88,9 @@ class ClassificationModelEvaluationAndSelection():
         print(f"the shape of the test set (target) is: {self._Y_test.shape}")
         plot_bc_dataset(x_bc, y_bc, "x1 vs. x2")
 
-    def ScaleData(self):
+    def _scale_data(self):
         # Scale the features
-        print(f"\n=== {self.ScaleData.__name__} ===")
+        print(f"\n=== {self._scale_data.__name__} ===")
 
         # Initialize the class
         self._scaler = StandardScaler()

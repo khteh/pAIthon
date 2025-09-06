@@ -43,7 +43,7 @@ class LinearRegressionModelEvaluationAndSelection():
     _poly : PolynomialFeatures = None
 
     def __init__(self, path):
-        self.PrepareData(path)
+        self._prepare_data(path)
         self._X_train_scaled = self.ScaleData(self._X_train)
         # Plot the results
         plot_dataset(x=self._X_train_scaled, y=self._Y_train, title="scaled input vs. target")
@@ -51,8 +51,8 @@ class LinearRegressionModelEvaluationAndSelection():
         self._X_test_scaled = self.ScaleData(self._X_test)
         self._model = LinearRegression()
 
-    def PrepareData(self, path: str):
-        print(f"\n=== {self.PrepareData.__name__} ===")
+    def _prepare_data(self, path: str):
+        print(f"\n=== {self._prepare_data.__name__} ===")
         # Load the dataset from the text file
         data = numpy.loadtxt(path, delimiter=',') # './data/data_w3_ex1.csv'
 

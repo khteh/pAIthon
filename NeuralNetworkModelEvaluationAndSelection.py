@@ -61,10 +61,10 @@ class NeuralNetworkModelEvaluationAndSelection():
 
     def __init__(self, path):
         InitializeGPU()
-        self.PrepareData(path)
+        self._prepare_data(path)
 
-    def PrepareData(self, path: str):
-        print(f"\n=== {self.PrepareData.__name__} ===")
+    def _prepare_data(self, path: str):
+        print(f"\n=== {self._prepare_data.__name__} ===")
         # Load the dataset from the text file
         data = numpy.loadtxt(path, delimiter=',') # './data/data_w3_ex1.csv'
 

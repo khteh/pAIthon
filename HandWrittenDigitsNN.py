@@ -20,13 +20,13 @@ class HandWrittenDigitsNN():
     def __init__(self, path):
         self._model_path = path
         InitializeGPU()
-        self.PrepareData()
-        self.VisualizeData()
+        self._prepare_data()
+        self._visualize_data()
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._model = tf.keras.models.load_model(self._model_path)
 
-    def PrepareData(self):
+    def _prepare_data(self):
         """
         - The data set contains 1000 training examples of handwritten digits $^1$, here limited to zero and one.  
 
@@ -45,7 +45,7 @@ class HandWrittenDigitsNN():
         self._X = self._X[0:1000]
         self._Y = self._Y[0:1000]
 
-    def VisualizeData(self):
+    def _visualize_data(self):
         m, n = self._X.shape
         fig, axes = plt.subplots(8,8, figsize=(10, 10)) # figsize = (width, height)
         fig.tight_layout(pad=0.1)
@@ -140,5 +140,5 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
     handwritten = HandWrittenDigitsNN("models/HandwrittenDigits.keras")
-    handwritten.BuildModel(parser.retrain)
+    handwritten.BuildModel(args.retrain)
     handwritten.Predict()

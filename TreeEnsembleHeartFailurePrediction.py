@@ -20,9 +20,9 @@ class HeartFailurePrediction():
     _rf: RandomForestClassifier = None
     _xgb: XGBClassifier = None
     def __init__(self, path):
-        self.PrepareData(path)
+        self._prepare_data(path)
 
-    def PrepareData(self, path:str):
+    def _prepare_data(self, path:str):
         """
         Remove the binary variables, because one-hot encoding them would do nothing to them. To achieve this we will just count how many different values there are in each categorical variable and consider only the variables with 3 or more values.
         one-hot encoding aims to transform a categorical variable with n outputs into n binary variables.

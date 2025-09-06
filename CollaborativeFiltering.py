@@ -45,9 +45,9 @@ Limitations:
 class CollaborativeFiltering():
     _data = None
     def __init__(self, path):
-        self.PrepareData()
+        self._prepare_data()
 
-    def PrepareData(self):
+    def _prepare_data(self):
         self._data = Dataset.load_builtin("ml-100k")
 
     def cofi_cost_func(self, X, W, b, Y, R, lambda_):

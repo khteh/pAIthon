@@ -31,7 +31,7 @@ class MovieRecommendation():
         self._num_features = num_features
         self._learning_rate = learning_rate
         self._lambda = lambda_
-        self.PrepareData()
+        self._prepare_data()
 
     def load_Movie_List_pd(self):
         """ returns df with and index of movies in the order they are in in the Y matrix """
@@ -73,8 +73,8 @@ class MovieRecommendation():
         num_users,_ = W.shape
         return(X, W, b, num_features, num_users)
 
-    def PrepareData(self):
-        print(f"\n=== {self.PrepareData.__name__} ===")
+    def _prepare_data(self):
+        print(f"\n=== {self._prepare_data.__name__} ===")
         X, W, b, num_features, num_users = self._load_precalc_params_small()
         #Y, R = self._load_ratings_small()
         #print("Y", Y.shape, "R", R.shape)

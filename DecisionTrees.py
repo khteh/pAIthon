@@ -12,9 +12,9 @@ class DecisionTree():
     def __init__(self, root_indices, feature):
         self._root_indices = root_indices
         self._feature = feature
-        self.PrepareData()
+        self._prepare_data()
 
-    def PrepareData(self):
+    def _prepare_data(self):
         self._X_train = numpy.array([[1,1,1],[1,0,1],[1,0,0],[1,0,0],[1,1,1],[0,1,1],[0,0,0],[1,0,1],[0,1,0],[1,0,0]])
         self._Y_train = numpy.array([1,1,0,0,1,0,0,1,1,0])        
 

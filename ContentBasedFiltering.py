@@ -61,9 +61,9 @@ class ContentBasedFiltering():
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._model = tf.keras.models.load_model(self._model_path)
-        self.PrepareData()
-        self.ScaleData()
-        self.SplitData()
+        self._prepare_data()
+        self._scale_data()
+        self._split_data()
 
     def _load_data(self):
         ''' called to load preprepared data for the lab '''
@@ -94,7 +94,7 @@ class ContentBasedFiltering():
         with open('./data/ContentBasedFiltering/content_user_to_genre.pickle', 'rb') as f:
             self._user_to_genre = pickle.load(f)
 
-    def PrepareData(self):
+    def _prepare_data(self):
         # Load Data, set configuration variables
         self._load_data()
         self._num_user_features = self._user_train.shape[1] - 3  # remove userid, rating count and ave rating during training
@@ -105,7 +105,7 @@ class ContentBasedFiltering():
         self._i_s = 1  # start of columns to use in training, items
         print(f"Number of training vectors: {len(self._item_train)}")
 
-    def ScaleData(self):
+    def _scale_data(self):
         # scale training data
         item_train_unscaled = self._item_train
         self._user_train_unscaled = self._user_train
@@ -127,7 +127,7 @@ class ContentBasedFiltering():
         print(numpy.allclose(item_train_unscaled, self._scalerItem.inverse_transform(self._item_train)))
         print(numpy.allclose(self._user_train_unscaled, self._scalerUser.inverse_transform(self._user_train)))
     
-    def SplitData(self):
+    def _split_data(self):
         self._item_train, self._item_test = train_test_split(self._item_train, train_size=0.80, shuffle=True, random_state=1)
         self._user_train, self._user_test = train_test_split(self._user_train, train_size=0.80, shuffle=True, random_state=1)
         self._y_train, self._y_test       = train_test_split(self._y_train,    train_size=0.80, shuffle=True, random_state=1)
