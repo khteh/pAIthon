@@ -45,12 +45,12 @@ class SignsLanguageDigits():
         # Reshape
         self._convert_labels_to_one_hot()
 
-        print ("number of training examples = " + str(self._X_train.shape[0]))
-        print ("number of test examples = " + str(self._X_test.shape[0]))
-        print ("X_train shape: " + str(self._X_train.shape))
-        print ("Y_train shape: " + str(self._Y_train.shape))
-        print ("X_test shape: " + str(self._X_test.shape))
-        print ("Y_test shape: " + str(self._Y_test.shape))
+        print (f"number of training examples = {self._X_train.shape[0]}")
+        print (f"number of test examples = {self._X_test.shape[0]}")
+        print (f"X_train shape: {self._X_train.shape}")
+        print (f"Y_train shape: {self._Y_train.shape}")
+        print (f"X_test shape: {self._X_test.shape}")
+        print (f"Y_test shape: {self._Y_test.shape}")
         print(f"Class#: {self._classes} {self._classes.shape}")
         print(f"Y_train: {self._Y_train[:10]}")
         print(f"Y_test: {self._Y_test[:10]}")
