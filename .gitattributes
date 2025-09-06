@@ -45,6 +45,7 @@
 *.gif   binary
 *.npy   binary
 *.h5    binary
+*.keras binary
 ###############################################################################
 # diff behavior for common document formats
 # 
