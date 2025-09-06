@@ -130,6 +130,8 @@ def AdvancedIndexing():
 
 def Broadcasting():
     """
+    Multiplying vectors of different sizes.
+    
     Z = XW + b utilized NumPy broadcasting to expand the vector b. If you are not familiar with NumPy Broadcasting, this short tutorial is provided.
     XW is a matrix-matrix operation with dimensions (𝑚,j1)(j1,j2) which results in a matrix with dimension (𝑚,j2). To that, we add a vector b with dimension (1,j2). b must be expanded to be a (𝑚,j2) matrix for this element-wise operation to make sense. This expansion is accomplished for you by NumPy broadcasting.
 
