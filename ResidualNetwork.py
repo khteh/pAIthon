@@ -258,7 +258,7 @@ class ResidualNetwork50():
     _Y_train: numpy.array = None
     _X_test: numpy.array = None
     _Y_test: numpy.array = None
-
+    _trained: bool = False
     def __init__(self, path:str, input_shape, learning_rate:float):
         InitializeGPU()
         self._model_path = path
@@ -268,6 +268,7 @@ class ResidualNetwork50():
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._model = tf.keras.models.load_model(self._model_path) # load_model('resnet50.h5')
+            self._trained = True
 
     def _prepare_data(self):
         train_dataset = h5py.File('data/train_signs.h5', "r")
@@ -418,6 +419,7 @@ class ResidualNetwork50():
         model -- a Model() instance in Keras
         """
         if self._model and not rebuild:
+            print("Using existing model...")
             return
         # Define the input as a tensor with shape input_shape
         X_input = Input(self._input_shape)
@@ -487,28 +489,34 @@ class ResidualNetwork50():
         self._model.summary()
 
     def TrainEvaluate(self, rebuild: bool, epochs:int, batch_size:int):
-        if self._model and rebuild:
-            history = self._model.fit(self._X_train, self._Y_train, epochs = epochs, batch_size = batch_size)
-            PlotModelHistory("ResNet-50 multi-class classifier", history)
-            # remote: error: File models/ResidualNetwork50.keras is 270.44 MB; this exceeds GitHub's file size limit of 100.00 MB
-            #if self._model_path:
-            #    self._model.save(self._model_path)
-            #    print(f"Model saved to {self._model_path}.")
-        preds = self._model.evaluate(self._X_test, self._Y_test)
-        print (f"Loss = {preds[0]}")
-        print (f"Test Accuracy = {preds[1]}")
+        if self._model:
+            if not self._trained or rebuild:
+                history = self._model.fit(self._X_train, self._Y_train, epochs = epochs, batch_size = batch_size)
+                PlotModelHistory("ResNet-50 multi-class classifier", history)
+                self._trained = True
+                # remote: error: File models/ResidualNetwork50.keras is 270.44 MB; this exceeds GitHub's file size limit of 100.00 MB
+                if self._model_path:
+                    self._model.save(self._model_path)
+                    print(f"Model saved to {self._model_path}.")
+            preds = self._model.evaluate(self._X_test, self._Y_test)
+            print (f"Loss = {preds[0]}")
+            print (f"Test Accuracy = {preds[1]}")
+        else:
+            raise RuntimeError("Please build the model first by calling BuildModel()!")
 
-    def PredictSign(self, path:str):
+    def PredictSign(self, path:str, truth:int):
         img = image.load_img(path, target_size=(64, 64))
         x = image.img_to_array(img)
         x = numpy.expand_dims(x, axis=0)
         x = x/255.0
         x2 = x 
-        print('Input image shape:', x.shape)
+        print(f"Input image {path}, shape: {x.shape}")
         imshow(img)
         prediction = self._model.predict(x2)
-        print("Class prediction vector [p(0), p(1), p(2), p(3), p(4), p(5)] = ", prediction)
-        print("Class:", numpy.argmax(prediction))
+        print(f"Class prediction vector [p(0), p(1), p(2), p(3), p(4), p(5)] = {prediction}")
+        prediction = numpy.argmax(prediction)
+        print(f"Truth: {truth}, Class: {prediction}")
+        # assert truth == prediction Need to train for more epochs
 
 if __name__ == "__main__":
     """
@@ -519,7 +527,11 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 
-    resnet50 = ResidualNetwork50("models/ResidualNetwork50.keras", (64, 64, 3), 0.00015)
+    resnet50 = ResidualNetwork50("/tmp/ResidualNetwork50.keras", (64, 64, 3), 0.00015)
     resnet50.BuildModel(args.retrain)
     resnet50.TrainEvaluate(args.retrain, 20, 32)
-    resnet50.PredictSign("images/my_handsign0.jpg")
+    resnet50.PredictSign("images/my_handsign0.jpg", 2)
+    resnet50.PredictSign("images/my_handsign1.jpg", 1)
+    resnet50.PredictSign("images/my_handsign2.jpg", 3)
+    resnet50.PredictSign("images/my_handsign3.jpg", 5)
+    resnet50.PredictSign("images/my_handsign4.jpg", 5)

@@ -17,6 +17,7 @@ class SmilingFaceConvNet():
     _classes: numpy.array = None
     _model: tf.keras.Sequential = None
     _model_path: str = None
+    _trained: bool = False
     def __init__(self, path:str):
         InitializeGPU()
         self._model_path = path
@@ -24,6 +25,7 @@ class SmilingFaceConvNet():
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._model = tf.keras.models.load_model(self._model_path)
+            self._trained = True
 
     def _prepare_data(self):
         train_dataset = h5py.File('data/train_happy.h5', "r")
@@ -96,14 +98,18 @@ class SmilingFaceConvNet():
         self._model.summary()
 
     def TrainEvaluate(self, rebuild:bool, epochs:int, batch_size:int):
-        if self._model and rebuild:
-            history = self._model.fit(self._X_train, self._Y_train, epochs=epochs, batch_size=batch_size)
-            print(f"history: {history.history}")
-            PlotModelHistory("Smiling face binary classifier", history)
-            if self._model_path:
-                self._model.save(self._model_path)
-                print(f"Model saved to {self._model_path}.")
-        self._model.evaluate(self._X_test, self._Y_test)
+        if self._model:
+            if not self._trained or rebuild:
+                history = self._model.fit(self._X_train, self._Y_train, epochs=epochs, batch_size=batch_size)
+                print(f"history: {history.history}")
+                PlotModelHistory("Smiling face binary classifier", history)
+                self._trained = True
+                if self._model_path:
+                    self._model.save(self._model_path)
+                    print(f"Model saved to {self._model_path}.")
+            self._model.evaluate(self._X_test, self._Y_test)
+        else:
+            raise RuntimeError("Please build the model first by calling BuildModel()!")
 
 if __name__ == "__main__":
     """
