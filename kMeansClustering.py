@@ -247,4 +247,4 @@ if __name__ == "__main__":
     K = 16
     max_iters = 10
     kmeans = kMeansClustering([], K, max_iters)
-    kmeans.kMeansImageCompression("data/bird_small.png")
+    kmeans.kMeansImageCompression("images/bird_small.png")

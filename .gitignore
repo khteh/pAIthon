@@ -5,7 +5,6 @@
 **/.~lock*
 **/.env
 **/__pycache__/
-**/*.png
 **/logs/
 **/output/
 **/checkpoints/
