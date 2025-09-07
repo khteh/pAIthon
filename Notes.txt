@@ -582,6 +582,7 @@ Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1
 Nc[l] = Filter#
 
 One property of convolution network is that the number of parameters are independent of the size of the input. This reduces overfitting.
+Early/Shallow layers often see the finer details with simpler shapes and patterns in smaller regions of the input (low-level features). Later/Deeper layers often see more complex shapes and patterns in larger regions of the input (high-level features). In other words, early/shallow layers zoom in, later/deeper layers zoom out.
 
 Example parameters# calculation:
 Input: 256x256 RGB
@@ -630,6 +631,16 @@ Max Pooling: filter size:3, stride: 3
 Nh[l] = floor((n+2p-f) / s) + 1 = 32
 Nw[l] = floor((n+2p-f) / s) + 1 = 32
 Output volume = Nh[l] x Nw[l] x Nc[l] = 22 x 22 x 21
+
+Input: 3D data with 64x64x64x3
+Filter: 4x4x4
+#filters = 16
+Padding: 0
+Stride: 2
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(64 - 4)/2 + 1 = 31
+Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(64 - 4)/2 + 1 = 31
+Nd[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(64 - 4)/2 + 1 = 31 
+Output volume = Nh[l] x Nw[l] x Nd[l] x Nc[l] = 31 x 31 x 31 x 16
 
 Typically in Convolutional NN, the size of the data will reduce deeper into the NN while the filter# will increase.
 
@@ -757,3 +768,62 @@ Transpose Convolution:
 - Output dimension is greater than the input dimension.
 - Apply the filter on the padded output.
 - Convolve input with the filter, fill the element-wise multiplication result in the respective output cell. Ignore the pad cells. For any overlapping cell, due to stride, add the cell values.
+
+======================================================================================================================================================================================================
+Face Recognition:
+- Face verification supervised learning:
+  - 1:1 mapping
+  - Authentication
+- Face Recognition:
+  - 1:K mapping
+  - Has a database of K persons.
+  - Ouput ID if the image is found in the database.
+One-shot learning:
+- Learn from ONE example to recognize the person again.
+- Problems:
+(1) Smalle dataset not effective to train a convnet.
+(2) New person requires retraining the convnet.
+Solution: 
+Learn a "similarity" function:
+- d(img1, img2) = degree of diff between 2 images
+- <= threshold : "same"
+- > threshold: "different"
+Siamese Network:
+- The 2 networks share the parameters and have the same architecture.
+- The final Dense layer is used to encode the input image. For example, (128 , 1) vector, f(x).
+- d(x1,x2) = |f(x1) - f(x2)| ** 2
+- Example system: DeepFace
+- To encode:
+(1) Use triplet loss function:
+  - Anchor image, postive image, negative image.
+  - d(A,P) <= d(A,N)
+    d(A,P) - d(A,N) <= 0
+  - To prevent the NN from learning a trivial solution (0 - 0 <= 0) setting all the parameters to 0, use "<= 0 - alpha"
+  - d(A,P) - d(A,N) + alpha <= 0
+  - L(A,P,N) = max(|f(A) - f(P)|^2 - |f(A) - f(N)|^2 + alpha, 0)
+  - J = sum()L(A,P,N) for all the triplets over the image corpera and #persons. Example, 10k pictures of 1k persons.
+  - Needs multiple pictures of each person.
+  - Caveat: d(A,N) is very easily large number with random pairs of images. To train the NN effectively, choose pairs which result in d(A,P) ~= d(A,N). Ideas from FaceNet.
+(2) Use binary classification:
+  - Linear Regression
+  - y^ = sigmoid(w * sum(|f(x1) - f(x2)|) + b) for i=1...128
+  - In DeepFace, the (f(x1) - f(x2))^2 / (f(x1) + f(x2)) is used in the summation.
+
+Nerual Style Transfer:
+- Content picture (C) + Styling picture (S) = Generated Image (G)
+- Let a convnet learn the features in a input picture.
+- Pick a neuron in a layer, find the nine image patches that maximize the neuron's activation. Repeat for other neurons.
+- Cost function J(G) = alpha * Jc(C, G) + beta * Js(S, G)
+(1) Initialize G with a seed, (100, 100, 3). G = G - alpha/2G * J(G)
+(2) Use Gradient Descent to minimize J(G). Update the generated image pixel with G = G - alpha/2G * J(G).
+- Jc(C, G) - Use middle layer to compute content cost.
+  - a(l,c), a(l,g): activation of layer l on images
+  - Jc(C, G) = |a(l,c) - a(l,g)| ** 2
+- Styles definition: Correlation among the activations across channels in the particular layer used to calculate Js(S, G).
+  Style Matrix to capture the style of the input image (S and G):
+  - a[l](i,j,k) = activation at (i,j,k) in lyaer l. Compute G[l] which is a matrix of Nc[l] x Nc[l].
+  - G[l, S](k,k') = sum(sum(a[l](i,j,k) * a[l](i,j,k'))) for all i,j (height, width) over all k channels for style picture
+  - G[l, G](k,k') = sum(sum(a[l](i,j,k) * a[l](i,j,k'))) for all i,j (height, width) over all k channels for generated picture
+  - J[l](S, G) = |G[l, S](k,k') - G[l, G](k,k')| ** 2 = sum(sum(G[l,S] - G[l, G])) / (2 * Nh *Nw * Nc) for all channels in layer l.
+  - For bettter styling effect, use J[l](S, G) from multiple layers. Js(S,G) = sum(lambda * J[l](S, G)) for some number of layers. This takes both low-level and high-level correlations into account.
+  - J(G) = 
