@@ -479,6 +479,12 @@ def ShapeTests():
     a = a.reshape((1,)+ a.shape)
     assert (1,2,2) == a.shape
     print(f"a.shape: {a.shape}")
+    a = numpy.ndarray((5,3,4,2))
+    print(f"a.shape: {a.shape}")
+    assert (5,3,4,2) == a.shape
+    a = tf.transpose(a, perm=[2,1,3,0]) # f.transpose can be used to change the order of the dimension.
+    print(f"a.shape (after transpose with indices [2,1,3,0]): {a.shape}")
+    assert (4,3,2,5) == a.shape
 
 if __name__ == "__main__":
     InitializeGPU()
