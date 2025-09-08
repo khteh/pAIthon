@@ -5,7 +5,11 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import concatenate, Input, Conv2D, MaxPooling2D, Dropout, Conv2DTranspose
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
-
+"""
+data too large to keep in git:
+19M	CameraMask
+507M	CameraRGB
+"""
 class UNet():
     _input_size = None
     _n_filters: int = None

@@ -526,6 +526,10 @@ Binary Classification uses Sigmoid activation function and BinaryCrossEntropy lo
 Multi-class Classification uses Softmax activation function and CategoricalCrossEntropy loss function.
 ================================================================================================================================================================================
 Convolution:
+Early/Shallow layers often see the finer details with simpler shapes and patterns in smaller regions of the input (low-level features) such as edges and simple textures.
+Later/Deeper layers often see more complex shapes and patterns in larger regions of the input (high-level features) such as more complex textures and object classes.
+In other words, early/shallow layers zoom in, later/deeper layers zoom out.
+
 Vertical edge detection filter: [[1, 0, -1],
                                  [1, 0, -1],
                                  [1, 0, -1]]
@@ -582,7 +586,6 @@ Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1
 Nc[l] = Filter#
 
 One property of convolution network is that the number of parameters are independent of the size of the input. This reduces overfitting.
-Early/Shallow layers often see the finer details with simpler shapes and patterns in smaller regions of the input (low-level features). Later/Deeper layers often see more complex shapes and patterns in larger regions of the input (high-level features). In other words, early/shallow layers zoom in, later/deeper layers zoom out.
 
 Example parameters# calculation:
 Input: 256x256 RGB
@@ -773,7 +776,9 @@ Transpose Convolution:
 Face Recognition:
 - Face verification supervised learning:
   - 1:1 mapping
-  - Authentication
+  - A 2-step authentication process:
+    (i) Identiy who you are. For example, name, ID, etc.
+    (ii) Check if the face matches the identity in step (i)
 - Face Recognition:
   - 1:K mapping
   - Has a database of K persons.
@@ -795,13 +800,13 @@ Siamese Network:
 - Example system: DeepFace
 - To encode:
 (1) Use triplet loss function:
-  - Anchor image, postive image, negative image.
+  - Anchor image, postive image, negative image. These triplets are picked from the training dataset. (𝐴(𝑖),𝑃(𝑖),𝑁(𝑖)) is used here to denote the 𝑖-th training example.
   - d(A,P) <= d(A,N)
     d(A,P) - d(A,N) <= 0
   - To prevent the NN from learning a trivial solution (0 - 0 <= 0) setting all the parameters to 0, use "<= 0 - alpha"
   - d(A,P) - d(A,N) + alpha <= 0
-  - L(A,P,N) = max(|f(A) - f(P)|^2 - |f(A) - f(N)|^2 + alpha, 0)
-  - J = sum()L(A,P,N) for all the triplets over the image corpera and #persons. Example, 10k pictures of 1k persons.
+  - L(A,P,N) = max(sum((f(A) - f(P))^2) - sum((f(A) - f(N))^2) + alpha, 0); sum over the image instances. 
+  - J = sum(L(A,P,N))for all the triplets over the image corpera and #persons. Example, 10k pictures of 1k persons.
   - Needs multiple pictures of each person.
   - Caveat: d(A,N) is very easily large number with random pairs of images. To train the NN effectively, choose pairs which result in d(A,P) ~= d(A,N). Ideas from FaceNet.
 (2) Use binary classification:
@@ -818,12 +823,34 @@ Nerual Style Transfer:
 (2) Use Gradient Descent to minimize J(G). Update the generated image pixel with G = G - alpha/2G * J(G).
 - Jc(C, G) - Use middle layer to compute content cost.
   - a(l,c), a(l,g): activation of layer l on images
-  - Jc(C, G) = |a(l,c) - a(l,g)| ** 2
+  - Jc(C, G) = sum(|a(l,c) - a(l,g)| ** 2)
 - Styles definition: Correlation among the activations across channels in the particular layer used to calculate Js(S, G).
-  Style Matrix to capture the style of the input image (S and G):
+  Style Matrix (also called a "Gram matrix.") to capture the style of the input image (S and G):
+  - In linear algebra, the Gram matrix G of a set of vectors (v1,…,vn) is the matrix of dot products, whose entries are Gij=viT * vj=np.dot(vi,vj).
+    In other words, G(gram)ij compares how similar vi is to vj: If they are highly similar, you would expect them to have a large dot product, and thus for G(gram)ij to be large. G(gram) = A @ A.T. The value G(gram)i,j measures how similar the activations of filter i are to the activations of filter j.
+    The diagonal elements of G(gram)ii measure how "active" a filter is. For example, suppose filter i is detecting vertical textures in the image. Then G(gram)ii measures how common vertical textures are in the image as a whole. If G(gram)ii is large, this means that the image has a lot of vertical texture.
+    By capturing the prevalence of different types of features (G(gram)ii), as well as how much different features occur together (G(gram)ij), the Style matrix Ggram measures the style of an image.
+  - Compute the Style matrix by multiplying the "unrolled" filter matrix with its transpose: 
+    - (Nc x (Nh x Nw)) @ (Nc x (Nh x Nw)).T = (Nc x (Nh x Nw)) @ ((Nh x Nw) x Nc) => (Nc, Nc)
   - a[l](i,j,k) = activation at (i,j,k) in lyaer l. Compute G[l] which is a matrix of Nc[l] x Nc[l].
   - G[l, S](k,k') = sum(sum(a[l](i,j,k) * a[l](i,j,k'))) for all i,j (height, width) over all k channels for style picture
   - G[l, G](k,k') = sum(sum(a[l](i,j,k) * a[l](i,j,k'))) for all i,j (height, width) over all k channels for generated picture
   - J[l](S, G) = |G[l, S](k,k') - G[l, G](k,k')| ** 2 = sum(sum(G[l,S] - G[l, G])) / (2 * Nh *Nw * Nc) for all channels in layer l.
   - For bettter styling effect, use J[l](S, G) from multiple layers. Js(S,G) = sum(lambda * J[l](S, G)) for some number of layers. This takes both low-level and high-level correlations into account.
-  - J(G) = 
+  - J(G) = alpha * J(C, G) + beta * J(S, G). Use gradient descent to generate G which minimizes J(G).
+
+Get better results if you "merge" style costs from several different layers.
+Each layer will be given weights (λ[l]) that reflect how much each layer will contribute to the style.
+How do you choose the coefficients for each layer? The deeper layers capture higher-level concepts, and the features in the deeper layers are less localized in the image relative to each other. So if you want the generated image to softly follow the style image, try choosing larger weights for deeper layers and smaller weights for the first layers. 
+In contrast, if you want the generated image to strongly follow the style image, try choosing smaller weights for deeper layers and larger weights for the first layers.
+What you should remember:
+The style of an image can be represented using the Gram matrix of a hidden layer's activations.
+You get even better results by combining this representation from multiple different layers.
+This is in contrast to the content representation, where usually using just a single hidden layer is sufficient.
+Minimizing the style cost will cause the image G to follow the style of the image S.
+======================================================================================================================================================================================================
+L2 Distance
+- Euclidean distance
+- A measure of the straight-line distance between two points in a multi-dimensional space.
+- sqrt(sum((A - B) ** 2))
+- dist = numpy.linalg.norm(a-b, ord=2)
