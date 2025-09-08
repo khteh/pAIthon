@@ -248,8 +248,8 @@ vgg.trainable = False
 content_layer = [('block5_conv4', 1)]
 vgg_model_outputs = get_layer_outputs(vgg, STYLE_LAYERS + content_layer)
 
-content_image = numpy.array(Image.open("images/my_content.jpg").resize((img_size, img_size)))
-style_image =  numpy.array(Image.open("images/my_style.jpg").resize((img_size, img_size)))
+content_image = numpy.array(Image.open("images/louvre_small.jpg").resize((img_size, img_size)))
+style_image =  numpy.array(Image.open("images/monet.jpg").resize((img_size, img_size)))
 content_image = tf.constant(numpy.reshape(content_image, ((1,) + content_image.shape)))
 style_image = tf.constant(numpy.reshape(style_image, ((1,) + style_image.shape)))
 generated_image = tf.Variable(tf.image.convert_image_dtype(content_image, tf.float32))
