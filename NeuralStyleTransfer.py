@@ -243,7 +243,7 @@ pp = pprint.PrettyPrinter(indent=4)
 img_size = 400
 vgg = tf.keras.applications.VGG19(include_top=False,
                                   input_shape=(img_size, img_size, 3),
-                                  weights='pretrained-model/vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5')
+                                  weights='pretrained-model/vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5') # 76.4MB
 vgg.trainable = False
 content_layer = [('block5_conv4', 1)]
 vgg_model_outputs = get_layer_outputs(vgg, STYLE_LAYERS + content_layer)

@@ -80,8 +80,8 @@ Perceptron Learning Rule: Given data point (x,y), update each weight according t
 Start with random weights, learn from data and update the weights that result in better weight vector which reduces loss.
 
 Support Vector Machines:
-  Maximum Margin Separator: Boundary that maximizes the distance between any of the data points
-If the data is not linearly separable, it works from higher dimension to find the separation boundary. For example, other shapes than linear lines.
+- Maximum Margin Separator: Boundary that maximizes the distance between any of the data points
+- If the data is not linearly separable, it works from higher dimension to find the separation boundary. For example, other shapes than linear lines.
 
 Optimization Problem Formulation:
 - Local Search: 
@@ -155,7 +155,7 @@ Strategy to debugging a learning algorithm:
 (6) Increase lambda - Fixes high variance.
 
 Hold-out cross validation splits data into training and testing data sets. How to split?
-k-fold corss-validation: Splitting data into k sets, and experimenting k times, using each set as a test set once, and using remaining data as training set.
+k-fold cross-validation: Splitting data into k sets, and experimenting k times, using each set as a test set once, and using remaining data as training set.
 
 Feature Scaling: When a feature has a large range of values, the weight/parameter calculated by the model will have small range. In this case, a small change in weight will have big change in the cost value.
 This causes the gradient descent to take longer time to find it's global minimum, i.e., converge slower. To oversome this, scale the input data. 2 ways:
@@ -854,3 +854,79 @@ L2 Distance
 - A measure of the straight-line distance between two points in a multi-dimensional space.
 - sqrt(sum((A - B) ** 2))
 - dist = numpy.linalg.norm(a-b, ord=2)
+======================================================================================================================================================================================================
+Sequence Models
+Use Cases:
+(1) Speech Recognition. Input: speech Output: text
+(2) Music Generation. Input: a number, genre, etc. Output: Music notes. One-to-many.
+(3) Sentiment Classification. Input: sentence, Output: integer count. #likes or #stars. Many-to-one.
+(4) DNA Sequence Analysis. Input: sequence of A,C,G,T Output: which part of the sequence corresponds to a specific pattern, protein for instance.
+(5) Machine Translation. Input: sentence in source language Output: sentence in translated language. 2 parts: Encoder reads the input; Decoder outputs the translated sentence.
+(6) Video Activity Recognition. Input: sequence of video frames Output: activity description.
+(7) Name Entity Recognition. Input: text Output: people / entities identified in the input.
+
+Notation:
+Both input and output are one-hot encoded vectors.
+
+Standard NN (one-to-one) work well for sequence because of 2 problems:
+(1) Inputs and outputs can be of different lengths in different samples of the dataset.
+(2) Standard NN doeesn't share features learnt across different positions of text. For example, in name-entity recognition, if a name is identified in early in the sequence, the same string (faeature) should be identified as well in later parts of the sequence.
+    - Same as how ConvNet help sharing features learnt in one part of an image to generalize quickly to other parts of the image, Recurrent NN plays the same role for sequence modeling.
+
+Recurrent NN:
+- Predict the next steps based on the knowledge of all prior steps.
+- Uses activations up to the current recurrent unit to compute output y-hat.
+- At each recurrent unit, a(t-1) and x(t) are input, a(t) and y(t) are output. Many-to-many.
+- Tx = length of input; Ty = length of output
+- a0 = vector of zeros.
+  Wax = weights used to compute output(a) using x
+  Wya = weights used to compute output(y) using a
+  a(t) = g(Waa * a(t-1) + WWax * x(t) + ba) <= Usually tanh is used. Sometimes ReLU
+  y^(t) = g(Wya * a(t) + by) <= Sigmoid fo binary classification, softmax for multi-class
+- Simplify a(t) = g(Waa * a(t-1) + WWax * x(t) + ba) = g(Wa*[a(t-1, x(t))] + ba)
+  Example:
+  - if a(t-1) is 100-element vector, Waa would be (100, 100)
+  - if x(t) is 10,000-element vector, Wax would be (100, 10000)
+  Wa is a matrix of [Waa | Wax] stacked horizontally with shape (100, 10100)
+  [a(t-1, x(t))] is a matrix of [a(t-1) | x(t)] stacked vertically with shape (10100, 1)
+- Simplify y^(t) = g(Wya * a(t) + by) = g(Wy * a(t) + by)
+- L(t)(y^(t), y(t)) => use BinaryCrossEntropy loss function
+  L(y^(t), y(t)) = sum(L(t)(y^(t), y(t))) for all time steps.
+- Backpropagation through time using gradient descent to update parameters.
+language Model and Sequence Generation:
+- L(y^(t), y(t)) = -sum(y(t) * log(y^(t)))
+  L = sum(L(y^(t), y(t))) for all time steps.
+- P(y(1), y(2), y(3)) = P(y1) * P(y2 | y1) * P(y3 | y1,y2)
+Sampling a sequence from a trained RNN:
+- Generate randomly chosen sentence from RNN.
+- y^(t): numpy.random.choice(P(word1)P(word2)P(word3)...)
+
+Basic RNN is not very good at capturing long-range dependencies. This is similar to the vanishing gradients problem inherent in training very deep conventional NN.
+Exploding gradients can also happen which is easily spotted because the parameters blow up which result in some NaN due to numerical overflows. Use gradient clipping to solve it. If gradient vectors larger than some threshold, rescale them.
+
+Gated Recurrent Unit:
+- Modification of RNN
+- Helps RNN capture long-range dependencies and solve the vanishing gradient problem.
+- C = memory cell
+- It outputs an activation a(t)
+- C(t) = a(t) : [1, N] vector. Each index serves to remember different types of contexts. For example, singular/plural, food, places, etc
+- C~(t) = tanh(Wc[C(t-1), x(t)] + bc) <= candidate replacement of current C(t) <- simplified version
+- Relevance Gate [0, 1], Gr = sigmoid(Wr[C(t-1), x(t)] + br) : 1: Update 0: Don't update
+- C~(t) = tanh(Wc[Gr * C(t-1), x(t)] + bc) <= candidate replacement of current C(t) <- Full version
+- Update Gate [0, 1], Gu = sigmoid(Wu[C(t-1), x(t)] + bu) : 1: Update 0: Don't update
+- C(t) = Gu * C~(t) + (1 - Gu) * C(t-1) : element-wise multiplications.
+Long Short Term Memory (LSTM)
+- Modification of RNN
+- More powerful than GRU
+- C~(t) = tanh(Wc[a(t-1), x(t)] + bc) <= candidate replacement of current C(t) <- Full version
+- Update Gate [0, 1], Gu = sigmoid(Wc[C(t-1), x(t)] + bu) : 1: Update 0: Don't update
+- Forget Gate [0, 1], Gf = sigmoid(Wf[C(t-1), x(t)] + bf) : 1: Forget 0: Don't forget
+- Output Gate [0, 1], Go = sigmoid(Wo[C(t-1), x(t)] + bo) : 1: Forget 0: Don't forget
+- C(t) = Gu * C~(t) + Gf * C(t-1) : element-wise multiplications.
+- a(t) = Go * tanh(C(t))
+
+Bidirectional RNN:
+- Both forward and backward passes can by RNN or GRU or LSTM.
+- y^(t) = g(Wy * [a(t), a'(t)] + by): a'(t) is the backward pass activation value.
+- LSTM BRNN is commonly used in NLP.
+- Needs the complete sequence to work. For example, if used in speech recognition system, have to wait for the speaker to stop talking to start processing the sentences.
