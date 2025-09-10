@@ -1,6 +1,14 @@
-import numpy, random, pprint, copy
+from __future__ import print_function
+import argparse, numpy, random, pprint, copy, sys, io
 from utils.RNN_utils import *
 from Softmax import softmax
+from tensorflow.keras.callbacks import LambdaCallback
+from tensorflow.keras.models import Model, load_model, Sequential
+from tensorflow.keras.layers import Dense, Activation, Dropout, Input, Masking
+from tensorflow.keras.layers import LSTM
+from tensorflow.keras.utils import get_file
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from utils.shakespeare_utils import on_epoch_end, sample
 """
 Exploding gradients
 When gradients are very large, they're called "exploding gradients."
@@ -32,32 +40,82 @@ class CharacterGenerationRNN():
     _char_to_ix = None
     _ix_to_char = None
     _learning_rate: float = None
+    _dinasaur: bool = None
+    _shakespeare: bool = None
+    _user_input:str = None
+    _Tx: int = None # sequence length, number of time-steps (or characters) in one training example
+    _stride:int = None # how much the window shifts itself while scanning
+    _X = []
+    _Y = []
 
-    def __init__(self, path:str, learning_rate:float):
+    def __init__(self, path:str, learning_rate:float, dinasaur:bool = False, shakespeare:bool = False, user_input:str = None, tx:int = None, stride:int = None):
         self._path = path
         self._learning_rate = learning_rate
+        self._dinasaur = dinasaur
+        self._shakespeare = shakespeare
+        self._user_input = user_input
+        self._Tx = tx
+        self._stride = stride
         self._PrepareData()
 
     def _PrepareData(self):
-        with open(self._path, 'r', newline='') as f: # dinos.txt
-            data = f.read().lower()
-            chars = list(set(data))
-            chars = sorted(chars)
-            self._words = data.split("\n")
-            self._data_size, self._vocab_size = len(data), len(chars)
-            self._char_to_ix = { ch:i for i,ch in enumerate(chars) }
-            self._ix_to_char = { i:ch for i,ch in enumerate(chars) }
-        print('There are %d total characters and %d unique characters in your data.' % (self._data_size, self._vocab_size))
+        if self._dinasaur:
+            with open(self._path, 'r', newline='') as f: # dinos.txt
+                data = f.read().lower()
+                chars = list(set(data))
+                chars = sorted(chars)
+                self._words = data.split("\n")
+                self._data_size, self._vocab_size = len(data), len(chars)
+                self._char_to_ix = { ch:i for i,ch in enumerate(chars) }
+                self._ix_to_char = { i:ch for i,ch in enumerate(chars) }
+            print('There are %d total characters and %d unique characters in your data.' % (self._data_size, self._vocab_size))
+        elif self._shakespeare:
+            print("Loading text data...")
+            with open(self._path, encoding='utf-8') as f:
+                text = f.read().lower()
+                #print('corpus length:', len(text))
+                chars = sorted(list(set(text)))
+                self._vocab_size = len(chars)
+                self._char_to_ix = { ch:i for i,ch in enumerate(chars) }
+                self._ix_to_char = { i:ch for i,ch in enumerate(chars) }
+                #print('number of unique characters in the corpus:', len(chars))
+                print("Creating training set...")
+                for i in range(0, len(text) - self._Tx, self._stride):
+                    self._X.append(text[i: i + self._Tx])
+                    self._Y.append(text[i + self._Tx])
+                print('number of training examples:', len(self._X))
+            print("Vectorizing training set...")
+            x, y = self._vectorization()
 
     def VocabSize(self) -> int:
         return self._vocab_size
-    
     def ix_to_char(self, idx:int):
         return self._ix_to_char[idx]
     def char_to_ix(self, char:int):
         return self._char_to_ix[char]
     def IndexSize(self):
         return len(self._char_to_ix)
+    def _vectorization(self):
+        """
+        Convert X and Y (lists) into arrays to be given to a recurrent neural network.
+        
+        Arguments:
+        X -- 
+        Y -- 
+        Tx -- integer, sequence length
+        
+        Returns:
+        x -- array of shape (m, Tx, len(chars))
+        y -- array of shape (m, len(chars))
+        """
+        m = len(self._X)
+        x = numpy.zeros((m, self._Tx, self._vocab_size), dtype=numpy.bool)
+        y = numpy.zeros((m, self._vocab_size), dtype=numpy.bool)
+        for i, sentence in enumerate(self._X):
+            for t, char in enumerate(sentence):
+                x[i, t, self._char_to_ix[char]] = 1
+            y[i, self._char_to_ix[self._Y[i]]] = 1
+        return x, y 
     
     def Clip(self, gradients, maxValue):
         '''
@@ -207,10 +265,51 @@ class CharacterGenerationRNN():
         
         # Update parameters (≈1 line)
         parameters = update_parameters(parameters, gradients, learning_rate)
-        
         return loss, gradients, a[len(X)-1]
+    
+    def BuildTrainShakespeareModel(self):
+        if not self._shakespeare:
+            print(f"Please select shakepeare poen generation functionality with -s option on the command line")
+            return
+        if not self._user_input or len(self._user_input) <= 0:
+            self._user_input = input("Write the beginning of your poem, the Shakespeare machine will complete it. Your input is: ")
+            if not self._user_input or len(self._user_input) <= 0:
+                print(f"Cannot continue without your input")
+                return
+        print("Loading model...")
+        model = load_model('models/model_shakespeare_kiank_350_epoch.h5')
+        generated = ''
+        #sentence = text[start_index: start_index + Tx]
+        #sentence = '0'*Tx
+        #usr_input = input("Write the beginning of your poem, the Shakespeare machine will complete it. Your input is: ")
+        # zero pad the sentence to Tx characters.
+        sentence = ('{0:0>' + str(self._Tx) + '}').format(self._user_input).lower()
+        generated += self._user_input 
 
-    def BuildTrainModel(self, num_iterations = 35000, n_a = 50, dino_names = 7, vocab_size = 27, verbose = False):
+        sys.stdout.write("\n\nHere is your poem: \n\n") 
+        sys.stdout.write(self._user_input )
+        for i in range(400):
+
+            x_pred = numpy.zeros((1, self._Tx, len(self._vocab_size)))
+
+            for t, char in enumerate(sentence):
+                if char != '0':
+                    x_pred[0, t, self._char_to_ix[char]] = 1.
+
+            preds = model.predict(x_pred, verbose=0)[0]
+            next_index = sample(preds, temperature = 1.0)
+            next_char = self._ix_to_char[next_index]
+
+            generated += next_char
+            sentence = sentence[1:] + next_char
+
+            sys.stdout.write(next_char)
+            sys.stdout.flush()
+
+            if next_char == '\n':
+                continue
+
+    def BuildTrainDinasaurModel(self, num_iterations = 35000, n_a = 50, dino_names = 7, vocab_size = 27, verbose = False):
         """
         Trains the model and generates dinosaur names. 
         
@@ -299,10 +398,14 @@ class CharacterGenerationRNN():
                     seed += 1  # To get the same result (for grading purposes), increment the seed by one. 
                 print('\n')
         return parameters, last_dino_name
+    
+    def GenerateShakespearePoem(self):
+        print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
+        model.fit(x, y, batch_size=128, epochs=1, callbacks=[print_callback])
 
 # Test with a max value of 10
 def clip_test(mValue):
-    chargen = CharacterGenerationRNN("data/dinos.txt", 0.01)
+    chargen = CharacterGenerationRNN("data/dinos.txt", 0.01, args.dinasaur, False)
     print(f"\nGradients for mValue={mValue}")
     numpy.random.seed(3)
     dWax = numpy.random.randn(5, 3) * 10
@@ -331,7 +434,7 @@ def clip_test(mValue):
     print("\033[92mAll tests passed!\x1b[0m")
 
 def sample_test():
-    chargen = CharacterGenerationRNN("data/dinos.txt", 0.01)
+    chargen = CharacterGenerationRNN("data/dinos.txt", 0.01, args.dinasaur, False)
     numpy.random.seed(24)
     _, n_a = 20, 100
     Wax, Waa, Wya = numpy.random.randn(n_a, chargen.VocabSize()), numpy.random.randn(n_a, n_a), numpy.random.randn(chargen.VocabSize(), n_a)
@@ -349,7 +452,7 @@ def sample_test():
     print("\033[92mAll tests passed!")
 
 def optimize_test():
-    chargen = CharacterGenerationRNN("data/dinos.txt", 0.01)
+    chargen = CharacterGenerationRNN("data/dinos.txt", 0.01, args.dinasaur, False)
     numpy.random.seed(1)
     vocab_size, n_a = 27, 100
     a_prev = numpy.random.randn(n_a, 1)
@@ -374,14 +477,28 @@ def optimize_test():
         assert numpy.max(grad) <= 5, "Problems in the clip function call"
     assert numpy.allclose(gradients['dWaa'][1, 2], 0.1947093), "Unexpected gradients. Check the rnn_backward call"
     assert numpy.allclose(gradients['dWya'][1, 2], -0.007773876), "Unexpected gradients. Check the rnn_backward call"
-    assert not numpy.allclose(parameters['Wya'], old_parameters['Wya']), "parameters were not updated"
-    
+    assert not numpy.allclose(parameters['Wya'], old_parameters['Wya']), "parameters were not updated"   
     print("\033[92mAll tests passed!")
 
 if __name__ == "__main__":
-    chargen = CharacterGenerationRNN("data/dinos.txt", 0.01)
-    clip_test(10)
-    clip_test(5)
-    sample_test()
-    parameters, last_name = chargen.BuildTrainModel(22001, verbose = True)
-    print(f"Generated dinasaur name: {last_name}")
+    """
+    https://docs.python.org/3/library/argparse.html
+    'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
+    """
+    parser = argparse.ArgumentParser(description='Character-level text generation using RNN')
+    parser.add_argument('-d', '--dinasaur', action='store_true', help='Generates a cool dinasaur name')
+    parser.add_argument('-s', '--shakespeare', action='store_true', help='Generates a shakespeare poem based on your initial input text')
+    args = parser.parse_args()
+    if args.dinasaur:
+        chargen = CharacterGenerationRNN("data/dinos.txt", 0.01, args.dinasaur, False)
+        clip_test(10)
+        clip_test(5)
+        sample_test()
+        parameters, last_name = chargen.BuildTrainDinasaurModel(22001, verbose = True)
+        print(f"Generated dinasaur name: {last_name}")
+    elif args.shakespeare:
+        user_input = input("Write the beginning of your poem, the Shakespeare machine will complete it. Your input is: ")
+        chargen = CharacterGenerationRNN("data/shakespeare.txt", 0.01, False, args.shakespeare, user_input, 40, 3)
+        chargen.BuildTrainShakespeareModel()
+    else:
+        print(f"Please select what do you want to generate: -d for dinasaur name, -s for shakespeare's poem")
