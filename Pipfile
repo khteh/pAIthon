@@ -30,6 +30,7 @@ pyvirtualdisplay = "*"
 xgboost = "*"
 seaborn = "*"
 tensorflow-hub = "*"
+tqdm = "*"
 
 [dev-packages]
 check50 = "*"

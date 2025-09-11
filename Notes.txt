@@ -932,3 +932,56 @@ Bidirectional RNN:
 - y^(t) = g(Wy * [a(t), a'(t)] + by): a'(t) is the backward pass activation value.
 - LSTM BRNN is commonly used in NLP.
 - Needs the complete sequence to work. For example, if used in speech recognition system, have to wait for the speaker to stop talking to start processing the sentences.
+======================================================================================================================================================================================================
+NLP & Word Embeddings
+Word Embeddings is a featurized representation of the words.
+Learn concepts / features of each word to draw similarity, etc.
+Orignal model trained on large corpera of texts, use transfer learning for other tasks which have smaller set of training dataset.
+
+Analogies using word feature vectors.
+Analogy reasoning.
+- Man is to woman as King is to Queen.
+e(man) - e(woman) ~= e(king) - e(?)
+Find w which maximizes similarity(e(?), e(king) - e(man) + e(woman))
+
+similarity function:
+(1) Cosine similarity
+(2) Squared differences || U-V || ** 2
+E: Embeddings matrix. (feature size, vocab size)
+O: one-hot encoding vector of each of the word in the vocabulary. (vocab size, 1)
+e(word) = E @ O -> (feature size, 1)
+
+To build a language model, use last few words
+To learn a word embedding, use any of the following:
+(1) #words on the left & right
+(2) Last 1 word
+(3) Nearby 1 word - Skip-grams model.
+
+Word2Vec
+Skip-grams model
+- Use Supervised learning to learn good word embeddings.
+- Randomly choose a context word
+- Randomly choose another word within some window size from the context word as the target word.
+- So, set up a supervised learning problem where given a context word, predict what is the randomly chosen word within a windows size of the context word.
+- The goal of this supervised learning is not to optimze the learning problem per se, but to use this learning problem to learn good word embeddings.
+- The supervised learning problem is to learn to map Context (Input x), c to Target (Output y), t
+- O(c) -> E -> e(c) = E @ O(c) -> softmax -> y^
+- softmax: p(t|c) = exp(theta(t).T @ e(c)) / sum(theta(j).T @ e(c)); theta(t) = parameter associated with output t, i.e., the chance of output t being the label.; sum over the vocabulary size.
+- L(y^, y) = - sum(y * log(y^)) over the vocabulary size.
+- y: (vocabulary size, 1)
+- Problems: The denominator, sum(theta(j).T @ e(c)), is slow.
+  - Use binary tree to solve it. Hierarchical softmax. Time complexity is log(N) instead of N.
+  - The tree is organized with commonly used words close to the root of the tree, less common ones close to the leafs.
+
+Negative Sampling:
+- Sample a context and target word.
+- X: Context word (c), target word (t)  Y: 1/0
+- Positive example Randomly sample a target word in a window size from the context word.
+- Negative examples (k): pick a word randomly from the vocabulary. k = 5-20 for small datasets, 2-5 for large datasets.
+- Logistic regression of P(y=1 | c, t) = sigmoid(theta(t).T @ e(c))
+- Negative : Positive = 5:1
+- vocabulary size sigmoid is cheaper than softmax. In every iteration, only train on k+1 input.
+- Sampling target words for negative examples based on P(wi) = (f(wi)^(3/4)) / (sum(f(wj)^(3/4))) sum over the vocabulary size.
+
+GloVe (Global vectors for word representation)
+- Not used as much as SKip-grams and Negative Sampling.

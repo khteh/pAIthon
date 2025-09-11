@@ -351,7 +351,7 @@ def VectorProperties():
     Magnitude: The magnitude of a vector is a non-negative number that represents the vector’s size or length. You can also refer to the magnitude of a vector as the norm, and you can denote it with ||v|| or |v|. 
     There are many different definitions of magnitude or norm, but the most common is the Euclidean norm or 2-norm. 2 ways to compute:
     (1) Euclidean norm
-    (2) np.linalg.norm(), a NumPy function that computes the Euclidean norm
+    (2) numpy.linalg.norm(), a NumPy function that computes the Euclidean norm
     """
     print(f"Euclidean norm: {numpy.sqrt(numpy.sum(v1**2))}, {numpy.linalg.norm(v1)}")
     assert numpy.sqrt(numpy.sum(v3**2)) == numpy.linalg.norm(v3)
