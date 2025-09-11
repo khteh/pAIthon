@@ -31,6 +31,7 @@ xgboost = "*"
 seaborn = "*"
 tensorflow-hub = "*"
 tqdm = "*"
+emoji = "*"
 
 [dev-packages]
 check50 = "*"
