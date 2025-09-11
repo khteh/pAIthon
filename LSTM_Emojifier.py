@@ -301,7 +301,7 @@ def pretrained_embedding_layer_test():
 
 def model_tests():
     # def __init__(self, path: str = None, train:str = None, test:str = None, word_to_vec_map = None, word_to_index = None, max_len:int = None, learning_rate:float = 0.01):
-    model = LSTMEmojifier('data/glove.6B.50d.txt', 'data/train_emoji.csv', 'data/tesss.csv')
+    model = LSTMEmojifier('data/glove.6B.50d.txt', 'data/Emojifier/train_emoji.csv', 'data/Emojifier/tesss.csv')
     model.BuildModel()
     model.Train(50, 32)
     model.Evaluate()
