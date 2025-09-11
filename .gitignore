@@ -2,6 +2,7 @@
 *.crt
 *.key
 *.tgj
+data/glove.6B.50d.txt
 **/.~lock*
 **/.env
 **/__pycache__/
