@@ -2,7 +2,12 @@ import numpy, spacy, csv, emoji
 from tqdm import tqdm
 from Softmax import softmax
 from utils.ConfusionMatrix import ConfusionMatrix
+
 class Emojifier():
+    """
+    Note that the model doesn't get the following sentence correct: "today is not good"
+    This algorithm ignores word ordering, so is not good at understanding phrases like "not good."
+    """
     _nlp = None
     _path:str = None
     _words = None
