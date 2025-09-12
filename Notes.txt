@@ -524,6 +524,10 @@ B = 0.01 * Bnew + 0.99 * B
 In machine learning, logits are the raw, unnormalized scores or outputs from a neural network's final layer before an activation function like softmax or sigmoid is applied.
 Binary Classification uses Sigmoid activation function and BinaryCrossEntropy loss function.
 Multi-class Classification uses Softmax activation function and CategoricalCrossEntropy loss function.
+
+Input: 128x128 greyscale image
+Dense: 256 neurons
+#parameters = 128 * 128 * 256 + 256 = 4194560 parameters
 ================================================================================================================================================================================
 Convolution:
 Early/Shallow layers often see the finer details with simpler shapes and patterns in smaller regions of the input (low-level features) such as edges and simple textures.
@@ -622,6 +626,12 @@ Filter: 32 4x4 s:3 p:0
 Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(121 - 4)/3 + 1 = 40
 Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(121 - 4)/3 + 1 = 40
 Output volume = Nh[l] x Nw[l] x Nc[l] = 40 * 40 * 32 = 51200
+
+Input: 63x63x16
+Filter: 32 7x7 s:2 p:0
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(63 - 7)/2 + 1 = 29
+Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(63 - 7)/2 + 1 = 29
+Output volume = Nh[l] x Nw[l] x Nc[l] = 29 * 29 * 32 = 26912
 
 Input: 128x128x12
 Max Pooling: filter size:4, stride: 4
