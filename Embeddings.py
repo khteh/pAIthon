@@ -6,7 +6,9 @@ class Embeddings():
     _words = None
     _word_to_vec_map = None
     _word_to_vec_map_unit_vectors: None
-    def __init__(self, path: str = None, word_to_vec_map = None, build_unit_vectors:bool = False):
+    _gender = None
+    _bias_axis = None
+    def __init__(self, path: str = None, word_to_vec_map = None):
         # $ pp spacy download en_core_web_md
         self._nlp = spacy.load("en_core_web_md")
         if word_to_vec_map:
@@ -16,19 +18,24 @@ class Embeddings():
             self._words = set()
             self._word_to_vec_map = {}
             self._read_glove_vecs()
-        else:
-            raise RuntimeError("Please provide a word_to vec map or path to load from!")
-        if build_unit_vectors:
-            # The paper assumes all word vectors to have L2 norm as 1 and hence the need for this calculation
+            # The [paper](https://papers.nips.cc/paper/6228-man-is-to-computer-programmer-as-woman-is-to-homemaker-debiasing-word-embeddings.pdf), which the debiasing algorithm is from, assumes all word vectors to have L2 norm as 1 and hence the need for the calculations below:
             self._word_to_vec_map_unit_vectors = {
-                word: embedding / numpy.linalg.norm(embedding)
+                word: embedding / numpy.linalg.norm(embedding, ord=2)
                 for word, embedding in tqdm(self._word_to_vec_map.items())
             }
+            self._gender = (self._word_to_vec_map['female'] - self._word_to_vec_map['male'] + self._word_to_vec_map['woman'] - self._word_to_vec_map['man'] + self._word_to_vec_map['mother'] - self._word_to_vec_map['father'] + self._word_to_vec_map['girl'] - self._word_to_vec_map['boy'] + self._word_to_vec_map['gal'] - self._word_to_vec_map['guy']) / 5
+            self._bias_axis = (self._word_to_vec_map_unit_vectors['female'] - self._word_to_vec_map_unit_vectors['male'] + self._word_to_vec_map_unit_vectors['woman'] - self._word_to_vec_map_unit_vectors['man'] + self._word_to_vec_map_unit_vectors['mother'] - self._word_to_vec_map_unit_vectors['father'] + self._word_to_vec_map_unit_vectors['girl'] - self._word_to_vec_map_unit_vectors['boy'] + self._word_to_vec_map_unit_vectors['gal'] - self._word_to_vec_map_unit_vectors['guy']) / 5
+            print(f"bias_axis: {self._bias_axis} {numpy.sum(self._bias_axis)}")
+        else:
+            raise RuntimeError("Please provide a word_to vec map or path to load from!")
 
     def _cosine_similarity(self, u: numpy.ndarray, v: numpy.ndarray) -> float:
         """Compute the cosine similarity between two vectors"""
-        norm_u = numpy.linalg.norm(u)
-        norm_v = numpy.linalg.norm(v)
+        # Special case. Consider the case u = [0, 0], v=[0, 0]
+        if numpy.all(u == v):
+            return 1
+        norm_u = numpy.linalg.norm(u, ord=2)
+        norm_v = numpy.linalg.norm(v, ord=2)
         # Avoid division by 0
         return 0 if numpy.isclose(norm_u * norm_v, 0, atol=1e-32) else (u @ v) / (norm_u * norm_v)
 
@@ -129,27 +136,20 @@ class Embeddings():
                 best_word = w
         return best_word
     
-    def Bias(self):
+    def Bias(self, words):
         """
-        See how the GloVe word embeddings relate to gender. You'll begin by computing a vector 𝑔=𝑒𝑤𝑜𝑚𝑎𝑛−𝑒𝑚𝑎𝑛, where 𝑒𝑤𝑜𝑚𝑎𝑛 represents the word vector corresponding to the word woman, and 𝑒𝑚𝑎𝑛 corresponds to the word vector corresponding to the word man. 
-        The resulting vector 𝑔 roughly encodes the concept of "gender".
-        You might get a more accurate representation if you compute  𝑔1=𝑒𝑚𝑜𝑡ℎ𝑒𝑟−𝑒𝑓𝑎𝑡ℎ𝑒𝑟,  𝑔2=𝑒𝑔𝑖𝑟𝑙−𝑒𝑏𝑜𝑦, etc. and average over them, but just using  𝑒𝑤𝑜𝑚𝑎𝑛−𝑒𝑚𝑎𝑛 will give good enough results for now.        
+        See how the GloVe word embeddings relate to gender. You'll begin by computing a vector gender = e(woman) - e(man), where e(woman) represents the word vector corresponding to the word woman, and e(man) corresponds to the word vector corresponding to the word man.
+        The resulting vector gender roughly encodes the concept of "gender".
+        You might get a more accurate representation if you compute  g1=e(mother) - e(father), g2= e(girl) - e(boy) etc. and average over them, but just using e(woman) - e(man) will give good enough results.
+        words inclined to female will have +ve cosine similarity while those inclined to male will have -ve consine similarity.
         """
-        print(f"=== {self.Bias.__name__} ===")
-        g = self._word_to_vec_map['woman'] - self._word_to_vec_map['man']
-        print(f"e(woman) - e(man) = {g}")
-        print ('\nList of names and their similarities with constructed vector g:')
-        # girls and boys name
-        name_list = ['john', 'marie', 'sophie', 'ronaldo', 'priya', 'rahul', 'danielle', 'reza', 'katy', 'yasmin']
-        for w in name_list:
-            # Positive values mean closer to woman; negative values mean closer to man
-            print (w, self._cosine_similarity(self._word_to_vec_map[w], g))
-        print('\nOther words and their similarities with constructed vector g:')
-        word_list = ['lipstick', 'guns', 'science', 'arts', 'literature', 'warrior','doctor', 'tree', 'receptionist', 
-                    'technology',  'fashion', 'teacher', 'engineer', 'pilot', 'computer', 'singer']
-        for w in word_list:
-            # Positive values mean closer to woman; negative values mean closer to man
-            print (w, self._cosine_similarity(self._word_to_vec_map[w], g))
+        print(f"\n=== {self.Bias.__name__} ===")
+        for w in words:
+            if w in self._word_to_vec_map:
+                # Positive values mean closer to woman; negative values mean closer to man
+                print (f"{w}: {self._cosine_similarity(self._word_to_vec_map[w], self._gender)}, {self._cosine_similarity(self.NeutralizeGenderBias(w), self._bias_axis)}")
+            else:
+                print(f"Skipping {w} not in vocabulary")
 
     def NeutralizeGenderBias(self, word):
         """
@@ -166,21 +166,73 @@ class Embeddings():
         Returns:
             e_debiased -- neutralized word vector representation of the input "word"        
         """
-        print(f"=== {self.NeutralizeGenderBias.__name__} ===")
-        g = self._word_to_vec_map['woman'] - self._word_to_vec_map['man']
-        g_unit = self._word_to_vec_map_unit_vectors['woman'] - self._word_to_vec_map_unit_vectors['man']
-        # Select word vector representation of "word". Use word_to_vec_map. (≈ 1 line)
-        e = self._word_to_vec_map[word]
+        #print(f"=== {self.NeutralizeGenderBias.__name__} ===")
+        if word in self._word_to_vec_map:
+            # Select word vector representation of "word". Use word_to_vec_map. (≈ 1 line)
+            e = self._word_to_vec_map[word]
+            
+            # Compute e_biascomponent using the formula given above. (≈ 1 line)
+            e_biascomponent = ((e @ self._gender) / numpy.square(numpy.linalg.norm(self._gender, ord=2))) * self._gender
         
-        # Compute e_biascomponent using the formula given above. (≈ 1 line)
-        e_biascomponent = ((e @ g_unit) / numpy.linalg.norm(g_unit, ord=2)) * g_unit
-    
-        # Neutralize e by subtracting e_biascomponent from it 
-        # e_debiased should be equal to its orthogonal projection. (≈ 1 line)
-        e_debiased = e - e_biascomponent
-        print("cosine similarity between " + word + " and g, before neutralizing: ", self._cosine_similarity(self._word_to_vec_map[word], g))
-        print("cosine similarity between " + word + " and g_unit, after neutralizing: ", self._cosine_similarity(e_debiased, g_unit))
-    
+            # Neutralize e by subtracting e_biascomponent from it 
+            # e_debiased should be equal to its orthogonal projection. (≈ 1 line)
+            e_debiased = e - e_biascomponent
+            return e_debiased
+        else:
+            print(f"Skipping {word} not in vocabulary")
+        #print(f"cosine similarity between {w} and gender, before neutralizing: {self._cosine_similarity(self._word_to_vec_map[w], self._gender)}")
+        #print(f"cosine similarity between {w} and bias_axis, after neutralizing: {self._cosine_similarity(e_debiased, self._bias_axis)}")
+
+    def Equalize(self, pair):
+        """
+        Next, let's see how debiasing can also be applied to word pairs such as "actress" and "actor." Equalization is applied to pairs of words that you might want to have differ only through the gender property. 
+        As a concrete example, suppose that "actress" is closer to "babysit" than "actor." By applying neutralization to "babysit," you can reduce the gender stereotype associated with babysitting. But this still does not guarantee that "actor" and "actress" are equidistant from "babysit." 
+        The equalization algorithm takes care of this.
+        The key idea behind equalization is to make sure that a particular pair of words are equidistant from the 49-dimensional g_orthogonal. The equalization step also ensures that the two equalized steps are now the same distance from e(receptionist_debiased), or from any other work that has been neutralized.
+
+        Arguments:
+        pair -- pair of strings of gender specific words to debias, e.g. ("actress", "actor") 
+        bias_axis -- numpy-array of shape (50,), vector corresponding to the bias axis, e.g. gender
+        word_to_vec_map -- dictionary mapping words to their corresponding vectors
+        
+        Returns
+        e_1 -- word vector corresponding to the first word
+        e_2 -- word vector corresponding to the second word
+        """
+        print(f"\n=== {self.Equalize.__name__} ===")
+        # Step 1: Select word vector representation of "word". Use word_to_vec_map. (≈ 2 lines)
+        w1, w2 = pair[0], pair[1]
+        e_w1, e_w2 = self._word_to_vec_map[w1], self._word_to_vec_map[w2]
+        #print(f"e_w1: {e_w1}, e_w2: {e_w2}")
+        # Step 2: Compute the mean of e_w1 and e_w2 (≈ 1 line)
+        mu = numpy.mean([e_w1, e_w2])
+        #print(f"mu: {mu}, bias_axis: {bias_axis.shape}, mu * bias_axis: {mu * bias_axis}")
+
+        # Step 3: Compute the projections of mu over the bias axis and the orthogonal axis (≈ 2 lines)
+        mu_B = ((mu * self._bias_axis) / numpy.square(numpy.linalg.norm(self._bias_axis, ord=2))) * self._bias_axis
+        mu_orth = mu - mu_B
+        mu_orth_norm = numpy.square(numpy.linalg.norm(mu_orth, ord=2))
+        #print(f"mu_orth: {mu_orth}, mu_orth_norm: {mu_orth_norm}") > 1 in the case of ["waiter", "waitress"] which fails numpy.sqr
+
+        # Step 4: Use equations (7) and (8) to compute e_w1B and e_w2B (≈2 lines)
+        e_w1B = ((e_w1 * self._bias_axis) / numpy.square(numpy.linalg.norm(self._bias_axis, ord=2))) * self._bias_axis
+        e_w2B = ((e_w2 * self._bias_axis) / numpy.square(numpy.linalg.norm(self._bias_axis, ord=2))) * self._bias_axis
+        #print(f"e_w1B: {e_w1B}, e_w2B: {e_w2B}")
+        
+        # Step 5: Adjust the Bias part of e_w1B and e_w2B using the formulas (9) and (10) given above (≈2 lines)
+        tmp = numpy.sqrt(1 - numpy.square(numpy.linalg.norm(mu_orth, ord=2)))
+        #print(f"tmp: {tmp}")
+        corrected_e_w1B = tmp * ((e_w1B - mu_B)/numpy.linalg.norm(e_w1B - mu_B, ord=2))
+        corrected_e_w2B = tmp * ((e_w2B - mu_B)/numpy.linalg.norm(e_w2B - mu_B, ord=2))
+        #print(f"corrected_e_w1B: {corrected_e_w1B}, corrected_e_w2B: {corrected_e_w2B}")
+        # Step 6: Debias by equalizing e1 and e2 to the sum of their corrected projections (≈2 lines)
+        e1 = corrected_e_w1B + mu_orth
+        e2 = corrected_e_w2B + mu_orth
+        print("cosine similarities after equalizing:")
+        print(f"cosine_similarity({w1}, gender) = {self._cosine_similarity(e1, self._bias_axis)}")
+        print(f"cosine_similarity({w2}, gender) = {self._cosine_similarity(e2, self._bias_axis)}")
+        #return e1, e2
+
     def _read_glove_vecs(self):
         with open(self._path, 'r') as f:
             for line in f:
@@ -230,14 +282,21 @@ def triads_analogy_tests():
 
 def bias():
     nlp = Embeddings('data/glove.6B.50d.txt')
-    nlp.Bias()
+    nlp.Bias(['john', 'marie', 'sophie', 'ronaldo', 'priya', 'rahul', 'danielle', 'reza', 'katy', 'yasmin'])
+    nlp.Bias(['lipstick', 'guns', 'science', 'arts', 'literature', 'warrior','doctor', 'tree', 'receptionist', 'technology',  'fashion', 'teacher', 'engineer', 'pilot', 'computer', 'singer', 'scientist'])
 
-def neutralize_gender_bias_tests():
-    nlp = Embeddings('data/glove.6B.50d.txt', None, True)
-    nlp.NeutralizeGenderBias("receptionist")
+def equalize():
+    nlp = Embeddings('data/glove.6B.50d.txt')
+    nlp.Equalize(("male", "female"))
+    nlp.Equalize(("man", "woman"))
+    nlp.Equalize(("father", "mother"))
+    nlp.Equalize(("boy", "girl"))
+    nlp.Equalize(("guy", "gal"))
+    nlp.Equalize(("waiter", "waitress"))
+    nlp.Equalize(("actor", "actress"))
 
 if __name__ == "__main__":
     complete_analogy_tests()
     triads_analogy_tests()
     bias()
-    neutralize_gender_bias_tests()
+    equalize()
