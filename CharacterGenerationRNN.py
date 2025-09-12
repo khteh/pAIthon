@@ -278,6 +278,7 @@ class CharacterGenerationRNN():
                 return
         print("Loading model...")
         model = load_model('models/model_shakespeare_kiank_350_epoch.h5')
+        #model = load_model('models/model_shakespeare_kiank.h5')
         generated = ''
         #sentence = text[start_index: start_index + Tx]
         #sentence = '0'*Tx
