@@ -30,31 +30,11 @@ def softmax(z):
  
     where function g is the softmax function. The softmax function is defined as:
     g(z) = e^Z / sum(e^Z)
-    """
-    try:
-        ez = numpy.exp(z) # Element-size exponential. math.exp won't work as it expects scalar input parameter
-        return ez / numpy.sum(ez)
-    except OverflowError as e:
-        print(f"Overflow! {e}")
-    except Exception as e:
-        print(e)
 
-def softmax1(z):
-    """
-    Compupte the softmax of z.
-    Softmax is for multi-class classification, transforming outputs into a probability distribution where probabilities sum to one and are dependent on each other. Softmax is essentially a generalized version of Sigmoid.
-
-    Args:
-        z (ndarray): A scalar, numpy array of any size.
-    
-    Returns:
-        g (ndarray): softmax(z). with the same shape as z
-
-    Recall that for logistic regression, the model is represented as
-    f(w,b) = g(w.x + b)
- 
-    where function g is the softmax function. The softmax function is defined as:
-    g(z) = e^Z / sum(e^Z)
+    Let Z = x - max(x)
+    e^(x - max(x)) = e^x * e^-max(x) = e^x  / e^max(x)
+    g(e^(x - max(x))) = (e^x  / e^max(x)) / sum(e^x  / e^max(x)) = (e^x  / e^max(x)) / ((1  / e^max(x)) * sum(e^x)) = ((e^x  / e^max(x)) / sum(e^x)) * e^max(x) = e^x / sum(e^x)
+    So, softmax(x) = softmax(1 - whatever)
     """
     try:
         ez = numpy.exp(z - numpy.max(z)) # Element-size exponential. math.exp won't work as it expects scalar input parameter
@@ -146,17 +126,11 @@ def NNStableSoftmax(X_train, y_train):
         print( f"{p_preferred[i]}, category: {numpy.argmax(p_preferred[i])}")
 
 def SoftmaxTests():
-    v = numpy.array([35.0, 36.0, 37.0, 38.0]).astype('float64')
+    v = numpy.array([333, 444, 555, 666, 777, 888, 999]).astype('float64')
     print(f"\n")
     print(f"softmax(v): {softmax(v)}")
-    print(f"softmax1(v): {softmax1(v)}")
-    #assert (softmax(v) == softmax1(v)).all() Assertion error
-    print(f"softmax(v): {softmax(v)}")
     print(f"softmax(v - max(v)): {softmax(v - numpy.max(v))}")
-    #assert (softmax(v) == softmax(v - numpy.max(v))).all() Assertion error
-    print(f"softmax1(v): {softmax1(v)}")
-    print(f"softmax1(v - max(v)): {softmax1(v - numpy.max(v))}")
-    assert (softmax1(v) == softmax1(v - numpy.max(v))).all()
+    assert (softmax(v) == softmax(v - numpy.max(v))).all() # Assertion error
 
 if __name__ == "__main__":
     X_train, y_train = PrepareData()
