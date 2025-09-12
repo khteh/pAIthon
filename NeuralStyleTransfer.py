@@ -1,4 +1,5 @@
-import numpy, os, pprint, sys, scipy.io, scipy.misc, matplotlib.pyplot as plt
+import numpy, pprint, matplotlib.pyplot as plt
+from pathlib import Path
 from matplotlib.pyplot import imshow
 from PIL import Image
 import tensorflow as tf
@@ -197,8 +198,6 @@ def train_step(generated_image):
     with tf.GradientTape() as tape:
         # In this function you must use the precomputed encoded images a_S and a_C
         
-        ### START CODE HERE
-        
         # Compute a_G as the vgg_model_outputs for the current generated image
         #(1 line)
         a_G = vgg_model_outputs(generated_image)
@@ -214,8 +213,6 @@ def train_step(generated_image):
         J_content = compute_content_cost(a_C, a_G)
         # Compute the total cost
         J = total_cost(J_content, J_style, 10, 40)
-        
-        ### END CODE HERE
         
     grad = tape.gradient(J, generated_image)
 
@@ -241,24 +238,48 @@ Define the optimizer and learning rate
 tf.random.set_seed(272) # DO NOT CHANGE THIS VALUE
 pp = pprint.PrettyPrinter(indent=4)
 img_size = 400
+# Use the eponymously named VGG network from the [original NST paper](https://arxiv.org/abs/1508.06576) published by the Visual Geometry Group at University of Oxford in 2014. Specifically, you'll use VGG-19, a 19-layer version of the VGG network. 
+# This model has already been trained on the very large ImageNet database, and has learned to recognize a variety of low level features (at the shallower layers) and high level features (at the deeper layers). 
 vgg = tf.keras.applications.VGG19(include_top=False,
                                   input_shape=(img_size, img_size, 3),
-                                  weights='pretrained-model/vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5') # 76.4MB
+                                  weights='models/vgg19_weights_tf_dim_ordering_tf_kernels_notop.h5') # 76.4MB
 vgg.trainable = False
+pp.pprint(vgg)
+print("\nPretrained VGG model layers:")
+for layer in vgg.layers:
+    print(layer.name)
+print(f"\nblock5_conv4 output: {vgg.get_layer('block5_conv4').output}")
+
 content_layer = [('block5_conv4', 1)]
 vgg_model_outputs = get_layer_outputs(vgg, STYLE_LAYERS + content_layer)
 
+# The following code loads, reshapes, and normalizes the "content" image C (the Louvre museum picture)
 content_image = numpy.array(Image.open("images/louvre_small.jpg").resize((img_size, img_size)))
-style_image =  numpy.array(Image.open("images/monet.jpg").resize((img_size, img_size)))
 content_image = tf.constant(numpy.reshape(content_image, ((1,) + content_image.shape)))
+imshow(content_image[0])
+plt.title("Content image")
+plt.show()
+
+# Now load, reshape and normalize your "style" image (Claude Monet's painting):
+style_image =  numpy.array(Image.open("images/monet.jpg").resize((img_size, img_size)))
 style_image = tf.constant(numpy.reshape(style_image, ((1,) + style_image.shape)))
+imshow(style_image[0])
+plt.title("Style image")
+plt.show()
+
+# Now, you get to initialize the "generated" image as a noisy image created from the content_image.
+# The generated image is slightly correlated with the content image.
+# By initializing the pixels of the generated image to be mostly noise but slightly correlated with the content image, this will help the content of the "generated" image more rapidly match the content of the "content" image. 
 generated_image = tf.Variable(tf.image.convert_image_dtype(content_image, tf.float32))
 noise = tf.random.uniform(tf.shape(generated_image), -0.25, 0.25)
 generated_image = tf.add(generated_image, noise)
 generated_image = tf.clip_by_value(generated_image, clip_value_min=0.0, clip_value_max=1.0)
-print(generated_image.shape)
+print(f"content image: {content_image.shape}, style image: {style_image.shape}, generated image: {generated_image.shape}\n")
+
 imshow(generated_image.numpy()[0])
+plt.title("Generated image")
 plt.show()
+
 content_target = vgg_model_outputs(content_image)  # Content encoder
 style_targets = vgg_model_outputs(style_image)     # Style encoder
 # Assign the content image to be the input of the VGG model.  
@@ -273,14 +294,18 @@ generated_image = tf.Variable(generated_image)
 # Show the generated image at some epochs
 # Uncomment to reset the style transfer process. You will need to compile the train_step function again 
 epochs = 2501
+Path("output/NeuralStyleTransfer").mkdir(parents=True, exist_ok=True)
+Path("output/NeuralStyleTransfer").is_dir()
+
 for i in range(epochs):
     train_step(generated_image)
     if i % 250 == 0:
         print(f"Epoch {i} ")
     if i % 250 == 0:
         image = tensor_to_image(generated_image)
+        image.save(f"output/NeuralStyleTransfer/image_{i}.jpg")
         imshow(image)
-        image.save(f"output/image_{i}.jpg")
+        plt.title(f"Epoch {i}")
         plt.show()
 
 # Show the 3 images in a row
