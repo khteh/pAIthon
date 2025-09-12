@@ -995,3 +995,52 @@ Negative Sampling:
 
 GloVe (Global vectors for word representation)
 - Not used as much as SKip-grams and Negative Sampling.
+
+Machine Translation can be thought of as a "conditional language model".
+- Instead of start of with a vector of zeros, start off with the encoded source language.
+- The encoded source language serves as a(0) to the RNN/sequence model.
+- Instead of predicting the probability of any novel sentence, it predicts the probability of translated sentence conditioned on the input source language.
+- P(y|x), x: source language sentence, y: translated language sentence, both are embedding vectors.
+- Maximize P(y|x). Greedy search word by word is exponentially large depending on the vocabulary size.
+Beam Search:
+- Approximate / heuristic search algorithm.
+- Beam width, B, best #choices to consider int every time step. Use B copies of the network for parallel calculation in every time step.
+- B=1 reduces this to greedy search.
+- First step: P(y1|x) y1 is [word1, word2, word3], length of it determined by B
+- Second step: P(y1,y2|x) = P(y1|x) * p(y2|x,y1)
+- Arg Max sum(P(yt|x,y1,...yt-1)) for all time steps, t1...Ty. Ty = #words in output sentence.
+- P(yt|x,y1,...yt-1) will result in very small floating point number which will cause accuracy issue - numerical rounding error.
+- Second problem is that this algorithm will incline towards shorter-sentence predictions since fewer factors of P(|) will result in larger number compared to longer-sentence predictions.
+- Arg Max sum(log(P(yt|x,y1,...yt-1))) fixes the numerical rounding issue.
+- Arg Max sum(log(P(yt|x,y1,...yt-1))) / (Ty ^ alpha) -> fixes the long-sentence penalty issue.
+Error Analysis:
+- B or RNN at fault?
+- Best: y*; prediction: y^
+(1) Compute P(y*|x) and P(y^|x)
+(2) P(y*|x) > P(y^|x): This aligns with the result but Beam search choise y^. So, it is at fault. Increase beam width, B.
+(3) P(y*|x) <= P(y^|x): RNN computes the wrong result. So, it is at fault, the objective function.
+Note: Need to consider length normalization as well (1 / Ty^alpha).
+Machine Translation Evaluation:
+- BLEU Score - Bilingual Evaluation, Understudy
+- Given a machine generated translation, automatically compute a score that measures how good the translation is.
+- Used to evaluate text-generation applications.
+- Pn = sum(Count<clip>(n-gram)) / sum(Count(n-gram)) where n-gram appears in prediction sequence. Count<clip> = max count the n-gram appears in any of the reference translations.
+- Pn = 1 if y^ exactly the same as any of the reference translation.
+- Combined BLEU score = BP * e^(1/n * sum(Pn)) for all lengths of n-grams.
+- BP, brevity penalty = 1 if MT_output_length > reference output length; 
+- BP = e^(1- reference_output_length/MT_output_length) otherwise.
+
+Naive encoder-decoder RNN is good at translating short sentences. BLEU score will drop when the source text gets longer.
+Attention model helps with translating long text.
+- Use Bidirectional RNN.
+- a(t') = [a(t') | a_backward(t')]; t' = time step of the source/input language sequence.
+- alpha(t,t') = weight / amount of attention y(t) should pay to a(t')
+- C(t) = sum(alpha(t,t') @ a(t'))
+
+Speech Recognition.
+- Use spectogram.
+CTC cost for speech recognition:
+- Connectionist temporal classification.
+- Usually output text is shorter than the input sequence. For example, with 100Hz, 10s of speech will end up with Tx = 10,000.
+- For RNN Ty to match Tx, use repeated character and collapse the repeated characters not separated by "space"/"blank".
+- Example: "The quick brown fox": ttt_h_eee____ ___qqq__uuu__ -> The qu
