@@ -199,4 +199,4 @@ if __name__ == "__main__":
     # Test 3 with Younes pictures 
     dist, identity = faceRecognition.Who_Is_It("images/younes.jpg")
     assert numpy.isclose(dist, 0.0)
-    assert identity == 'younes'    
+    assert identity == 'younes'

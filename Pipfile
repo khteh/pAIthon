@@ -32,6 +32,8 @@ seaborn = "*"
 tensorflow-hub = "*"
 tqdm = "*"
 emoji = "*"
+faker = "*"
+babel = "*"
 
 [dev-packages]
 check50 = "*"
