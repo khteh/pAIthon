@@ -25,7 +25,7 @@ class Embeddings():
             }
             self._gender = (self._word_to_vec_map['female'] - self._word_to_vec_map['male'] + self._word_to_vec_map['woman'] - self._word_to_vec_map['man'] + self._word_to_vec_map['mother'] - self._word_to_vec_map['father'] + self._word_to_vec_map['girl'] - self._word_to_vec_map['boy'] + self._word_to_vec_map['gal'] - self._word_to_vec_map['guy']) / 5
             self._bias_axis = (self._word_to_vec_map_unit_vectors['female'] - self._word_to_vec_map_unit_vectors['male'] + self._word_to_vec_map_unit_vectors['woman'] - self._word_to_vec_map_unit_vectors['man'] + self._word_to_vec_map_unit_vectors['mother'] - self._word_to_vec_map_unit_vectors['father'] + self._word_to_vec_map_unit_vectors['girl'] - self._word_to_vec_map_unit_vectors['boy'] + self._word_to_vec_map_unit_vectors['gal'] - self._word_to_vec_map_unit_vectors['guy']) / 5
-            print(f"bias_axis: {self._bias_axis} {numpy.sum(self._bias_axis)}")
+            print(f"_gender: {self._gender}, _bias_axis: {self._bias_axis} {numpy.sum(self._bias_axis)}")
         else:
             raise RuntimeError("Please provide a word_to vec map or path to load from!")
 
