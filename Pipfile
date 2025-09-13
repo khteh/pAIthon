@@ -34,6 +34,8 @@ tqdm = "*"
 emoji = "*"
 faker = "*"
 babel = "*"
+pydub = "*"
+audioop-lts = "*"
 
 [dev-packages]
 check50 = "*"
