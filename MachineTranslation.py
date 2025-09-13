@@ -3,6 +3,7 @@ import numpy, tensorflow as tf, random, matplotlib.pyplot as plt
 from faker import Faker
 from tqdm import tqdm
 from babel.dates import format_date
+from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.layers import Bidirectional, Concatenate, Permute, Dot, Input, LSTM, Multiply
 from tensorflow.keras.layers import RepeatVector, Dense, Activation, Lambda
 from tensorflow.keras.activations import softmax
@@ -53,15 +54,27 @@ class MachineTranslation():
     _Yoh = None
     _n_a:int = None# -- hidden state size of the Bi-LSTM
     _n_s:int = None# -- hidden state size of the post-attention LSTM
+    _learning_rate: float = None
+    _beta_1: float = None
+    _beta_2: float = None
+    _batch_size: int = None
+    _epochs:int = None
+    _decay: float = None
     _model: Model = None
 
-    def __init__(self, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int):
+    def __init__(self, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
         self._locale = locale
         self._size = size
         self._Tx = tx
         self._Ty = ty
         self._n_a = n_a
         self._n_s = n_s
+        self._learning_rate = learning_rate
+        self._beta_1 = beta1
+        self._beta_2 = beta2
+        self._decay = decay
+        self._batch_size = batchsize
+        self._epochs = epochs
         self._fake = Faker()
         self._PrepareData()
 
@@ -90,7 +103,7 @@ class MachineTranslation():
         # Use densor2 to propagate e through a small fully-connected neural network to compute the "energies" variable energies. (≈1 lines)
         energies = Dense(1, activation='relu')(e)
         # Use "activator" on "energies" to compute the attention weights "alphas" (≈ 1 line)
-        alphas = Activation(self._softmax, name='attention_weights')(energies) # We are using a custom softmax(axis = 1) loaded in this notebook
+        alphas = Activation(self._softmax)(energies) # We are using a custom softmax(axis = 1) loaded in this notebook. This layer produces the attention weights.
         # Use dotor together with "alphas" and "a", in this order, to compute the context vector to be given to the next (post-attention) LSTM-cell (≈ 1 line)
         context = Dot(axes=1)([alphas, a])
         #print(f"context: {context.shape} {context.numpy()}")
@@ -141,7 +154,7 @@ class MachineTranslation():
             # Remember: s = hidden state, c = cell state
             # Remember to pass in the previous hidden-state  𝑠⟨𝑡−1⟩ and cell-states  𝑐⟨𝑡−1⟩ of this LSTM
             print(f"s: {s.shape}, c: {c.shape}, context: {context.shape}")
-            _, s, c = LSTM(self._n_s, return_state = True, return_sequences=True)(inputs=context, initial_state=[s, c])
+            _, s, c = LSTM(self._n_s, return_state = True, return_sequences=True)(context, initial_state=[s, c])
             
             # Step 2.C: Apply Dense layer to the hidden state output of the post-attention LSTM (≈ 1 line)
             out = Dense(len(self._machine_vocab), activation=softmax)(s)
@@ -166,7 +179,51 @@ class MachineTranslation():
                          ['Dense', (None, 11), 715, 'softmax']]
         """
         assert len(self._model.outputs) == 10, f"Wrong output shape. Expected 10 != {len(self._model.outputs)}"
+        self._model.compile(
+                loss=CategoricalCrossentropy(), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
+                optimizer=Adam(learning_rate=self._learning_rate, beta_1=self._beta_1, beta_2=self._beta_2, weight_decay=self._decay), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                metrics=['accuracy']
+            )
         self._model.summary()
+
+    def Train(self):
+        s0 = numpy.zeros((self._size, self._n_s))
+        c0 = numpy.zeros((self._size, self._n_s))
+        outputs = list(self._Yoh.swapaxes(0,1))
+        self._model.fit([self._Xoh, s0, c0], outputs, epochs=self._epochs, batch_size=self._batch_size)
+
+    def ModelStateTest(self):
+        """
+        Check if the model correctly updates the (next) `hidden state` and `cell state`.
+        """
+        print(f"\n=== {self.ModelStateTest.__name__} ===")
+        # Create test inputs
+        X_test = numpy.random.rand(1, self._Tx, len(self._human_vocab))
+        s0_test = numpy.zeros((1, self._n_s))
+        c0_test = numpy.zeros((1, self._n_s))
+
+        @tf.function(input_signature=[
+            tf.TensorSpec(shape=[None, self._Tx, len(self._human_vocab)], dtype=tf.float32),
+            tf.TensorSpec(shape=[None, self._n_s], dtype=tf.float32),
+            tf.TensorSpec(shape=[None, self._n_s], dtype=tf.float32)
+        ])
+        def predict_function(X, s0, c0):
+            # Call the model directly with input tensors
+            return self._model([X, s0, c0])  
+
+        # Get the outputs of the model for the first five time steps
+        outputs = predict_function(X_test, s0_test, c0_test)
+
+        # Extract the hidden states (s) from the LSTM outputs for each time step
+        hidden_states = [numpy.array(output) for output in outputs]
+
+        # Check if consecutive hidden states are different
+        for i in range(len(hidden_states) - 1):
+            assert not numpy.allclose(hidden_states[i], hidden_states[i + 1]), (
+                "Consecutive hidden states should be different.\n"
+                "Check if the LSTM cell is using the correct previous states.\n"
+                "Make sure you are using s and c, and NOT using s0 and c0 in Step 2.B."
+            )
 
     def _softmax(self, x, axis=1):
         """Softmax activation function.
@@ -305,7 +362,9 @@ def one_step_attention_test():
     n_a = 32
     n_s = 64
     # size: 10000, Tx: 30, Ty: 10, n_a: 32, n_s: 64, X: (10000, 30), Y: (10000, 10), Xoh: (10000, 30, 37), Yoh: (10000, 10, 11)
-    mt = MachineTranslation("en_SG", m, Tx, Ty, n_a, n_s)
+    # def __init__(self, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
+    # lr=0.005, beta_1=0.9,beta_2=0.999,decay=0.01
+    mt = MachineTranslation("en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100, 10)
 
     a = numpy.random.uniform(1, 0, (m, Tx, 2 * n_a)).astype(numpy.float32)
     s_prev = numpy.random.uniform(1, 0, (m, n_s)).astype(numpy.float32) * 1
@@ -326,8 +385,10 @@ def model_test():
     n_a = 32
     n_s = 64
     # size: 10000, Tx: 30, Ty: 10, n_a: 32, n_s: 64, X: (10000, 30), Y: (10000, 10), Xoh: (10000, 30, 37), Yoh: (10000, 10, 11)
-    mt = MachineTranslation("en_SG", m, Tx, Ty, n_a, n_s)
+    mt = MachineTranslation("en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100, 10)
     model = mt.BuildModel()
+    mt.ModelStateTest()
+    mt.Train()
 
 if __name__ == "__main__":
     print(tf.version.GIT_VERSION, tf.version.VERSION)

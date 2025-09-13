@@ -1044,3 +1044,18 @@ CTC cost for speech recognition:
 - Usually output text is shorter than the input sequence. For example, with 100Hz, 10s of speech will end up with Tx = 10,000.
 - For RNN Ty to match Tx, use repeated character and collapse the repeated characters not separated by "space"/"blank".
 - Example: "The quick brown fox": ttt_h_eee____ ___qqq__uuu__ -> The qu
+======================================================================================================================================================================================================
+Transformer Network
+- Eliminate the sequential nature of RNN which processes one token / word at a time.
+- Ingest the entire sequence at once and process the tokens/words in parallel.
+- Attention + CNN
+  - Self attention
+  - Multi-head attention
+Self-Attention:
+- A(q,K,V) = attention-based vector representation of a word.
+  - Calculate for each word in the input sequence. A(1),...A(5) in parallel.
+  - q: query, K: key, V: value
+  - q(i) = Wq @ x(i)
+  - k(i) = Wk @ x(i)
+  - v(i) = Wv @ x(i)
+  - x(i) is the word embedding
