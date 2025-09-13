@@ -3,6 +3,8 @@
 *.key
 *.tgj
 data/glove.6B.50d.txt
+data/XY_dev
+data/XY_train
 **/.~lock*
 **/.env
 **/__pycache__/
