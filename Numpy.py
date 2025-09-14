@@ -428,6 +428,12 @@ def RandomTests():
     print(f"Top-10 indices (descending): {top10_descending_indices}")
     print(f"Top-10 data  (descending): {data[top10_descending_indices]}")
 
+def EvenOddTests():
+    print(f"\n=== {EvenOddTests.__name__} ===")
+    data = numpy.arange(0,10,1)
+    assert (numpy.array([1,3,5,7,9]) == data[1::2]).all()
+    assert (numpy.array([0,2,4,6,8]) == data[0::2]).all()
+
 def NoisySineWave(samples: int):
     print(f"\n=== {NoisySineWave.__name__} ===")
     x_values = rng.uniform(low=0, high=(2 * math.pi), size=samples)
@@ -519,6 +525,7 @@ if __name__ == "__main__":
     Polynomial()
     kMin(3)
     RandomTests()
+    EvenOddTests()
     ShapeTests()
     NoisySineWave(1024)
     NoisySineWaveNoise(1024)
