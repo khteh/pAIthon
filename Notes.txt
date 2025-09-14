@@ -1059,3 +1059,27 @@ Self-Attention:
   - k(i) = Wk @ x(i)
   - v(i) = Wv @ x(i)
   - x(i) is the word embedding
+- W(i) is the head(i) in multi-head attention. It can be thought of as a "question" to find out the context of every word. The same head has to be dot-product with Q,K,V of every word.
+  - For example, W(1) = "What's happening?" W(2) = "When?", W(3) = "Who?", etc
+  - head(i) = Attention(W(i) @ Q, W(i) @ K, W(i) @ V)
+  - All heads computed in parallel.
+- h = #heads
+- Multihead(Q,K,V) = concat(head1, head2, head3,...) @ W
+Note: 
+(1) In self-attention, multiply x with matrices W. In case of the multi-head attention, you don't need to do this, as you already have the matrices W(i) in each head, and you would effectively do the calculation twice if you did the multiplication here also. 
+    In the simplest case of multi-headed self-attention you would actually use q = k = v = x. The reason we anyway show q, k and v here as different values is that in one part of the transformer (where you calculate the attention between the input and output) the q, k, and v are not the same as they carry different information.
+(2) Transformer Details:
+    - Position encoding of the word in the input sequence. This is needed in transformer architecture since the computation is done in parallel and thus losing the position information in the original sequence.
+    - i repeats itself once to encode 2 dimensions using the sine and cosine functions (same i is used for sine and cosine). To calculate i, use a helper index k, which is simply counting over the dimentions of the word embedding from 0 to d-1. i = k // 2.
+    i: 0
+    k = 2i = 0
+    k = 2i + 1 = 1
+    i: 1
+    k = 2i = 2
+    k = 2i + 1 = 3
+- Masked multihead attention is used during training to mask some texts from the input sequence so that the transformer architecture would learn to predict the masked words compared to the complete Y sequences available in the training dataset.
+Positional Encoding:
+- A feature that contains the information about the relative positions of words. The sum of the positional encoding and word embedding is ultimately what is fed into the model. 
+  If you just hard code the positions in, say by adding a matrix of 1's or whole numbers to the word embedding, the semantic meaning is distorted. 
+  Conversely, the values of the sine and cosine equations are small enough (between -1 and 1) that when you add the positional encoding to a word embedding, the word embedding is not significantly distorted, and is instead enriched with positional information. 
+  Using a combination of these two equations helps your Transformer network attend to the relative positions of your input data.
