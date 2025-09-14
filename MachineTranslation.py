@@ -1,8 +1,10 @@
-import tensorflow.keras.backend as K
-import numpy, tensorflow as tf, random, matplotlib.pyplot as plt
+import argparse, numpy, tensorflow as tf, random, matplotlib.pyplot as plt, tensorflow.keras.backend as K
+from datetime import datetime, date
 from faker import Faker
 from tqdm import tqdm
 from babel.dates import format_date
+from pathlib import Path
+from keras import saving
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.layers import Bidirectional, Concatenate, Permute, Dot, Input, LSTM, Multiply
 from tensorflow.keras.layers import RepeatVector, Dense, Activation, Lambda
@@ -12,6 +14,9 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import load_model, Model
 
 class MachineTranslation():
+    """
+    Nerual Machine Translation - Date translation
+    """
     # Define format of the data we would like to generate
     FORMATS = ['short',
             'medium',
@@ -39,6 +44,7 @@ class MachineTranslation():
             'dd.MM.YY']
     # change this if you want it to work with another language
     LOCALES = ['en_SG']
+    _path: str = None
     _fake: None
     _size:int = None
     _locale:str = None
@@ -60,9 +66,15 @@ class MachineTranslation():
     _batch_size: int = None
     _epochs:int = None
     _decay: float = None
+    _repeator: RepeatVector = None
+    _concatenator: Concatenate = None
+    _densor1: Dense = None
+    _densor2: Dense = None
+    _activator: Activation = None
+    _dot: Dot = None
     _model: Model = None
 
-    def __init__(self, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
+    def __init__(self, path:str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
         self._locale = locale
         self._size = size
         self._Tx = tx
@@ -77,6 +89,14 @@ class MachineTranslation():
         self._epochs = epochs
         self._fake = Faker()
         self._PrepareData()
+        # Defined shared layers as global variables
+        self._repeator = RepeatVector(self._Tx)
+        self._concatenator = Concatenate(axis=-1)
+        self._densor1 = Dense(10, activation = "tanh")
+        self._densor2 = Dense(1, activation = "relu")
+        self._activator = Activation(self._softmax, name='attention_weights') # We are using a custom softmax(axis = 1) loaded in this notebook
+        self._dot = Dot(axes = 1)
+        self._model_path = path
 
     def one_step_attention(self, a, s_prev):
         """
@@ -92,24 +112,24 @@ class MachineTranslation():
         """
         print(f"\n=== {self.one_step_attention.__name__} ===")
         # Use repeator to repeat s_prev to be of shape (m, Tx, n_s) so that you can concatenate it with all hidden states "a" (≈ 1 line)
-        s_prev = RepeatVector(self._Tx)(s_prev)
+        s_prev = self._repeator(s_prev)
         print(f"a.shape: {a.shape}, s_prev.shape: {s_prev.shape}")
         # Use concatenator to concatenate a and s_prev on the last axis (≈ 1 line)
         # For grading purposes, please list 'a' first and 's_prev' second, in this order.
-        concat = Concatenate(axis=-1)([a, s_prev])
+        concat = self._concatenator([a, s_prev])
         #print(f"a: {a.shape}, concat: {concat.shape}")
         # Use densor1 to propagate concat through a small fully-connected neural network to compute the "intermediate energies" variable e. (≈1 lines)
-        e = Dense(10, activation='tanh')(concat)
+        e = self._densor1(concat)
         # Use densor2 to propagate e through a small fully-connected neural network to compute the "energies" variable energies. (≈1 lines)
-        energies = Dense(1, activation='relu')(e)
+        energies = self._densor2(e)
         # Use "activator" on "energies" to compute the attention weights "alphas" (≈ 1 line)
-        alphas = Activation(self._softmax)(energies) # We are using a custom softmax(axis = 1) loaded in this notebook. This layer produces the attention weights.
+        alphas = self._activator(energies) # We are using a custom softmax(axis = 1) loaded in this notebook. This layer produces the attention weights.
         # Use dotor together with "alphas" and "a", in this order, to compute the context vector to be given to the next (post-attention) LSTM-cell (≈ 1 line)
-        context = Dot(axes=1)([alphas, a])
+        context = self._dot([alphas, a])
         #print(f"context: {context.shape} {context.numpy()}")
         return context
 
-    def BuildModel(self):
+    def BuildModel(self, rebuild: bool = False):
         """
         Arguments:
         Tx -- length of the input sequence
@@ -124,6 +144,12 @@ class MachineTranslation():
         model -- Keras model instance
         """
         print(f"\n=== {self.BuildModel.__name__} ===")
+        if self._model and not rebuild:
+            return
+        elif self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file() and not rebuild:
+            print(f"Using saved model {self._model_path}...")
+            self._model = tf.keras.models.load_model(self._model_path)
+            return
         # Define the inputs of your model with a shape (Tx, human_vocab_size)
         # Define s0 (initial hidden state) and c0 (initial cell state)
         # for the decoder LSTM with shape (n_s,)
@@ -143,6 +169,10 @@ class MachineTranslation():
         # Step 1: Define your pre-attention Bi-LSTM. (≈ 1 line)
         a = Bidirectional(LSTM(units=self._n_a, return_sequences=True))(X)
 
+        # Please note, this is the post attention LSTM cell. These have to be REUSED in the following for loop instead of instantiating new layers.
+        post_activation_LSTM_cell = LSTM(self._n_s, return_state = True) # Please do not modify this global variable.
+        output_layer = Dense(len(self._machine_vocab), activation=softmax)
+
         # Step 2: Iterate for Ty steps
         for t in range(self._Ty):
         
@@ -154,10 +184,10 @@ class MachineTranslation():
             # Remember: s = hidden state, c = cell state
             # Remember to pass in the previous hidden-state  𝑠⟨𝑡−1⟩ and cell-states  𝑐⟨𝑡−1⟩ of this LSTM
             print(f"s: {s.shape}, c: {c.shape}, context: {context.shape}")
-            _, s, c = LSTM(self._n_s, return_state = True, return_sequences=True)(context, initial_state=[s, c])
+            _, s, c = post_activation_LSTM_cell(context, initial_state=[s, c])
             
             # Step 2.C: Apply Dense layer to the hidden state output of the post-attention LSTM (≈ 1 line)
-            out = Dense(len(self._machine_vocab), activation=softmax)(s)
+            out = output_layer(s)
             
             # Step 2.D: Append "out" to the "outputs" list (≈ 1 line)
             outputs.append(out)
@@ -182,15 +212,137 @@ class MachineTranslation():
         self._model.compile(
                 loss=CategoricalCrossentropy(), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
                 optimizer=Adam(learning_rate=self._learning_rate, beta_1=self._beta_1, beta_2=self._beta_2, weight_decay=self._decay), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-                metrics=['accuracy']
+                metrics=['accuracy','accuracy','accuracy','accuracy','accuracy','accuracy','accuracy','accuracy','accuracy','accuracy'] # https://github.com/tensorflow/tensorflow/issues/100319
             )
         self._model.summary()
 
     def Train(self):
-        s0 = numpy.zeros((self._size, self._n_s))
-        c0 = numpy.zeros((self._size, self._n_s))
-        outputs = list(self._Yoh.swapaxes(0,1))
-        self._model.fit([self._Xoh, s0, c0], outputs, epochs=self._epochs, batch_size=self._batch_size)
+        print(f"\n=== {self.Train.__name__} ===")
+        if self._model:
+            s0 = numpy.zeros((self._size, self._n_s))
+            c0 = numpy.zeros((self._size, self._n_s))
+            outputs = list(self._Yoh.swapaxes(0,1))
+            self._model.fit([self._Xoh, s0, c0], outputs, epochs=self._epochs, batch_size=self._batch_size)
+            self.LoadWeights("models/machine_translation_weights.h5")
+        #if self._model_path:
+        #    self._model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/100327
+        #    print(f"Model saved to {self._model_path}.")
+
+    def LoadWeights(self, path:str):
+        """
+        Load a pretrained weights which was trained for a longer period of time. This saves time.
+        """
+        print(f"\n=== {self.LoadWeights.__name__} ===")
+        if self._model:
+            self._model.load_weights(path)
+
+    def Predict(self, dates, s00, c00):
+        print(f"\n=== {self.Predict.__name__} ===")
+        for date in dates:
+            source = self._string_to_int(date, self._Tx, self._human_vocab)
+            #print(source)
+            source = numpy.array(list(map(lambda x: to_categorical(x, num_classes=len(self._human_vocab)), source))).swapaxes(0,1)
+            source = numpy.swapaxes(source, 0, 1)
+            source = numpy.expand_dims(source, axis=0)
+            prediction = self._model.predict([source, s00, c00])
+            prediction = numpy.argmax(prediction, axis = -1) # (10, 1)
+            output = [self._inv_machine_vocab[int(i.item())] for i in prediction]
+            print("source:", date)
+            print("output:", ''.join(output),"\n")    
+
+    def visualize_attentions(self, text):
+        """
+        Plot the attention map.
+        """
+        print(f"\n=== {self.Predict.__name__} ===")
+        attention_map = numpy.zeros((10, 30))
+        Ty, Tx = attention_map.shape
+        
+        # Well, this is cumbersome but this version of tensorflow-keras has a bug that affects the 
+        # reuse of layers in a model with the functional API. 
+        # So, I have to recreate the model based on the functional 
+        # components and connect then one by one.
+        # ideally it can be done simply like this:
+        # layer = self._model.layers[num]
+        # f = Model(self._model.inputs, [layer.get_output_at(t) for t in range(Ty)])
+        #
+        X = self._model.inputs[0] 
+        s0 = self._model.inputs[1] 
+        c0 = self._model.inputs[2] 
+        s = s0
+        c = s0
+        a = self._model.layers[2](X)  
+        outputs = []
+        for t in range(Ty):
+            s_prev = s
+            s_prev = self._model.layers[3](s_prev)
+            concat = self._model.layers[4]([a, s_prev]) 
+            e = self._model.layers[5](concat) 
+            energies = self._model.layers[6](e) 
+            alphas = self._model.layers[7](energies) 
+            context = self._model.layers[8]([alphas, a])
+            # Don't forget to pass: initial_state = [hidden state, cell state] (≈ 1 line)
+            s, _, c = self._model.layers[10](context, initial_state = [s, c]) 
+            outputs.append(energies)
+
+        f = Model(inputs=[X, s0, c0], outputs = outputs)
+        s0 = numpy.zeros((1, self._n_s))
+        c0 = numpy.zeros((1, self._n_s))
+        encoded = numpy.array(self._string_to_int(text, Tx, self._human_vocab)).reshape((1, 30))
+        encoded = numpy.array(list(map(lambda x: to_categorical(x, num_classes=len(self._human_vocab)), encoded)))
+        r = f([encoded, s0, c0])
+            
+        for t in range(Ty):
+            for t_prime in range(Tx):
+                attention_map[t][t_prime] = r[t][0, t_prime]
+
+        # Normalize attention map
+        row_max = attention_map.max(axis=1)
+        attention_map = attention_map / row_max[:, None]
+
+        prediction = self._model.predict([encoded, s0, c0])
+        #print(f"prediction: {type(prediction)}, {prediction[0]}")
+        predicted_text = []
+        for i in range(len(prediction)):
+            predicted_text.append(int(numpy.argmax(prediction[i], axis=-1).item()))
+            
+        predicted_text = list(predicted_text)
+        predicted_text = self._int_to_string(predicted_text, self._inv_machine_vocab)
+        text_ = list(text)
+        
+        # get the lengths of the string
+        input_length = len(text)
+        output_length = Ty
+        
+        # Plot the attention_map
+        plt.clf()
+        plt.cla()
+        fig, ax = plt.subplots(1,1, figsize=(8, 8.5))
+        #ax = f.add_subplot(1, 1, 1)
+
+        # add image
+        i = ax.imshow(attention_map, interpolation='nearest', cmap='Blues')
+
+        # add colorbar
+        cbaxes = fig.add_axes([0.2, 0, 0.6, 0.03])
+        cbar = fig.colorbar(i, cax=cbaxes, orientation='horizontal')
+        cbar.ax.set_xlabel('Alpha value (Probability output of the "softmax")', labelpad=2)
+
+        # add labels
+        ax.set_yticks(range(output_length))
+        ax.set_yticklabels(predicted_text[:output_length])
+
+        ax.set_xticks(range(input_length))
+        ax.set_xticklabels(text_[:input_length], rotation=45)
+
+        ax.set_xlabel('Input Sequence')
+        ax.set_ylabel('Output Sequence')
+
+        # add grid and legend
+        ax.grid()
+        fig.suptitle("Attention Map", fontsize=16)
+        plt.show()
+        #return attention_map
 
     def ModelStateTest(self):
         """
@@ -224,7 +376,8 @@ class MachineTranslation():
                 "Check if the LSTM cell is using the correct previous states.\n"
                 "Make sure you are using s and c, and NOT using s0 and c0 in Step 2.B."
             )
-
+    
+    @saving.register_keras_serializable(name="_softmax")
     def _softmax(self, x, axis=1):
         """Softmax activation function.
         # Arguments
@@ -362,9 +515,9 @@ def one_step_attention_test():
     n_a = 32
     n_s = 64
     # size: 10000, Tx: 30, Ty: 10, n_a: 32, n_s: 64, X: (10000, 30), Y: (10000, 10), Xoh: (10000, 30, 37), Yoh: (10000, 10, 11)
-    # def __init__(self, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
+    # def __init__(self, path: str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
     # lr=0.005, beta_1=0.9,beta_2=0.999,decay=0.01
-    mt = MachineTranslation("en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100, 10)
+    mt = MachineTranslation("models/MachineTranslation.keras", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100, 10)
 
     a = numpy.random.uniform(1, 0, (m, Tx, 2 * n_a)).astype(numpy.float32)
     s_prev = numpy.random.uniform(1, 0, (m, n_s)).astype(numpy.float32) * 1
@@ -377,7 +530,7 @@ def one_step_attention_test():
     #assert numpy.all(context.numpy() == expected_output), "Unexpected values in the result"
     print("\033[92mAll tests passed!")
 
-def model_test():
+def model_test(retrain:bool):
     print(f"\n=== {model_test.__name__} ===")
     m = 10000
     Tx = 30
@@ -385,12 +538,29 @@ def model_test():
     n_a = 32
     n_s = 64
     # size: 10000, Tx: 30, Ty: 10, n_a: 32, n_s: 64, X: (10000, 30), Y: (10000, 10), Xoh: (10000, 30, 37), Yoh: (10000, 10, 11)
-    mt = MachineTranslation("en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100, 10)
-    model = mt.BuildModel()
+    # def __init__(self, path: str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
+    # lr=0.005, beta_1=0.9,beta_2=0.999,decay=0.01
+    mt = MachineTranslation("models/MachineTranslation.keras", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100, 10) # Increasing epochs does not improve accuracy. Have to examine the training dataset!
+    model = mt.BuildModel(retrain)
     mt.ModelStateTest()
     mt.Train()
+    print(f"date.today(): {date.today()}")
+    print(f"datetime.now().date: {datetime.now().date()}")
+    EXAMPLES = ['3 May 1979', '5 April 09', '21th of August 2016', 'Tue 10 Jul 2007', 'Saturday May 9 2018', 'March 3 2001', 'March 3rd 2001', '1 March 2001', "25th December 2020", "31st October 2021", "3rd November 2022"]
+    s00 = numpy.zeros((1, n_s))
+    c00 = numpy.zeros((1, n_s))
+    mt.Predict(EXAMPLES, s00, c00)
+    mt.visualize_attentions("Tuesday 09 Oct 1993")
 
 if __name__ == "__main__":
+    """
+    https://docs.python.org/3/library/argparse.html
+    'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
+    """
+    parser = argparse.ArgumentParser(description='Nerual Machine Translation - Date translation')
+    parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
+    args = parser.parse_args()
+
     print(tf.version.GIT_VERSION, tf.version.VERSION)
     one_step_attention_test()
-    model_test()
+    model_test(True) #args.retrain) https://github.com/tensorflow/tensorflow/issues/100327
