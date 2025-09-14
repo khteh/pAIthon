@@ -172,7 +172,7 @@ class Embeddings():
             e = self._word_to_vec_map[word]
             
             # Compute e_biascomponent using the formula given above. (≈ 1 line)
-            e_biascomponent = ((e @ self._gender) / numpy.square(numpy.linalg.norm(self._gender, ord=2))) * self._gender
+            e_biascomponent = ((e @ self._bias_axis) / numpy.square(numpy.linalg.norm(self._bias_axis, ord=2))) * self._bias_axis
         
             # Neutralize e by subtracting e_biascomponent from it 
             # e_debiased should be equal to its orthogonal projection. (≈ 1 line)
