@@ -51,12 +51,14 @@ class ContentBasedFiltering():
     _ivs = None
     _u_s = None
     _i_s = None
+    _learning_rate: float = None
     _model = None
     _model_path = None
     _scalerUser: StandardScaler = None
     _scalerItem: StandardScaler = None
     _scalerTarget: MinMaxScaler = None
-    def __init__(self, path):
+    def __init__(self, path:str, learning_rate:float):
+        self._learning_rate = learning_rate
         self._model_path = path
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
@@ -135,7 +137,7 @@ class ContentBasedFiltering():
         print(f"movie/item test data shape: {self._item_test.shape}")
         self._pprint_train(self._user_train, self._user_features, self._uvs, self._u_s, maxcount=5)
 
-    def BuildModels(self, rebuild: bool = False, learning_rate:float = 0.01):
+    def BuildModel(self, rebuild: bool = False):
         if self._model and not rebuild:
             return
         num_outputs = 32
@@ -168,13 +170,13 @@ class ContentBasedFiltering():
         # specify the inputs and output of the model
         self._model = tf.keras.Model([input_user, input_item], output)
         self._model.summary()
-        self._train_model(learning_rate)
+        self._train_model()
         self._evaluate_model()
 
-    def _train_model(self, learning_rate):
+    def _train_model(self):
         tf.random.set_seed(1)
         cost_fn = MeanSquaredError()
-        opt = keras.optimizers.Adam(learning_rate=learning_rate) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+        opt = keras.optimizers.Adam(learning_rate=self._learning_rate) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
         self._model.compile(optimizer=opt, loss=cost_fn)        
         tf.random.set_seed(1)
         self._model.fit([self._user_train[:, self._u_s:], self._item_train[:, self._i_s:]], self._y_train, epochs=30)
@@ -422,8 +424,8 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 
-    contentBasedFiltering = ContentBasedFiltering("models/ContentBasedFiltering.keras")
-    contentBasedFiltering.BuildModels(args.retrain, 0.01)
+    contentBasedFiltering = ContentBasedFiltering("models/ContentBasedFiltering.keras", 0.01)
+    contentBasedFiltering.BuildModel(args.retrain)
     contentBasedFiltering.PredictExistingUser()
     user = {
         "id": 1234,
