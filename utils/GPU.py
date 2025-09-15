@@ -14,3 +14,9 @@ def InitializeGPU():
     print(f"{len(gpus)} GPUs available")
     for gpu in gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
+
+def SetMemoryLimit(size: int):
+    gpus = tf.config.list_physical_devices('GPU')
+    print(f"{len(gpus)} GPUs available")
+    for gpu in gpus:
+        tf.config.experimental.set_virtual_device_configuration(gpu,[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=size)])
