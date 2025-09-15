@@ -114,6 +114,11 @@ def TupleArithmetic():
     assert (1,2,3,4) == t2
     print(t2)
 
+def ArrayExtension():
+    array = ['accuracy'] * 10
+    assert 10 == len(array)
+    print(f"array: {array}")
+    
 if __name__ == "__main__":
     sort_dict_by_tuple_values()
     permutations([0], list(range(1, len(portnames)))) # This will start the recursion with 0 ("PAN") as the first stop
@@ -123,3 +128,4 @@ if __name__ == "__main__":
     PathlibMkdirTest()
     #univariate_plot() This blocks
     TupleArithmetic()
+    ArrayExtension()
