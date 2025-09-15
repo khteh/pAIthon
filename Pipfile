@@ -15,7 +15,6 @@ pandas = "*"
 polars = {extras = ["pandas", "numpy"], version = "*"}
 requests = "*"
 pillow = "*"
-transformers = "*"
 keras-preprocessing = "*"
 tensorflow = {extras = ["and-cuda"], version = "*"}
 spacy = "*"
@@ -36,6 +35,8 @@ faker = "*"
 babel = "*"
 pydub = "*"
 audioop-lts = "*"
+seqeval = "*"
+transformers = "*"
 
 [dev-packages]
 check50 = "*"

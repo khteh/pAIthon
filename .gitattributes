@@ -46,6 +46,7 @@
 *.npy   binary
 *.h5    binary
 *.keras binary
+*.gz    binary
 ###############################################################################
 # diff behavior for common document formats
 # 

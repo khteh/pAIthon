@@ -5,6 +5,7 @@
 data/glove.6B.50d.txt
 data/XY_dev
 data/XY_train
+models/name_entity_recognition.h5
 **/.~lock*
 **/.env
 **/__pycache__/
