@@ -212,7 +212,7 @@ class MachineTranslation():
         self._model.compile(
                 loss=CategoricalCrossentropy(), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
                 optimizer=Adam(learning_rate=self._learning_rate, beta_1=self._beta_1, beta_2=self._beta_2, weight_decay=self._decay), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-                metrics=['accuracy','accuracy','accuracy','accuracy','accuracy','accuracy','accuracy','accuracy','accuracy','accuracy'] # https://github.com/tensorflow/tensorflow/issues/100319
+                metrics=['accuracy'] * self._Ty # https://github.com/tensorflow/tensorflow/issues/100319
             )
         self._model.summary()
 
