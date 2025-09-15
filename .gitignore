@@ -5,7 +5,7 @@
 data/glove.6B.50d.txt
 data/XY_dev
 data/XY_train
-models/NameEntityRecognition/tf_model.h5
+models/**/tf_model.h5
 **/.~lock*
 **/.env
 **/__pycache__/

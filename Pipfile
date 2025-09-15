@@ -36,6 +36,7 @@ pydub = "*"
 audioop-lts = "*"
 seqeval = "*"
 transformers = "*"
+datasets = "*"
 
 [dev-packages]
 check50 = "*"
