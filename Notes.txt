@@ -380,7 +380,7 @@ Pros:
 (2) Reduce hand-crafted / manual components. Dont' force the ML to learn the archaic ways.
 Cons:
 (1) Excludes potentially useful hand-crafted / manual components. This is especially true when there is lack of end-to-end data. The NN don't have sufficient data to learn the features to map X to Y in this case.
-(2) Hint: Sometimes divide-and-conquer works better.
+(2) Sometimes divide-and-conquer works better. Need to weight the relative complexity vs data availability.
 
 Skewed Datasets:
 Precision = #True positives / (#True + #False positives) = #True positives / (#Total predicted positives)
