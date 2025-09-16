@@ -105,6 +105,8 @@ Underfitting (High bias):
 - More data will NOT help.
 - Example: Training dataset performance: 64%, Test dataset performance: 47%
 
+Variance = measure of how well the model can generalize to unseen data.
+
 Overfitting (High variance):
 - J(train) is low; J(cv) is high
 - A model that fits too closely to a particular data set and therefore may fail to generalize to future data. High variance because if the model overfits, a tiny change in one of the training data set will end up completely different model.
@@ -171,6 +173,7 @@ Rules of thumb: Aim for [-1, 1] input data range. These need to rescale:
 Notes:
 Feature scaling usually isn't required for your target variable (labels).
 Feature scaling is usually not required with tree-based models (e.g. Random Forest) since they can handle varying features.
+Amount of data used must measure up to the #parameters to fit or train on.
 
 Reinforcement Learning:
 Given a set of rewards or penalties, learn what actions to take in the future.
@@ -346,13 +349,38 @@ Data Synthesis:
 Transfer Learning:
 Example: A NN trained on 1 million images of diverse object types (animal, fruits, plants, people, etc). You want to come up with a NN for character OCR.
 Make a copy of the NN, replace the output layer with a 10-unit layer. Then, there are 2 options to train the "new" NN:
-(1) Only train output layer parameters - This works if having a small data set
-(2) Train all parameters - This works with a huge data set.
+(1) Fine Tuning. Only train output layer parameters - This works if having a small data set.
+(2) Train all parameters - This works with a huge data set. The initial phase of training is called pre-training.
 The NN trained on 1 million images is called "supervised pretrained model".
 The "new" copy of the NN is called "fine-tuning".
 This works because layers of neurons have learnt different parts of the images. This could generalize to other types of images not found in the original dataset.
-Only work for the same input types: text, images, audio.
-Use-case exmaples: GPT-3, BERT, imageNet.
+Only use this when:
+(1) The same input types: text, images, audio.
+(2) Original task has a lot more data than the new task.
+(3) Low level features from original task could be helpful to learn the new task.
+Use-case exmaples: GPT-3, BERT, imageNet, Speech-recognition -> wake/trigger word detection, Image classification to radiology classification.
+
+Multi-task Learning:
+- One NN do several things at the same time. Every task helps, hopefully, all of the other tasks.
+- Same NN when all the tasks share similar or same low-level features / early layers of the NN. The output layer will be y^ with shape (n,m). n: #tasks, m: #samples.
+  - Loss function = sum(sum(L(y^(j)(i), y(j)(i)) for j:[i:n] )) for i: [1:m]
+  -  L is the usual logistic loss: -y(j)(i) * log(y^(j)(i)) - (1 - y(j)(i)) * log(y^(j)(i))
+  - Benefit: Works well for partially labelled data. The loss function sum over j with valid value of [0,1] and omit inf, -inf, or NaN.
+Only use this when:
+- Tasks having similar low-level features.
+- Amount of data for each task is quite similar. The aggregate of N-1 tasks' data should be a lot more than the remaining 1 other task. Symmetrically, data of N-1 tasks augment training of every other tasks.
+- Can train a big enough NN to do well on ALL of the tasks. This NN should perform better than having a separate NN for each of the tasks.
+
+End-to-End Deep Learning:
+- A NN that replaces a traditional multi-staged learning pipeline and removes intermediate steps.
+- Only use this when there is large engough end-to-end dataset (X,Y).
+- Carefully choose what types of X->Y mappings to learn depeneding on what task the data could be obtained for.
+Pros:
+(1) Let the data speak for itself.
+(2) Reduce hand-crafted / manual components. Dont' force the ML to learn the archaic ways.
+Cons:
+(1) Excludes potentially useful hand-crafted / manual components. This is especially true when there is lack of end-to-end data. The NN don't have sufficient data to learn the features to map X to Y in this case.
+(2) Hint: Sometimes divide-and-conquer works better.
 
 Skewed Datasets:
 Precision = #True positives / (#True + #False positives) = #True positives / (#Total predicted positives)
@@ -1083,3 +1111,125 @@ Positional Encoding:
   If you just hard code the positions in, say by adding a matrix of 1's or whole numbers to the word embedding, the semantic meaning is distorted. 
   Conversely, the values of the sine and cosine equations are small enough (between -1 and 1) that when you add the positional encoding to a word embedding, the word embedding is not significantly distorted, and is instead enriched with positional information. 
   Using a combination of these two equations helps your Transformer network attend to the relative positions of your input data.
+======================================================================================================================================================================================================
+ML Strategy:
+Orthogonalization: What to tune to achieve a specific effect.
+(1) Fit training  set well on cost function
+    - Bigger network
+    - Different optimizers
+    - NO: early stopping - This is not orthogonal as it will affect (2) below
+(2) Fit dev/validation set well on cost function
+    - Regularization
+    - Bigger training set
+    - NO: early stopping - This is not orthogonal as it will affect (1) above
+(3) Fit test set well on cost function
+    - Bigger dev/validation set
+(4) Performs well in real world
+    - Change dev/test set or cost function.
+  
+Use a single number evaluation metric
+Classifier:
+- 2 metrics: Precision and Recall.
+- Sometimes different classifier models will yield different scores for these 2 metrics.
+- Instead of using 2 to identify the "best" classsifier to use, use a single metric - F1 score.
+Satisfying and Optimizing metrics:
+- If N metrics, pick ONE to optimize, the rest could be just satisfying.
+- Example: 
+  (1) Optimize accuracy, Satisfiies running time.
+  (2) Optimize accuracy, Satisfiies #false positive. Example in the use case of wake/trigger words, <= 1 false positives in every 24 hours.
+  
+Dev/test datasets:
+- Dev / cross-validation datasets is used to evaluate different ideas and pick one. For example, used to tune hyperparameters and/or to evaluate the best performing model.
+- Must come from the same distribution. In other words, the bull-eye's target must be the same for both datasets.
+- It is ok for the training dataset to come from a slightly different distribution than the dev/test sets. For example, scrapping the dataset from the internet or purchase from third-party vendors.
+- The goal of test set is to evaluate how good the final system is. So it is best to get these datasets from the field - data the system is built for.
+How about size?
+- Test set should be big enough to give high confidencein the overall performance of the system.
+- Train-test split - The "test" is actually the dev/cross-validation dataset.
+  - It's ok to not have a test dataset if ensuring "high confidence" in the final system is not critical.
+- Must make sure large percentage of dev/test set to be as close to the field as possible.
+- Example, 200,000 corpera of data scrapped from internet. 10,000 from the field.
+  - Bad idea: Mix them, shuffle and distribute them to train/dev/test. This will result in dev/test having big proportion of data not of concern - away from the bulleye's target.
+  - Recommended: Training: 200,000 + 5000 from the field. dev/test 25,000 each.
+  
+Error metric:
+- Keep reviewing error metrics.
+- Example: Error (J) = sum(Wi * {y^(i) != y(i)}) / sum(Wi) for all i in the dataset.
+                      W(i): 1 if desirable input data; 10 if non-desirable input data.
+- If doing well on metric + dev/test does not translate to doing well on final application, change metric and/or dev/test set.
+
+Bayes optimal error - Best possible error. A theorical level which is impossible to achieve for any X->Y function, F(Y|X).
+Progress is often quite fast until the system surpasses human-level performance. After that it would slow now / plateau. The reason is that it would be difficult to have a good estimate of Bayes error that still helps with making good decision clearly.
+
+So long as ML is worse that humans,
+- Get labelled data from humans.
+- Gain insight from manual error analysis - Why / how does a person get it right?
+- Better analysis of bias/variance.
+
+For tasks that humans can do really well, human-level error is a proxy to Bayes error. Human error ~= Bayes error.
+
+Example 1:
+Human (~ Bayes): 1%
+Training error: 8%
+Dev error     : 10%
+Focus on bias:
+- Bigger model
+- Train longer
+- Bettern optimization algorithms: Add momentum or RMSProp or use bettern algo like Adam.
+- Review / change NN architecture / hyperparameters search - RNN, CNN
+
+Example 2:
+Human (~ Bayes): 7.5%
+Training error: 8%
+Dev error     : 10%
+Focus on variance:
+- More training data
+- Regularization - L2, Dropout, Data augmentation.
+- Review / change NN architecture / hyperparameters search - RNN, CNN
+
+Training error - human error = Avoidable bias
+Dev error - Training error = Variance
+
+Problem areas where ML significantly surpasses human-level performance:
+- Structured data
+- Lots of data - Easier for computer to find statistical patterns
+Problem areas harder for ML to surpass human-level performance:
+- Natural perception: Speech, image recognition
+
+Carry out Error Analysis on dev/cross-validation dataset
+- Count up #errors from various different categories.
+  Example: cross-validation error is 10%. Analyze the distribution of this 10% of misclassified pictures. Let's say 100 pictures are misclassified and 5 of them are of alien categories. Spending tine and effort to work on this 5% misclassified category will only give 0.5% improvement on the dev set.
+- Consider examining examples the algorithm prediction was right and wrong. Examining only the wrong examples will end up with biased estimates of the errors.
+
+Mislabelled datasets
+- DL algorithms are quite robust to random errors in the training set. If the total dataset size is big and the actual percentage of error not too high, it is ok to leave it.
+- If mislabelled in dev/test sets, carry out error analysis.
+
+Build first system quickly and dirty, then iterate, except:
+- Have significant prior experience in the application area.
+- Significant body of academic literature that can be drawn on for pretty much the same problem the system is built for.
+
+If training data comes from different distribution than that of dev/test set and error differs significantly,
+- Can't tell if it is variance problem.
+- Maybe training data is high-resolution and/or dev dataset is more difficult to deal with.
+- To help identify the root cause, 
+  (1) Carve out a training-dev set from the training dataset. 
+  (2) Train on the remaining training dataset.
+  (3) Check variance between training and train-dev set. If big, there is confirmed a variance problem.
+      Otherwise, if small error diff between training and training-dev but big error difference between training-dev and dev, then there is a data mismatch problem.
+      Or maybe both "Avoidable bias" problem between training and training/dev + data mismatch between original training data and the dev/test set.
+      - Training set - human error level = avoidable bias
+      - Training-dev - training = variance
+      - Dev - training-dev = data mismatch if > training/dev error. If smaller, it may mean that the training datset is much harder than the dev/test dataset.
+      - Test - Dev = test = degree of overfitting to the Dev dataset. May need to find a bigger Dev dataset.
+
+              General Application               Final Application
+              (Source of training data corpera) (Field/target dataset)
+Human level         4%                              6%
+Training error      7%                              6.5%
+Dev/test error     10%                              7%
+
+Addressing data mismatch error:
+- Carry out manual error analysis to understand diff between training and dev dataset. Only on dev but exclude the test to avoid overfitting.
+- Make traiing dataset more similar to the dev/test set. Or collect more data similar to dev/test set.
+- Generally, just find ways to close the gap between training and dev/test set. For example, using artifically data synthesis. The proportion of the synthesized data must match up to the size of the real data. Otherwise, ML will overfit to it. For example, noisy background sound, graphically synthesized images.
