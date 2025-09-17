@@ -367,18 +367,25 @@ def VectorProperties():
 
 def MatrixMultiplication():
     print(f"\n=== {MatrixMultiplication.__name__} ===")
-    x = numpy.array([66, 5, 15, 2, 500])
-    c = numpy.array([3000, 200 , -50, 5000, 100])
+    a = numpy.array([66, 5, 15, 2, 500])
+    b = numpy.array([3000, 200 , -50, 5000, 100])
     # @ operator = numpy.matmul (matrix multiplication)
-    matmul = x @ c
-    dotproduct = numpy.dot(x, c)
-    print(f"x @ c: {matmul}, numpy.dot(x, c): {dotproduct}")
+    matmul = a @ b
+    dotproduct = numpy.dot(a, b)
+    print(f"a @ b: {matmul}, numpy.dot(a, b): {dotproduct}")
     assert (matmul == dotproduct).all()
-    x = numpy.array([[66, 5, 15, 2, 500], 
+    a = numpy.array([[66, 5, 15, 2, 500], 
                     [21, 3, 50, 1, 100]])
-    matmul = x @ c
-    dotproduct = numpy.dot(x, c)
-    print(f"x @ c: {matmul}, numpy.dot(x, c): {dotproduct}")
+    matmul = a @ b
+    dotproduct = numpy.dot(a, b)
+    print(f"a @ b: {matmul}, numpy.dot(a, b): {dotproduct}")
+    assert (matmul == dotproduct).all()
+
+    a = rng.standard_normal(1000000)
+    b = rng.standard_normal(1000000)
+    matmul = a @ b
+    dotproduct = numpy.dot(a, b)
+    print(f"a @ b: {matmul}, numpy.dot(a, b): {dotproduct}")
     assert (matmul == dotproduct).all()
 
 def kMin(n): #N minimum (index) values in a numpy array
