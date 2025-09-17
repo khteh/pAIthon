@@ -24,7 +24,7 @@ class NeuralNetwork():
         return tmp * (1 - tmp)
 
     def Predict(self, input):
-        l1 = numpy.dot(input, self._weights) + self._bias
+        l1 = (input @ self._weights) + self._bias
         l2 = sigmoid(l1)
         return l2
 
@@ -33,7 +33,7 @@ class NeuralNetwork():
         The power rule states that the derivative of xⁿ is nx⁽ⁿ⁻¹⁾. So the derivative of np.square(x) is 2 * x, and the derivative of x is 1.
         """
         #print(f"self._weights: {self._weights}, input: {input}, target: {target}")
-        l1 = numpy.dot(input, self._weights) + self._bias
+        l1 = (input @ self._weights) + self._bias
         l2 = sigmoid(l1)
         prediction = l2
 

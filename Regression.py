@@ -169,7 +169,7 @@ def MultipleLinearRegressionSquaredErrorCostFunction(x, y, w, b: float, lambda_:
     cost = 0
     rcost = 0
     for i in range(m): 
-        f_wb_i = numpy.dot(x[i], w) + b   
+        f_wb_i = (x[i] @ w) + b   
         cost += (f_wb_i - y[i]) ** 2
     for i in w:
         rcost += i ** 2
@@ -232,7 +232,7 @@ def MultipleLinearRegressionGradient(X, y, w, b: float, lambda_):
     dj_dw = numpy.zeros((n,))
     dj_db = 0.
     for i in range(m):                             
-        err = (numpy.dot(X[i], w) + b) - y[i]
+        err = ((X[i] @ w) + b) - y[i]
         for j in range(n):                         
             dj_dw[j] += err * X[i, j] + lambda_ * w[j]
         dj_db += err                        
@@ -373,7 +373,7 @@ def MultipleLinearRegressionTraining():
     print(f"b,w found by gradient descent: {b_final:0.2f},{w_final} ")
     m,_ = X_train.shape
     for i in range(m):
-        print(f"prediction: {numpy.dot(X_train[i], w_final) + b_final:0.2f}, target value: {y_train[i]}")
+        print(f"prediction: {(X_train[i] @ w_final) + b_final:0.2f}, target value: {y_train[i]}")
     CostIterationPlot(J_hist)
 
 def SimpleLinearRegression():

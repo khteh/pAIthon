@@ -53,11 +53,11 @@ def LinearRegressionModel():
     # Manual calculation of parameters and bias:
     a1 = linear_layer(X_train[0].reshape(1,1))
     print(f"Neuron output: {a1}")
-    alin = numpy.dot(set_w,X_train[0].reshape(1,1)) + set_b
+    alin = (set_w @ X_train[0].reshape(1,1)) + set_b
     print(f"Linear Regression output: {alin}")
     assert (a1.numpy() == alin).all()
     prediction_tf = linear_layer(X_train)
-    prediction_np = numpy.dot( X_train, set_w) + set_b
+    prediction_np = ( X_train @ set_w) + set_b
     assert (prediction_tf.numpy() == prediction_np).all()
 
 def LogisticNeuron():
@@ -104,7 +104,7 @@ def LogisticNeuron():
     print(f"Logistic Regression weights: {logistic_layer.get_weights()}")
     a1 = model.predict(X_train[0].reshape(1,1))
     print(f"Neuron output: {a1}")
-    #alog = sigmoidnp(numpy.dot(set_w,X_train[0].reshape(1,1)) + set_b)
+    #alog = sigmoidnp((set_w @ X_train[0].reshape(1,1)) + set_b)
     #print(f"Linear Regression output: {alog}")
 
 def TensorFlowDataNormalization(X):
@@ -127,7 +127,7 @@ def Dense(a_in, W, b):
     a_out = numpy.zeros(neurons)
     for i in range(neurons):
         w = W[:, i] # Pull out the column values
-        z = numpy.dot(w, a_in) + b[i]
+        z = (w @ a_in) + b[i]
         a_out[i] = sigmoid(z)
     return a_out
 

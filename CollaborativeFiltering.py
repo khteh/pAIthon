@@ -1,9 +1,9 @@
 import numpy, pandas
 import tensorflow as tf
 # https://github.com/NicolasHug/Surprise/issues/485#issuecomment-2787770326
-from surprise import Dataset, Reader, KNNWithMeans, SVD
-from surprise.model_selection import GridSearchCV
-numpy._import_array()
+#from surprise import Dataset, Reader, KNNWithMeans, SVD
+#from surprise.model_selection import GridSearchCV
+#numpy._import_array()
 """
 https://realpython.com/build-recommendation-engine-collaborative-filtering/
 Mock up user-based similarity with one new user "E" who has rated only movie 1"
@@ -44,7 +44,7 @@ Limitations:
 """
 class CollaborativeFiltering():
     _data = None
-    def __init__(self, path):
+    def __init__(self):
         self._prepare_data()
 
     def _prepare_data(self):
@@ -77,7 +77,7 @@ class CollaborativeFiltering():
                     x = X[i,:]
                     y = Y[i,j]
                     r = R[i,j]
-                    param += (numpy.dot(w, x) + b_j - y) ** 2
+                    param += ((w @ x) + b_j - y) ** 2
         print(f"param: {param}, w_sum: {w_sum}, x_sum: {x_sum}")
         J = (param + w_sum * lambda_ + x_sum * lambda_) / 2
         print(f"J: {J}")

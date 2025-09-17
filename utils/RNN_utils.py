@@ -39,23 +39,22 @@ def initialize_parameters(n_a, n_x, n_y):
     return parameters
 
 def rnn_step_forward(parameters, a_prev, x):
-    
     Waa, Wax, Wya, by, b = parameters['Waa'], parameters['Wax'], parameters['Wya'], parameters['by'], parameters['b']
-    a_next = numpy.tanh(numpy.dot(Wax, x) + numpy.dot(Waa, a_prev) + b) # hidden state
-    p_t = softmax(numpy.dot(Wya, a_next) + by) # unnormalized log probabilities for next chars # probabilities for next chars 
+    a_next = numpy.tanh((Wax @ x) + (Waa @ a_prev) + b) # hidden state
+    p_t = softmax((Wya @ a_next) + by) # unnormalized log probabilities for next chars # probabilities for next chars 
     
     return a_next, p_t
 
 def rnn_step_backward(dy, gradients, parameters, x, a, a_prev):
     
-    gradients['dWya'] += numpy.dot(dy, a.T)
+    gradients['dWya'] += dy @ a.T
     gradients['dby'] += dy
-    da = numpy.dot(parameters['Wya'].T, dy) + gradients['da_next'] # backprop into h
+    da = (parameters['Wya'].T @ dy) + gradients['da_next'] # backprop into h
     daraw = (1 - a * a) * da # backprop through tanh nonlinearity
     gradients['db'] += daraw
-    gradients['dWax'] += numpy.dot(daraw, x.T)
-    gradients['dWaa'] += numpy.dot(daraw, a_prev.T)
-    gradients['da_next'] = numpy.dot(parameters['Waa'].T, daraw)
+    gradients['dWax'] += daraw @ x.T
+    gradients['dWaa'] += daraw @ a_prev.T
+    gradients['da_next'] = parameters['Waa'].T @ daraw
     return gradients
 
 def update_parameters(parameters, gradients, lr):

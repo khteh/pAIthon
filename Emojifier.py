@@ -126,7 +126,7 @@ class Emojifier():
                 
                 # Compute gradients 
                 dz = a - Y_oh[i]
-                dW += numpy.dot(dz.reshape(n_y,1), avg.reshape(1, n_h))
+                dW += dz.reshape(n_y,1) @ avg.reshape(1, n_h)
                 db += dz
 
                 # Update parameters with Stochastic Gradient Descent
@@ -175,7 +175,7 @@ class Emojifier():
                 avg = avg / count
 
             # Forward propagation
-            Z = numpy.dot(W, avg) + b
+            Z = (W @ avg) + b
             A = softmax(Z)
             pred[j] = numpy.argmax(A)
         print("Accuracy: "  + str(numpy.mean((pred[:] == Y.reshape(Y.shape[0],1)[:]))))
@@ -266,8 +266,8 @@ def model_tests():
     assert numpy.allclose(pred.transpose(), Y), "Model must give a perfect accuracy"
     assert numpy.allclose(b[0], -1 * b[1]), "b should be symmetric in this example"
 
-    X_train, Y_train = nlp.read_csv('data/train_emoji.csv')
-    X_test, Y_test = nlp.read_csv('data/tesss.csv')
+    X_train, Y_train = nlp.read_csv('data/Emojifier/train_emoji.csv')
+    X_test, Y_test = nlp.read_csv('data/Emojifier/tesss.csv')
 
     nlp = Emojifier('data/glove.6B.50d.txt')
     pred, W, b = nlp.BuildModel(X_train, Y_train)

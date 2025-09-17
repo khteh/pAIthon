@@ -90,7 +90,7 @@ def LogisticRegressionCost(x, y, w, b, lambda_: float = 1.0):
     m = x.shape[0]
     cost = 0.0
     for i in range(m):
-        z_i = numpy.dot(x[i], w) + b
+        z_i = (x[i] @ w) + b
         f_w_b = sigmoid(z_i)
         cost += - y[i] * math.log(f_w_b) - (1 - y[i]) * math.log(1 - f_w_b)
     cost /= m
@@ -122,7 +122,7 @@ def LogisticGradient(x, y, w, b, lambda_: float = 1.0):
     dj_dw = numpy.zeros((cols,))
     dj_db = 0.0
     for i in range(rows):
-        z_i = numpy.dot(x[i], w) + b
+        z_i = (x[i] @ w) + b
         f_w_b = sigmoid(z_i)
         err = f_w_b - y[i]
         for j in range(cols):

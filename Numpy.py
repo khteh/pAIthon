@@ -365,8 +365,8 @@ def VectorProperties():
     assert numpy.sum(v2 * v3) == v2 @ v3 > 0
     assert 0 == v1 @ v2 # Orthogonal OR Unrelated
 
-def Polynomial():
-    print(f"\n=== {Polynomial.__name__} ===")
+def MatrixMultiplication():
+    print(f"\n=== {MatrixMultiplication.__name__} ===")
     x = numpy.array([66, 5, 15, 2, 500])
     c = numpy.array([3000, 200 , -50, 5000, 100])
     # @ operator = numpy.matmul (matrix multiplication)
@@ -375,7 +375,7 @@ def Polynomial():
     print(f"x @ c: {matmul}, numpy.dot(x, c): {dotproduct}")
     assert (matmul == dotproduct).all()
     x = numpy.array([[66, 5, 15, 2, 500], 
-              [21, 3, 50, 1, 100]])
+                    [21, 3, 50, 1, 100]])
     matmul = x @ c
     dotproduct = numpy.dot(x, c)
     print(f"x @ c: {matmul}, numpy.dot(x, c): {dotproduct}")
@@ -522,7 +522,7 @@ if __name__ == "__main__":
     Tensors()
     VectorProperties()
     VectorSlicing()
-    Polynomial()
+    MatrixMultiplication()
     kMin(3)
     RandomTests()
     EvenOddTests()
