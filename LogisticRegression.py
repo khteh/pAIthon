@@ -62,11 +62,10 @@ Derivatives:
                    dL/dz = a - y
 dL/dw1 = dL/dz * dz/dw1 = (a - y) * x1
 dL/dw2 = dL/dz * dz/dw2 = (a - y) * x2
-dL/db = dL/dz * dz/dw2 = (a - y)
+dL/db = dL/dz * dz/db = (a - y)
 
-dJ/dw1 = sum(dJ/dw1) / m
-dJ/dw2 = sum(dJ/dw2) / m
-dJ/db = sum(dJ/db) / m
+dJ/dw = dL/dw / m # (1,n)
+dJ/db = dL/db / m # scalar
 J /= m
 
 Note: dL/dz can be found in https://community.deeplearning.ai/t/derivation-of-dl-dz/165
@@ -90,20 +89,28 @@ print(sigmoid(result1))
 print(sigmoid(result2))
 print(sigmoid(result3))
 
-def LogisticRegressionCost(x, y, w, b, lambda_: float = 1.0):
+def LogisticRegressionCost(X, Y, W, b, lambda_: float = 1.0):
     """
     Computes cost
 
     Args:
       X (ndarray (m,n)): Data, m examples with n features
-      y (ndarray (m,)) : target values
-      w (ndarray (n,)) : model parameters  
+      Y (ndarray (m,)) : target values. (1,m)
+      W (ndarray (n,)) : model parameters (1,n)
       b (scalar)       : model parameter
     
     Returns:
       cost (scalar): cost
     """
+    print(f"\n=== {LogisticRegressionCost.__name__} ===")
     m = x.shape[0]
+    # Vectorized Calculation
+    Z = W @ X.T + b # (1, m)
+    predictions = sigmoid(Z) # (1,m)
+    cost = numpy.sum(-Y * numpy.log(predictions) - (1 - Y) * numpy.log(1 - predictions)) / m # scalar
+    rcost = numpy.sum((W ** 2)) * lambda_ / (2 * m) # scalar
+    print(f"predictions: {predictions.shape}, cost: {cost}, rcost: {rcost}")
+    """
     cost = 0.0
     for i in range(m):
         z_i = (x[i] @ w) + b
@@ -114,27 +121,32 @@ def LogisticRegressionCost(x, y, w, b, lambda_: float = 1.0):
     for i in w:
         rcost += i ** 2
     rcost *= lambda_ / (2 * m)
+    """
     return cost + rcost
 
-def LogisticGradient(x, y, w, b, lambda_: float = 1.0):
+def LogisticGradient(X, Y, W, b, lambda_: float = 1.0):
     """
     Computes the gradient for logistic regression 
  
     Args:
       X (ndarray (m,n): Data, m examples with n features
-      y (ndarray (m,)): target values
-      w (ndarray (n,)): model parameters  
+      Y (ndarray (m,)): target values
+      W (ndarray (n,)): model parameters  
       b (scalar)      : model parameter
     Returns
       dj_dw (ndarray (n,)): The gradient of the cost w.r.t. the parameters w. 
       dj_db (scalar)      : The gradient of the cost w.r.t. the parameter b.
 
-    dJ(w,b)/dw[col] = (sum((f_w_b - y[row]) * x[row, col]) + lambda * w[j]) / m
-    dJ(w,b)/db[col] = (sum(f_w_b - y[row]) / m
-    f_w_b = sigmoid(z_i)
+    a = Y
+    dL/dw1 = dL/dz * dz/dw1 = (a - y) @ x1 : (1,m) @ (m,n)
+    dL/dw2 = dL/dz * dz/dw2 = (a - y) @ x2
+    dL/db = dL/dz * dz/dw2 = (a - y)
+
+    dJ/dw = sum(dL/dw) / m # (1,n)
+    dJ/db = sum(dL/db) / m # scalar
+    J /= m
+
     In Tensorflow, derivatives are calculated using back-propagation with time complexity of N+P (N: # nodes, P: #parameters) compared to NxP if using forward propagation
-    """
-    rows, cols = x.shape
     dj_dw = numpy.zeros((cols,))
     dj_db = 0.0
     for i in range(rows):
@@ -145,8 +157,17 @@ def LogisticGradient(x, y, w, b, lambda_: float = 1.0):
             dj_dw[j] += err * x[i,j] + lambda_ * w[j]
         dj_db += err
     return dj_dw / rows, dj_db / rows
+    """
+    print(f"\n=== {LogisticGradient.__name__} ===")
+    # Vectorized Calculation
+    Z = W @ X.T + b # (1,n) @ (n, m) = (1,m)
+    predictions = sigmoid(Z) # (1,m)
+    dj_dw = ((predictions - Y) @ X + lambda_ * W) / X.shape[0] # (1,m) @ (m,n) + (1,n) = (1,n)
+    dj_db = numpy.sum(predictions - Y) / X.shape[0] # scalar
+    assert dj_dw.shape == W.shape
+    return dj_dw, dj_db
 
-def LogisticGradientDescent(x, y, w_in, b_in, alpha, lambda_, iterations):
+def LogisticGradientDescent(X, Y, w_in, b_in, alpha, lambda_, iterations):
     """
     Performs batch gradient descent
     
@@ -162,35 +183,36 @@ def LogisticGradientDescent(x, y, w_in, b_in, alpha, lambda_, iterations):
       w (ndarray (n,))   : Updated values of parameters
       b (scalar)         : Updated value of parameter 
     """
+    print(f"\n=== {LogisticGradient.__name__} ===")
     # An array to store cost J and w's at each iteration primarily for graphing later
     J_history = []
-    w = copy.deepcopy(w_in)  #avoid modifying global w within function
+    W = copy.deepcopy(w_in)  #avoid modifying global w within function
     b = b_in
     
     for i in range(iterations):
         # Calculate the gradient and update the parameters
-        dj_db, dj_dw = LogisticGradient(x, y, w, b, lambda_)
+        dj_db, dj_dw = LogisticGradient(X, Y, W, b, lambda_)
 
         # Update Parameters using w, b, alpha and gradient
-        w -= alpha * dj_dw               
+        W -= alpha * dj_dw               
         b -= alpha * dj_db               
       
         # Save cost J at each iteration
         if i<100000:      # prevent resource exhaustion 
-            J_history.append(LogisticRegressionCost(x, y, w, b, lambda_))
+            J_history.append(LogisticRegressionCost(X, Y, W, b, lambda_))
 
         # Print cost every at intervals 10 times or as many iterations if < 10
         if i% math.ceil(iterations / 10) == 0:
             print(f"Iteration {i:4d}: Cost {J_history[-1]}   ")
-    return w, b, J_history         #return final w,b and J history for graphing    
+    return W, b, J_history         #return final w,b and J history for graphing    
 
-def LogisticPredict(x, w, b, threshold: float = 0.5):
+def LogisticPredict(X, W, b, threshold: float = 0.5):
     """
     Predict whether the label is 0 or 1 using learned logistic regression parameters w
     
     Args:
       X : (ndarray Shape (m,n)) data, m examples by n features
-      w : (ndarray Shape (n,))  values of parameters of the model. (1, n)
+      W : (ndarray Shape (n,))  values of parameters of the model. (1, n)
       b : (scalar)              value of bias parameter of the model
       threshold: (scalar) 
       
@@ -202,11 +224,29 @@ def LogisticPredict(x, w, b, threshold: float = 0.5):
     """
     print(f"\n=== {LogisticPredict.__name__} ===")
     assert 0 <= threshold <= 1
-    print(f"W: {w.shape} {w}, X: {x.shape}")
+    print(f"W: {W.shape} {W}, X: {X.shape}")
     # Vectorized calculation
-    Z = w @ x.T + b
+    Z = W @ X.T + b
     Y = sigmoid(Z)
     return Y >= threshold
+
+def test_LogisticRegressionCost():
+    X_tmp = numpy.random.rand(5,6)
+    y_tmp = numpy.array([0,1,0,1,0])
+    w_tmp = numpy.random.rand(X_tmp.shape[1]).reshape(-1,)-0.5
+    b_tmp = 0.5
+    lambda_tmp = 0.7
+    cost_tmp = LogisticRegressionCost(X_tmp, y_tmp, w_tmp, b_tmp, lambda_tmp)
+    print(f"Regularized cost: {cost_tmp}")
+
+def test_LogisticRegressionGradient():
+    X_tmp = numpy.random.rand(5,3)
+    y_tmp = numpy.array([0,1,0,1,0])
+    w_tmp = numpy.random.rand(X_tmp.shape[1])
+    b_tmp = 0.5
+    lambda_tmp = 0.7
+    dj_dw, dj_db =  LogisticGradient(X_tmp, y_tmp, w_tmp, b_tmp, lambda_tmp)
+    print(f"Regularized dj_db: {dj_db}, dj_dw: {dj_dw}")
 
 def test_LogisticPrediction():
     # Test your predict code
@@ -221,6 +261,7 @@ def single_variate_binary_classification(C: float = 1.0):
     """
     larger value of C means weaker regularization, or weaker penalization related to high values of 𝑏₀ and 𝑏₁
     """
+    print(f"\n=== {single_variate_binary_classification.__name__} ===")
     x = numpy.arange(10).reshape(-1, 1) # one column for each input, and the number of rows should be equal to the number of observations.
     y = numpy.array([0, 0, 0, 0, 1, 1, 1, 1, 1, 1])
     model = LogisticRegression(solver='liblinear', C=C, random_state=0).fit(x, y)
@@ -281,6 +322,7 @@ def HandwritingClassification():
         z = (x - 𝜇) / lambda
     where  𝜇 is the mean of the feature values and lambda is the standard deviation. 
     """
+    print(f"\n=== {HandwritingClassification.__name__} ===")
     scaler = StandardScaler() # perform z-score normalization
     x_train = scaler.fit_transform(x_train)
     x_test = scaler.transform(x_test) # only transforms the argument, without fitting the scaler.
@@ -298,6 +340,7 @@ def ShowMulticlassConfusionMatrix(confusion, font_size: int):
     The numbers on the main diagonal (27, 32, …, 36) show the number of correct predictions from the test set. For example, there are 27 images with zero, 32 images of one, and so on that are correctly classified. 
     Other numbers correspond to the incorrect predictions. For example, the number 1 in the third row and the first column shows that there is one image with the number 2 incorrectly classified as 0.
     """
+    print(f"\n=== {ShowMulticlassConfusionMatrix.__name__} ===")
     fig, ax = plt.subplots(figsize=(8, 8)) # figsize = (width, height)
     ax.imshow(confusion)
     ax.grid(False)
@@ -317,6 +360,7 @@ def ShowConfusionMatrix(confusion):
     Creates a heatmap that represents the confusion matrix.
     Different colors represent different numbers and similar colors represent similar numbers
     """
+    print(f"\n=== {ShowConfusionMatrix.__name__} ===")
     fig, ax = plt.subplots(figsize=(8, 8)) # figsize = (width, height)
     ax.imshow(confusion)
     ax.grid(False)
@@ -332,6 +376,8 @@ def ShowConfusionMatrix(confusion):
 if __name__ == "__main__":
     assert sigmoid(0) == 0.5
     test_LogisticPrediction()
+    test_LogisticRegressionCost()
+    test_LogisticRegressionGradient()
     single_variate_binary_classification()
     single_variate_binary_classification(10.0)
     single_variate_binary_classification_statsmodels()
