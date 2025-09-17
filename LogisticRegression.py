@@ -64,8 +64,8 @@ dL/dw1 = dL/dz * dz/dw1 = (a - y) * x1
 dL/dw2 = dL/dz * dz/dw2 = (a - y) * x2
 dL/db = dL/dz * dz/db = (a - y)
 
-dJ/dw = dL/dw / m # (1,n)
-dJ/db = dL/db / m # scalar
+dj_dw = ((predictions - Y) @ X + lambda_ * W) / X.shape[0] # (1,m) @ (m,n) + (1,n) = (1,n)
+dj_db = numpy.sum(predictions - Y) / X.shape[0] # scalar
 J /= m
 
 Note: dL/dz can be found in https://community.deeplearning.ai/t/derivation-of-dl-dz/165
@@ -183,7 +183,7 @@ def LogisticGradientDescent(X, Y, w_in, b_in, alpha, lambda_, iterations):
       w (ndarray (n,))   : Updated values of parameters
       b (scalar)         : Updated value of parameter 
     """
-    print(f"\n=== {LogisticGradient.__name__} ===")
+    print(f"\n=== {LogisticGradientDescent.__name__} ===")
     # An array to store cost J and w's at each iteration primarily for graphing later
     J_history = []
     W = copy.deepcopy(w_in)  #avoid modifying global w within function
@@ -191,7 +191,7 @@ def LogisticGradientDescent(X, Y, w_in, b_in, alpha, lambda_, iterations):
     
     for i in range(iterations):
         # Calculate the gradient and update the parameters
-        dj_db, dj_dw = LogisticGradient(X, Y, W, b, lambda_)
+        dj_dw, dj_db = LogisticGradient(X, Y, W, b, lambda_)
 
         # Update Parameters using w, b, alpha and gradient
         W -= alpha * dj_dw               
@@ -231,6 +231,7 @@ def LogisticPredict(X, W, b, threshold: float = 0.5):
     return Y >= threshold
 
 def test_LogisticRegressionCost():
+    print(f"\n=== {test_LogisticRegressionCost.__name__} ===")
     X_tmp = numpy.random.rand(5,6)
     y_tmp = numpy.array([0,1,0,1,0])
     w_tmp = numpy.random.rand(X_tmp.shape[1]).reshape(-1,)-0.5
@@ -240,7 +241,8 @@ def test_LogisticRegressionCost():
     print(f"Regularized cost: {cost_tmp}")
 
 def test_LogisticRegressionGradient():
-    X_tmp = numpy.random.rand(5,3)
+    print(f"\n=== {test_LogisticRegressionGradient.__name__} ===")
+    X_tmp = numpy.random.rand(5,3) # (m,n)
     y_tmp = numpy.array([0,1,0,1,0])
     w_tmp = numpy.random.rand(X_tmp.shape[1])
     b_tmp = 0.5
@@ -248,9 +250,22 @@ def test_LogisticRegressionGradient():
     dj_dw, dj_db =  LogisticGradient(X_tmp, y_tmp, w_tmp, b_tmp, lambda_tmp)
     print(f"Regularized dj_db: {dj_db}, dj_dw: {dj_dw}")
 
+def test_LogisticGradientDescent():
+    print(f"\n=== {test_LogisticGradientDescent.__name__} ===")
+    X = numpy.array([[0.5, 1.5], [1,1], [1.5, 0.5], [3, 0.5], [2, 2], [1, 2.5]])
+    Y = numpy.array([0, 0, 0, 1, 1, 1])    
+
+    W  = numpy.zeros_like(X[0])
+    b_tmp  = 0.
+    alph = 0.1
+    iters = 10000
+    print(f"X: {X.shape}, W: {W.shape}")
+    w_out, b_out, _ = LogisticGradientDescent(X, Y, W, b_tmp, alph, 1.0, iters) 
+    print(f"\ntest_LogisticGradientDescent() Updated parameters: w:{w_out}, b:{b_out}")
+
 def test_LogisticPrediction():
     # Test your predict code
-    numpy.random.seed(1)
+    #numpy.random.seed(1)
     tmp_w = numpy.random.randn(2)
     tmp_b = 0.3    
     tmp_X = numpy.random.randn(4, 2) - 0.5
@@ -378,6 +393,7 @@ if __name__ == "__main__":
     test_LogisticPrediction()
     test_LogisticRegressionCost()
     test_LogisticRegressionGradient()
+    test_LogisticGradientDescent()
     single_variate_binary_classification()
     single_variate_binary_classification(10.0)
     single_variate_binary_classification_statsmodels()
