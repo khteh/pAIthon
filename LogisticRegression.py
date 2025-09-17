@@ -51,9 +51,25 @@ f(X) = g(z) = 1 / (1 + e^(-z)) = P(y=1|x)
 -log(f(X)) for y == 1 = Loss of P(y=1|x)
 -log(1 - f(X)) for y == 0 = Loss of P(y=0|x)
 = -ylog(f(X)) - (1 - y)log(1 - f(X)) = BinaryCrossentropy
-Cost = Lost / m <= NOTE: NOT divided by 2m which is different from linear regression.
+Cost, J(w,b) = Lost / m <= NOTE: NOT divided by 2m which is different from linear regression.
 Regularized Cost Function: =  Unregularized cost function + lambda * sum(w ** 2) / 2m
 Derived from statistics using maximum likelihood estimation.
+Derivatives:
+- Let a = y^
+(x1,w1,x2,w2,b) => z = x1w1 + x2w2 + b => a = sigmoid(z) => L(a,y) (Forward propagation)
+                   dL/dz = dL/da * da/dz  <= d(L)/da = - y/a + (1-y)/(1-a) (Backward propagation) Note: d (ln(a)) / da = 1 / a
+                   da/dz = a(1-a)
+                   dL/dz = a - y
+dL/dw1 = dL/dz * dz/dw1 = (a - y) * x1
+dL/dw2 = dL/dz * dz/dw2 = (a - y) * x2
+dL/db = dL/dz * dz/dw2 = (a - y)
+
+dJ/dw1 = sum(dJ/dw1) / m
+dJ/dw2 = sum(dJ/dw2) / m
+dJ/db = sum(dJ/db) / m
+J /= m
+
+Note: dL/dz can be found in https://community.deeplearning.ai/t/derivation-of-dl-dz/165
 
 Softmax is a generalization of Logistic Regression: a[j] = e^z[j] / sum(e^z[k]) for k: [1, N]
 It is used for multiclass classification
@@ -174,7 +190,7 @@ def LogisticPredict(x, w, b, threshold: float = 0.5):
     
     Args:
       X : (ndarray Shape (m,n)) data, m examples by n features
-      w : (ndarray Shape (n,))  values of parameters of the model      
+      w : (ndarray Shape (n,))  values of parameters of the model. (1, n)
       b : (scalar)              value of bias parameter of the model
       threshold: (scalar) 
       
@@ -184,27 +200,13 @@ def LogisticPredict(x, w, b, threshold: float = 0.5):
     To predict 1 only if very confident, use high value of threshold. This results in high precision, low recall
     To predict 1 even when in doubt, use low value of threshold. This results in low precision, high recall
     """
+    print(f"\n=== {LogisticPredict.__name__} ===")
     assert 0 <= threshold <= 1
-    # number of training examples
-    m, n = x.shape   
-    p = numpy.zeros(m)
-    # Loop over each example
-    for i in range(m):   
-        z_wb = 0.0
-        # Loop over each feature
-        for j in range(n): 
-            # Add the corresponding term to z_wb
-            z_wb += x[i, j] * w[j]
-        
-        # Add bias term 
-        z_wb += b
-        
-        # Calculate the prediction for this example
-        f_wb = sigmoid(z_wb)
-
-        # Apply the threshold
-        p[i] = f_wb >= threshold
-    return p
+    print(f"W: {w.shape} {w}, X: {x.shape}")
+    # Vectorized calculation
+    Z = w @ x.T + b
+    Y = sigmoid(Z)
+    return Y >= threshold
 
 def test_LogisticPrediction():
     # Test your predict code
@@ -212,8 +214,7 @@ def test_LogisticPrediction():
     tmp_w = numpy.random.randn(2)
     tmp_b = 0.3    
     tmp_X = numpy.random.randn(4, 2) - 0.5
-    tmp_p = LogisticPredict(tmp_X, tmp_w, tmp_b)
-    print(f'Output of predict: shape {tmp_p.shape}, value {tmp_p}')    
+    print(f"Predictions: {LogisticPredict(tmp_X, tmp_w, tmp_b)}")
     #print('Train Accuracy: %f'%(numpy.mean(tmp_p == y_train) * 100))
 
 def single_variate_binary_classification(C: float = 1.0):
