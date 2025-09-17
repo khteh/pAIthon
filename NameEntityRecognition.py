@@ -1,8 +1,10 @@
-import numpy, os, pandas as pd, tensorflow as tf, json, random, logging, re
+import numpy, argparse, pandas as pd, tensorflow as tf, json, random, logging, re
+from pathlib import Path
 from collections import Counter
 from matplotlib import pyplot as plt
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.optimizers import Adam
+#from tensorflow.keras.optimizers import Adam
+from tf_keras.optimizers import Adam
 from pandas import DataFrame
 from tqdm import tqdm
 from transformers import DistilBertTokenizerFast, TFDistilBertForTokenClassification #, TFDistilBertModel
@@ -13,6 +15,7 @@ tf.get_logger().setLevel('ERROR')
 
 class NameEntityRecognition():
     _path: str = None
+    _model_path:str = None
     _data: DataFrame = None
     _cleaned_data = None
     _data_cleaned: DataFrame = None
@@ -28,14 +31,15 @@ class NameEntityRecognition():
     _train = None
     _learning_rate:float = None
     _batch_size:int = None
-    _epocs: int = None
+    _epochs: int = None
     _model: TFDistilBertForTokenClassification = None
-    def __init__(self, path:str, maxlen:int, learning_rate:float, batchsize:int, epochs:int):
+    def __init__(self, model_path:str, path:str, maxlen:int, learning_rate:float, batchsize:int, epochs:int):
         self._path = path
+        self._model_path = model_path
         self._maxlen = maxlen
         self._learning_rate = learning_rate
         self._batch_size = batchsize
-        self._epocs = epochs
+        self._epochs = epochs
         """
         Before feeding the texts to a Transformer model, you will need to tokenize your input using a 🤗 Transformer tokenizer.
         Tokenizer must match the Transformer model type!
@@ -44,17 +48,26 @@ class NameEntityRecognition():
         """
         self._tokenizer = DistilBertTokenizerFast.from_pretrained('tokenizer/')
         self._PrepareData()
+        #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file(): TFDistilBertForTokenClassification is NOT decorated @keras.saving.register_keras_serializable()
+        #    print(f"Using saved model {self._model_path}...")
+        #    self._model = tf.keras.models.load_model(self._model_path)
 
-    def BuildTrainModel(self):
+    def BuildTrainModel(self, rebuild: bool = False):
         """
         Use DistilBERT model, which matches the tokenizer you used to preprocess your data.
         """
+        print(f"\n=== {self.BuildTrainModel.__name__} ===")
+        if self._model and not rebuild:
+            return
         self._model = TFDistilBertForTokenClassification.from_pretrained('models/NameEntityRecognition', num_labels=len(self._unique_tags))
         # https://github.com/tensorflow/tensorflow/issues/100330
         # https://github.com/keras-team/keras/issues/21666
         self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=self._model.hf_compute_loss, metrics=['accuracy']) # can also use any keras loss fn
         history = self._model.fit(self._train.batch(self._batch_size), epochs=self._epochs, batch_size=self._batch_size)
         PlotModelHistory("Name Entity Recognition", history)
+        #if self._model_path:
+        #    self._model.save(self._model_path)
+        #    print(f"Model saved to {self._model_path}.")
 
     def Predict(self, text:str):
         """
@@ -68,6 +81,7 @@ class NameEntityRecognition():
         self._model(inputs)
         return prediction
         """
+        print(f"\n=== {self.Predict.__name__} ===")
         output = self._model.predict(text)
         predictions = numpy.argmax(output['logits'].reshape(220, -1, 12), axis=-1)
         pred_labels = [[self._id2tag.get(index, "Empty") for index in predictions[i]] for i in range(len(predictions))]
@@ -107,7 +121,7 @@ class NameEntityRecognition():
         plt.xticks(rotation='vertical')
         plt.title("True Labels")
         plt.show()
-        Counter(numpy.array(self._true_labels).flatten())
+        print(Counter(numpy.array(self._true_labels).flatten()))
 
     def _get_entities(self):
         print(f"\n=== {self._get_entities.__name__} ===")
@@ -295,7 +309,17 @@ class NameEntityRecognition():
         return tokenized_inputs
 
 if __name__ == "__main__":
+    """
+    https://docs.python.org/3/library/argparse.html
+    'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
+    """
+    parser = argparse.ArgumentParser(description='Content-based filtering recommendation system')
+    parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
+    args = parser.parse_args()
+
     InitializeGPU()
+    SetMemoryLimit(4096)
     print(tf.version.GIT_VERSION, tf.version.VERSION)
-    ner = NameEntityRecognition("data/ner.json", 512, 1e-5, 4, 10)
-    ner.BuildTrainModel()
+    ner = NameEntityRecognition("models/name_entity_recognition.keras", "data/ner.json", 512, 1e-5, 4, 10)
+    ner.BuildTrainModel(True) # TFDistilBertForTokenClassification is NOT decorated @keras.saving.register_keras_serializable()
+    ner.Predict("Manisha Bharti. 3.5 years of professional IT experience in Banking and Finance domain")
