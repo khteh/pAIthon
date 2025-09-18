@@ -18,6 +18,9 @@ numpy.var(): Variance = A measure of the average degree to which each number is 
 numpy.std(): Standard deviation = A measure of how spread out a group of numbers is from the mean. = sqrt(numpy.var())
 .T: Transpose reverses the axes. Ex: (2,3,4) -> (4,3,2)
 numpy.argsort(): Return the indices which will sort the ndarray
+
+(n,): Rank-1 array. Neither a row (1,n) nor a column (n,1) vector!
+      shape is same when it is transposed.
 """
 def oneDArray(n: int):
     print(f"=== {oneDArray.__name__} ===")

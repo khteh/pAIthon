@@ -142,6 +142,8 @@ Many features + insufficient data -> overfitting
     Example: f_w_b = w1x + w2x^2 + w3x^3 + w4x^4 + b
     lambda = 0: Overfitting. Wiggly curve/graph which tries to fit every single data point in the training data set.
     lambda = 10^10: f_w_b = b Underfitting
+Gradient Descent:
+w = w - alpha * (dJ(w) / dw)
 Gradient Descent withh regularization:
 w = w - alpha/m * (sum((f_w_b(x) - y) * x) + lambda * w[j])
   = w * (1 - alpha * lambda / m) - (alpha / m ) * sum((f_w_b(x) - y) * x)
@@ -265,7 +267,12 @@ Principal Component Analysis:
 (5) Less common applications:
     (i) Data compression - Reduce storage and/or transmission cost
     (ii) Speed up training of a supervised learning model.
+=========================================================================================================================================================================================================================================
 Neural Network (multilayer perceptron):
+- Scale drives DL progess.
+  (1) Data - especially labelled data (X,Y).
+  (2) Computation - Speeds up Idea -> Code -> Experiment iterations.
+  (3) Algorithms - Algorithmic innovation which makes computaion runs faster. For example, switching from Sigmoid to ReLU enables graduent descent to run faster by eliminating the long tails of Sigmoid.
 Activation functions:
 (1) Step function: g(x) = 1 if x >=0, else 0
 (2) Logistic Sigmoid: g(x) = e^x / (1 + e^x)
@@ -277,7 +284,7 @@ Choices of Activation Function:
     (iii) Only positive numbers: ReLU
 (2) Hidden layers: Mostly use LeLU. Reasons:
     (i) Simpler calculation compared to Sigmoid. This makes NN runs faster.
-    (ii) There are 2 horizontal asymtotes in Sigmoid. This results in derivaties being close to 0 and therefore make gradient descent slower to run to global minimum.
+    (ii) There are 2 horizontal asymtotes in Sigmoid. This results in derivatives being close to 0 and therefore make gradient descent slower to run to global minimum.
     Do NOT use linear activation function. This will result in a linear regression and defeats the purpose of NN.
     The "off" or disable feature  of the ReLU activation enables models to stitch together linear segments to model complex non-linear functions.
 Types of Layers:
@@ -288,9 +295,9 @@ Types of Layers:
     
 h(x1,x2) = g(w0 + w1x1 + w2x2 + ...)
 Example:
-(1) To mdel the OR function:
+(1) To model the OR function:
     h(x1,x2) = g(-1 + x1 + x2); w0 = -1, w1=w2=1
-(2) To mdel the AND function:
+(2) To model the AND function:
     h(x1,x2) = g(-2 + x1 + x2); w0 = -2, w1=w2=1
 Training - to calculate the parameters:
 - Trade-offs between speed and accuracy
@@ -303,11 +310,13 @@ Training - to calculate the parameters:
 Perceptron: Only capable of learning linearly separable decision boundary
 Multilayer NN: Artificial NN with an input layer, an output layer, and at least one hidden layer. Capable of modelling more complex problems compared to perceptron.
 To train multi-layer NN, we have to propagate the loss/error from the output back to the hidden layers:
-Backpropagation: Algorithm for training NN with hidden layers
-    Start with a random choice of weights, repeat:
-    - Calculate error for output layer
-    - For each layer, starting with output layer, and moving inwards towards the earliest hidden layer
-      - Propagate error back one layer
+Back Propagation: Algorithm for training NN with hidden layers
+- Start with a random choice of weights, repeat:
+  - Calculate error for output layer
+  - For each layer, starting with output layer, and moving inwards towards the earliest hidden layer
+    - Propagate error back one layer
+- One step of back propagation will provide a derivative of the output variable with respect to the input variable at that layer.
+- Using calculus chain rule, i.e., dJ/da == dJ/dv * dv/da, Backpropagation helps calculate derivative of final output, J, with respect to the input, a.
 
 To prevent underfitting (high bias):
 (1) Use a larger network.

@@ -24,10 +24,20 @@ class Discriminator():
         self.model = models.Sequential([
                         layers.Input(shape=(28, 28, 1)),
                         layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same'),
+                        # Input: 28x28x1
+                        # Filter: 64 5x5 s:2 p = (f-1)/2 = 2
+                        # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(28 + 4 - 5)/2 + 1 = 14
+                        # Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(28 + 4 - 5)/2 + 1 = 14
+                        # Output volume = Nh[l] x Nw[l] x Nc[l] = 14 * 14 * 64 = 12544
                         layers.LeakyReLU(),
                         layers.Dropout(0.3),
 
                         layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same'),
+                        # Input: 14 * 14 * 64
+                        # Filter: 128 5x5 s:2 p = (f-1)/2 = 2
+                        # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 4 - 5)/2 + 1 = 7
+                        # Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 4 - 5)/2 + 1 = 7
+                        # Output volume = Nh[l] x Nw[l] x Nc[l] = 7 * 7 * 128 = 6272
                         layers.LeakyReLU(),
                         layers.Dropout(0.3),
 
@@ -82,21 +92,41 @@ class Generator():
         self.model.add(layers.Dense(7*7*256, name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
         self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         self.model.add(layers.LeakyReLU())
-        self.model.add(layers.Reshape((7, 7, 256)))
+        self.model.add(layers.Reshape((7, 7, 256))) # Match the Dense layer's shape
         assert self.model.output_shape == (None, 7, 7, 256)  # Note: None is the batch size
 
         self.model.add(layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same'))
+        # Input: 7x7x256
+        # Filter: 128 5x5 s:1 p = (f-1)/2 = 2
+        # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(7 + 4 - 5)/1 + 1 = 7
+        # Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(7 + 4 - 5)/1 + 1 = 7
+        # Output volume = Nh[l] x Nw[l] x Nc[l] = 7 * 7 * 128 = 6272
+        # Nout = (Nin  - 1) * s + f - 2p = (7-1) * 1 + 5 - 2*2 = 6 + 5 - 4 = 7
         assert self.model.output_shape == (None, 7, 7, 128)
         self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         self.model.add(layers.LeakyReLU())
 
         self.model.add(layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same'))
-        assert self.model.output_shape == (None, 14, 14, 64)
+        # Input: 7x7x128
+        # Filter: 64 5x5 s:2 p = (f-1)/2 = 2
+        # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(7 + 4 - 5)/2 + 1 = 4
+        # Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(7 + 4 - 5)/2 + 1 = 4
+        # Output volume = Nh[l] x Nw[l] x Nc[l] = 4 * 4 * 64 = 6272
+        # Nout = (Nin  - 1) * s + f - 2p = (7-1) * 2 + 5 - 2*2 = 6*2 + 5 - 4 = 12 + 5 - 4 = 13
+        # OutputSize = (InputSize - 1) * StrideSize + M + KernelSize - 2*P
+        # M = (OutputSize - KernelSize + 2 * P) % StrideSize
+        assert self.model.output_shape == (None, 14, 14, 64) # XXX
         self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         self.model.add(layers.LeakyReLU())
 
         self.model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', activation='tanh'))
-        assert self.model.output_shape == (None, 28, 28, 1)
+        # Input: 14x14x64
+        # Filter: 1 5x5 s:2 p = (f-1)/2 = 2
+        # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 4 - 5)/2 + 1 = 7
+        # Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 4 - 5)/2 + 1 = 7
+        # Output volume = Nh[l] x Nw[l] x Nc[l] = 7 * 7 * 1 = 6272
+        # Nout = (Nin  - 1) * s + f - 2p = (14-1) * 2 + 5 - 2*2 = 13*2 + 5 - 4 = 26 + 5 - 4 = 27
+        assert self.model.output_shape == (None, 28, 28, 1) # XXX
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.

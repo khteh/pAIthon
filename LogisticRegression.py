@@ -140,7 +140,7 @@ def LogisticGradient(X, Y, W, b, lambda_: float = 1.0):
     a = Y
     dL/dw1 = dL/dz * dz/dw1 = (a - y) @ x1 : (1,m) @ (m,n)
     dL/dw2 = dL/dz * dz/dw2 = (a - y) @ x2
-    dL/db = dL/dz * dz/dw2 = (a - y)
+    dL/db = dL/dz * dz/db = (a - y)
 
     dJ/dw = sum(dL/dw) / m # (1,n)
     dJ/db = sum(dL/db) / m # scalar
