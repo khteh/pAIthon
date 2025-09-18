@@ -21,6 +21,8 @@ numpy.argsort(): Return the indices which will sort the ndarray
 
 (n,): Rank-1 array. Neither a row (1,n) nor a column (n,1) vector!
       shape is same when it is transposed.
+
+||x|| = 2-norm
 """
 def oneDArray(n: int):
     print(f"=== {oneDArray.__name__} ===")
@@ -444,6 +446,18 @@ def EvenOddTests():
     assert (numpy.array([1,3,5,7,9]) == data[1::2]).all()
     assert (numpy.array([0,2,4,6,8]) == data[0::2]).all()
 
+def NormalizeRows(x):
+    """
+    Implement a function that normalizes each row of the matrix x (to have unit length).
+    
+    Argument:
+    x -- A numpy matrix of shape (n, m)
+    
+    Returns:
+    x -- The normalized (by row) numpy matrix. You are allowed to modify x.
+    """
+    return numpy.linalg.norm(x, axis=1, keepdims=True)
+
 def NoisySineWave(samples: int):
     print(f"\n=== {NoisySineWave.__name__} ===")
     x_values = rng.uniform(low=0, high=(2 * math.pi), size=samples)
@@ -502,6 +516,13 @@ def ShapeTests():
     print(f"a.shape (after transpose with indices [2,1,3,0]): {a.shape}")
     assert (4,3,2,5) == a.shape
 
+def NormalizeRowsTests():
+    x = numpy.array([[0., 3., 4.],
+                  [1., 6., 4.]])
+    expected_output = numpy.array([[ 0., 0.6, 0.8 ],
+                                [ 0.13736056, 0.82416338, 0.54944226]])
+    assert expected_output == NormalizeRows(x)
+    
 if __name__ == "__main__":
     InitializeGPU()
     oneDArray(10)
@@ -535,6 +556,7 @@ if __name__ == "__main__":
     MatrixMultiplication()
     kMin(3)
     RandomTests()
+    NormalizeRowsTests()
     EvenOddTests()
     ShapeTests()
     NoisySineWave(1024)

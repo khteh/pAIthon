@@ -76,7 +76,7 @@ def NNSoftmax(X_train, y_train):
         optimizer=Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
     )
     model.fit(
-        X_train,y_train,
+        X_train, y_train,
         epochs=10
     )
     # Because the softmax is integrated into the output layer, the output is a vector of probabilities.
