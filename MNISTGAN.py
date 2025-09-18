@@ -119,7 +119,7 @@ class Generator():
         self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         self.model.add(layers.LeakyReLU())
 
-        self.model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', activation='tanh'))
+        self.model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', activation='tanh')) # Similar to sigmoid graph but the output is [-1, 1]
         # Input: 14x14x64
         # Filter: 1 5x5 s:2 p = (f-1)/2 = 2
         # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 4 - 5)/2 + 1 = 7

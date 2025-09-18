@@ -92,7 +92,7 @@ class MachineTranslation():
         # Defined shared layers as global variables
         self._repeator = RepeatVector(self._Tx)
         self._concatenator = Concatenate(axis=-1)
-        self._densor1 = Dense(10, activation = "tanh")
+        self._densor1 = Dense(10, activation = "tanh") # Similar to sigmoid graph but the output is [-1, 1]
         self._densor2 = Dense(1, activation = "relu")
         self._activator = Activation(self._softmax, name='attention_weights') # We are using a custom softmax(axis = 1) loaded in this notebook
         self._dot = Dot(axes = 1)

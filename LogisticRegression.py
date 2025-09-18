@@ -55,7 +55,7 @@ Cost, J(w,b) = Lost / m <= NOTE: NOT divided by 2m which is different from linea
 Regularized Cost Function: =  Unregularized cost function + lambda * sum(w ** 2) / 2m
 Derived from statistics using maximum likelihood estimation.
 Derivatives:
-- Let a = y^
+- Let a = y^ : a for 'activation'
 (x1,w1,x2,w2,b) => z = x1w1 + x2w2 + b => a = sigmoid(z) => L(a,y) (Forward propagation)
                    dL/dz = dL/da * da/dz  <= d(L)/da = - y/a + (1-y)/(1-a) (Backward propagation) Note: d (ln(a)) / da = 1 / a
                    da/dz = a(1-a)

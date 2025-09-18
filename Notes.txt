@@ -273,10 +273,28 @@ Neural Network (multilayer perceptron):
   (1) Data - especially labelled data (X,Y).
   (2) Computation - Speeds up Idea -> Code -> Experiment iterations.
   (3) Algorithms - Algorithmic innovation which makes computaion runs faster. For example, switching from Sigmoid to ReLU enables graduent descent to run faster by eliminating the long tails of Sigmoid.
-Activation functions:
+Non-Linear Activation functions:
 (1) Step function: g(x) = 1 if x >=0, else 0
-(2) Logistic Sigmoid: g(x) = e^x / (1 + e^x)
-(3) Rectifier Linear Unit (ReLu): g(x) = max(0,x)
+(2) Logistic Sigmoid: 
+    - g(x) = e^x / (1 + e^x)
+    - derivative is minuscule when z is both -ve/+ve large numbers. Not good for gradient descent.
+    - Never use this in the hidden layers. Only in the output layer for binary classification.
+    - Derivative = a * (1 - a)
+(3) tanh:
+    - (e^z - e^(-z)) / (e^z + e^(-z))
+    - Similar to sigmoid graph but the output is [-1, 1]. 
+    - Center at (0,0) means easier for the NN to learn.
+    - derivative is minuscule when z is both -ve/+ve large numbers. Not good for gradient descent.
+    - Derivative = 1 - a ** 2
+(4) Rectified Linear Unit (ReLu):
+    - g(x) = max(0,x)
+    - derivative = 0 for z <= 0, 1 otherwise.
+    - Preferred default choice for hidden layers.
+    - Derivative = 1 if z > 0; 0 otherwise
+(5) Leaky Rectified Linear Unit (Leaky ReLu):
+    - g(x) = max(0.01 * z, x)
+    - derivative = 0.01 for z <= 0, 1 otherwise.
+
 Choices of Activation Function:
 (1) Output layer: Depends on the nature of the label:
     (i) Binary classification: Sigmoid
@@ -285,14 +303,20 @@ Choices of Activation Function:
 (2) Hidden layers: Mostly use LeLU. Reasons:
     (i) Simpler calculation compared to Sigmoid. This makes NN runs faster.
     (ii) There are 2 horizontal asymtotes in Sigmoid. This results in derivatives being close to 0 and therefore make gradient descent slower to run to global minimum.
-    Do NOT use linear activation function. This will result in a linear regression and defeats the purpose of NN.
-    The "off" or disable feature  of the ReLU activation enables models to stitch together linear segments to model complex non-linear functions.
+    Do NOT use linear/identity activation function, g(z) = z in hidden layers. This will result in a linear function and defeats the purpose of NN. The computaion of multiple linear funtions is itself a linear function.
+    The "off" or disable feature of the ReLU activation enables models to stitch together linear segments to model complex non-linear functions.
 Types of Layers:
 (1) Dense: Every neuron in a layer computes it's output / activation using ALL inputs/activations from ALL neurons in previous layer.
 (2) Convolution: Neurons only look at regions of the data. Benefits:
     (i) Faster computation.
     (ii) Need less training data - less prone to overfitting.
-    
+
+Random Weights Initialization:
+- If initialize to zeros, all the hidden units will be computing the same function. dW will have the same rows after every epoch and therefore same as W.
+- b is ok to initialize to zeros.
+- W = numpy.random.randn((m,n)) * 0.01
+  - * 0.01 so as NOT to generate big numbers which will make NN slow to learn when using sigmoid or tanh activation functions.
+  
 h(x1,x2) = g(w0 + w1x1 + w2x2 + ...)
 Example:
 (1) To model the OR function:

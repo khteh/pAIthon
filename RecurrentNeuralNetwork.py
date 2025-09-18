@@ -47,7 +47,7 @@ def rnn_cell_forward(xt, a_prev, parameters):
     # compute next activation state using the formula given above
     # a(t) = g(Waa * a(t-1) + Wax * x(t) + ba)
     # at = g(Wa*[a(t-1), x(t)] + ba)
-    a_next = numpy.tanh(Waa @ a_prev + Wax @ xt + ba)
+    a_next = numpy.tanh(Waa @ a_prev + Wax @ xt + ba) # Similar to sigmoid graph but the output is [-1, 1]
     # compute output of the current cell using the formula given above
     yt_pred = softmax(Wya @ a_next + by)
     
@@ -186,10 +186,10 @@ def lstm_cell_forward(xt, a_prev, c_prev, parameters):
     """
     ft = sigmoid(Wf @ concat + bf) # forget
     it = sigmoid(Wi @ concat + bi) # update
-    cct = numpy.tanh(Wc @ concat + bc) # candidate value
+    cct = numpy.tanh(Wc @ concat + bc) # candidate value. Similar to sigmoid graph but the output is [-1, 1]
     c_next = it * cct + ft * c_prev
     ot = sigmoid(Wo @ concat + bo) # output gate
-    a_next = ot * numpy.tanh(c_next)
+    a_next = ot * numpy.tanh(c_next) # Similar to sigmoid graph but the output is [-1, 1]
     
     # Compute prediction of the LSTM cell (≈1 line)
     # y^(t) = g(Wya @ a(t) + by)

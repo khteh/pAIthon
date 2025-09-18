@@ -184,7 +184,7 @@ class CharacterGenerationRNN():
             # g(Wa @ [a(t-1), x(t)] + ba)
             assert (n_a, vocab_size) == Wax.shape
             assert (vocab_size, 1) == x.shape
-            a = numpy.tanh(Wax @ x + Waa @ a_prev + b)
+            a = numpy.tanh(Wax @ x + Waa @ a_prev + b) # Similar to sigmoid graph but the output is [-1, 1]
             assert (n_a,1) == a.shape
             z = Wya @ a + by
             assert (vocab_size, 1) == z.shape

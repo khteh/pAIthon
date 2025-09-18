@@ -40,7 +40,7 @@ def initialize_parameters(n_a, n_x, n_y):
 
 def rnn_step_forward(parameters, a_prev, x):
     Waa, Wax, Wya, by, b = parameters['Waa'], parameters['Wax'], parameters['Wya'], parameters['by'], parameters['b']
-    a_next = numpy.tanh((Wax @ x) + (Waa @ a_prev) + b) # hidden state
+    a_next = numpy.tanh((Wax @ x) + (Waa @ a_prev) + b) # hidden state. Similar to sigmoid graph but the output is [-1, 1]
     p_t = softmax((Wya @ a_next) + by) # unnormalized log probabilities for next chars # probabilities for next chars 
     
     return a_next, p_t
