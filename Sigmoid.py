@@ -1,4 +1,4 @@
-import numpy, math, tensorflow as tf
+import numpy, tensorflow as tf
 
 def sigmoid(z):
     """
@@ -18,7 +18,7 @@ def sigmoid(z):
     g(z) = 1 / (1 + exp(-z))
     """
     z = numpy.clip( z, -500, 500 )           # protect against overflow
-    return 1.0/(1.0+numpy.exp(-z))
+    return 1.0 / (1.0 + numpy.exp(-z))
 
 if __name__ == "__main__":
     assert tf.math.sigmoid(123.456) == sigmoid(123.456)

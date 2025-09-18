@@ -1,4 +1,4 @@
-import logging, numpy, math
+import logging, numpy
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
