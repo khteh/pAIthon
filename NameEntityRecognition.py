@@ -70,27 +70,16 @@ class NameEntityRecognition():
         #    print(f"Model saved to {self._model_path}.")
 
     def Predict(self, text:str):
-        """
-        text = "Manisha Bharti. 3.5 years of professional IT experience in Banking and Finance domain"
-        inputs = self._tokenizer(text, return_tensors="tf", truncation=True, is_split_into_words=False, padding="max_length", max_length=512 )
-        input_ids = inputs["input_ids"]
-        #inputs["labels"] = tf.reshape(tf.constant([1] * tf.size(input_ids).numpy()), (-1, tf.size(input_ids)))
-        output = self._model(inputs).logits
-        prediction = numpy.argmax(output, axis=2)
-        print(prediction)
-        self._model(inputs)
-        return prediction
-        """
         print(f"\n=== {self.Predict.__name__} ===")
-        output = self._model.predict(text)
-        predictions = numpy.argmax(output['logits'].reshape(220, -1, 12), axis=-1)
+        inputs = self._tokenizer(text, return_tensors="tf", truncation=True, is_split_into_words=False, padding="max_length", max_length=self._maxlen)
+        predictions = self._model.predict(inputs)
+        predictions = numpy.argmax(predictions['logits'].reshape(1, -1, 12), axis=-1)
+        print(f"predictions: {predictions.shape}, {predictions}")
         pred_labels = [[self._id2tag.get(index, "Empty") for index in predictions[i]] for i in range(len(predictions))]
-        plt.hist(numpy.array(pred_labels).flatten())
+        p = plt.hist(numpy.array(pred_labels).flatten())
         plt.xticks(rotation='vertical')
-        plt.title("Prediction Labels")
         plt.show()
-        print(classification_report(self._true_labels, pred_labels))
-    
+
     def _PrepareData(self):
         print(f"\n=== {self._PrepareData.__name__} ===")
         self._data = pd.read_json(self._path, lines=True)
