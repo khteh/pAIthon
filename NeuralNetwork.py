@@ -1,7 +1,7 @@
 import numpy
 import matplotlib.pyplot as plt
 from numpy.random import Generator, PCG64DXSM
-from Sigmoid import sigmoid
+from Activations import sigmoid
 rng = Generator(PCG64DXSM())
 
 class NeuralNetwork():

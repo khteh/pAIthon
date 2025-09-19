@@ -7,6 +7,7 @@ from sklearn.datasets import make_blobs
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
+from Activations import softmax
 """
 SparseCategorialCrossentropy or CategoricalCrossEntropy
 Tensorflow has two potential formats for target values and the selection of the loss defines which is expected.
@@ -14,36 +15,6 @@ Tensorflow has two potential formats for target values and the selection of the 
 SparseCategorialCrossentropy: expects the target/label to be an integer corresponding to the index. For example, if there are 10 potential target values, y would be between 0 and 9.
 CategoricalCrossEntropy: Expects the target/label value of an example to be one-hot encoded where the value at the target index is 1 while the other N-1 entries are zero. An example with 10 potential target values, where the target is 2 would be [0,0,1,0,0,0,0,0,0,0].    
 """
-def softmax(z):
-    """
-    Compupte the softmax of z.
-    Softmax is for multi-class classification, transforming outputs into a probability distribution where probabilities sum to one and are dependent on each other. Softmax is essentially a generalized version of Sigmoid.
-
-    Args:
-        z (ndarray): A scalar, numpy array of any size.
-    
-    Returns:
-        g (ndarray): softmax(z). with the same shape as z
-
-    Recall that for logistic regression, the model is represented as
-    f(w,b) = g(w.x + b)
- 
-    where function g is the softmax function. The softmax function is defined as:
-    g(z) = e^Z / sum(e^Z)
-
-    Let Z = x - max(x)
-    e^(x - max(x)) = e^x * e^-max(x) = e^x  / e^max(x)
-    g(e^(x - max(x))) = (e^x  / e^max(x)) / sum(e^x  / e^max(x)) = (e^x  / e^max(x)) / ((1  / e^max(x)) * sum(e^x)) = ((e^x  / e^max(x)) / sum(e^x)) * e^max(x) = e^x / sum(e^x)
-    So, softmax(x) = softmax(1 - whatever)
-    """
-    try:
-        ez = numpy.exp(z - numpy.max(z)) # Element-size exponential. math.exp won't work as it expects scalar input parameter
-        return ez / numpy.sum(ez)
-    except OverflowError as e:
-        print(f"Overflow! {e}")
-    except Exception as e:
-        print(e)
-
 def PrepareData():
     # make  dataset for example
     coordinates = [[-5, 2], [-2, -2], [1, 2], [5, -2]]

@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
-from Sigmoid import sigmoid
+from Activations import sigmoid
 """
 https://realpython.com/logistic-regression-python/
 
@@ -58,13 +58,21 @@ Derivatives:
 - Let a = y^ : a for 'activation'
 (x1,w1,x2,w2,b) => z = x1w1 + x2w2 + b => a = sigmoid(z) => L(a,y) (Forward propagation)
                    dL/dz = dL/da * da/dz  <= d(L)/da = - y/a + (1-y)/(1-a) (Backward propagation) Note: d (ln(a)) / da = 1 / a
-                   da/dz = a(1-a)
+                   da/dz = dL/da * g[l]'(Z[l]) = a(1-a) 
                    dL/dz = a - y
 dL/dw1 = dL/dz * dz/dw1 = (a - y) * x1
 dL/dw2 = dL/dz * dz/dw2 = (a - y) * x2
 dL/db = dL/dz * dz/db = (a - y)
 
-dj_dw = ((predictions - Y) @ X + lambda_ * W) / X.shape[0] # (1,m) @ (m,n) + (1,n) = (1,n)
+To generalize:
+Cost, J(w,b) = Lost / m
+A[l] = g[l](Z[l])
+dA/dZ[l] = g[l]'(Z[l]) <- g[l]' is the derivative of the activation function used at layer l
+dL/dZ[l] = dL/dA[l] * dA/dZ[l] = dL/dA[l] * g[l]'(Z[l])
+dJ/dW[l] = (dJ/dZ[l] * dZ[l]/dW[l-1]) / m
+dJ/db[l] = (dJ/dZ[l] * dZ[l]/db) / m = sum(dJ/dZ[l]) / m
+
+dj_dw = ((predictions - Y) @ X + lambda_ * W) / X.shape[0]   <- (1,m) @ (m,n) + (1,n) = (1,n)
 dj_db = numpy.sum(predictions - Y) / X.shape[0] # scalar
 J /= m
 

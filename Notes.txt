@@ -316,7 +316,31 @@ Random Weights Initialization:
 - b is ok to initialize to zeros.
 - W = numpy.random.randn((m,n)) * 0.01
   - * 0.01 so as NOT to generate big numbers which will make NN slow to learn when using sigmoid or tanh activation functions.
-  
+
+Dimensions:
+- n[l] = #units at layer l
+- W[l] = dW[l] = (n[l], n[l-i])
+- b[l] = db[l] = (n[l], 1)
+- A[l] = (n[l], 1)
+(1) Stack the input horizontally:
+m = #inputs.
+Z = W @ X + b
+Z: (m, n[l])
+A: (m, n[l]) = g(Z)
+W: (n[l], n[l-1])
+X: (m, n[l-1])
+b: (m, n[l])
+
+Z = X @ W.T + b
+(m, n[l]) = (m, n[l-1]) @ (n[l], n[l-1]).T + (m, n[l])
+          = (m, n[l-1]) @ (n[l-1], n[l]) + (m, n[l])
+          = (m, n[l]) + (m, n[l])
+
+Deep vs Shallow NN:
+- One comparison is using the Circuit theory to calculate some mathematical function like XOR.
+- Deep NN requires O(ln(N)) complexity.
+- 1-layer requires exponentially more hidden units to compute. O(2^N) complexity.
+
 h(x1,x2) = g(w0 + w1x1 + w2x2 + ...)
 Example:
 (1) To model the OR function:
@@ -358,7 +382,7 @@ Convolutional NN: NN that uses convolution, usually for analyzing images (i.e., 
                 - Training is done to figure out what's the best filters for the input image
                 - Models how human look at images
 Input image -> [Convolution (calculates filters) -> Pooling (Summarize and reduces the size of inputs)] -> Flattening (Feeds into the inputs of NN)
-[Convolution -> Pooling] can be applied multiple times before Flattening. Early layers of this to discover low-level features (Edges, Curves, Shapes); later layers to discover high-level features (objects, person, face, etc)
+[Convolution -> Pooling] can be applied multiple times before Flattening. Early layers of this to discover low-level features (Edges, Curves, Shapes, low-level audio waveform); later layers to discover high-level features (objects, person, face, basic units of sounds like phonemes, etc)
 Note: In a convnet, the higher up a layer is, the more specialized it is. The first few layers in a convnet learn very simple and generic features, which generalize to almost all types of images. But as you go higher up, the features are increasingly specific to the dataset that the model is trained on.
 
 Feed-forward NN: Good for classification. 1:1 mapping from input to output -Single-valued output.

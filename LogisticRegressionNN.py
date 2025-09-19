@@ -1,7 +1,7 @@
 import numpy, copy, matplotlib.pyplot as plt, h5py, scipy
 from PIL import Image
 from scipy import ndimage
-from Sigmoid import sigmoid
+from Activations import sigmoid
 
 class LogisticRegressionNN():
     _train_path:str = None
@@ -38,6 +38,7 @@ class LogisticRegressionNN():
 
         self._X_train = self._X_train_orig.reshape(self._X_train_orig.shape[0], -1).T / 255
         self._X_test = self._X_test_orig.reshape(self._X_test_orig.shape[0], -1).T / 255
+        print(f"X_train: {self._X_train.shape}, Y_train: {self._Y_train.shape}, X_test: {self._X_test.shape}, Y_test: {self._Y_test.shape}")
 
     def _propagate(self, w, b):
         """
@@ -160,7 +161,7 @@ class LogisticRegressionNN():
         # initialize parameters with zeros
         # and use the "shape" function to get the first dimension of X_train
         # w, b = ...
-        w = numpy.zeros((self._X_train.shape[0], 1))
+        w = numpy.random.randn(self._X_train.shape[0], 1) * 0.01
         b = 0.0
         #(≈ 1 line of code)
         # Gradient descent 

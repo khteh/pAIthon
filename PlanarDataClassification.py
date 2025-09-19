@@ -1,5 +1,5 @@
 import numpy, copy, matplotlib.pyplot as plt, sklearn, sklearn.datasets, sklearn.linear_model
-from Sigmoid import sigmoid
+from Activations import sigmoid
 
 class PlanarDataClassification():
     _X = None
@@ -167,9 +167,9 @@ class PlanarDataClassification():
         # Compute the cross-entropy cost
         cost1 = -(numpy.log(A2) @ self._Y.T)
         cost2 = -(numpy.log(1-A2) @ (1-self._Y).T)
-        cost3 = (cost1 + cost2) / m
+        cost = (cost1 + cost2) / m
         #print(f"{cost1} -> {float(numpy.squeeze(cost1))}, cost2: {cost2}, cost3: {cost3} -> {float(numpy.squeeze(cost3))}")
-        cost = float(numpy.squeeze(cost3))  # makes sure cost is the dimension we expect. 
+        cost = float(numpy.squeeze(cost))  # makes sure cost is the dimension we expect. 
                                         # E.g., turns [[17]] into 17  
         return cost
     

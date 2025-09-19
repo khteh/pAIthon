@@ -1,5 +1,5 @@
 import numpy
-from Sigmoid import sigmoid
+from Activations import sigmoid
 from Softmax import softmax
 """
 Input with n_x number of units
