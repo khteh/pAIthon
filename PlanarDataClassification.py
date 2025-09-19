@@ -53,7 +53,7 @@ class PlanarDataClassification():
             if print_cost and i % 1000 == 0:
                 print ("Cost after iteration %i: %f" %(i, cost))
 
-    def Predict(self):
+    def Predict(self, X = None):
         """
         Using the learned parameters, predicts a class for each example in X
         
@@ -64,14 +64,59 @@ class PlanarDataClassification():
         Returns
         predictions -- vector of predictions of our model (red: 0 / blue: 1)
         """
+        if X is None:
+            X = self._X
         # Computes probabilities using forward propagation, and classifies to 0/1 using 0.5 as the threshold.
         #(≈ 2 lines of code)
-        A2, cache = self._forward_propagation()
-        #print(f"A2: {A2.shape} {A2}")
+        A2, cache = self._forward_propagation(X)
         predictions = A2 > 0.5
-        print ('Accuracy: %d' % float((numpy.dot(self._Y, predictions.T) + numpy.dot(1 - self._Y, 1 - predictions.T)).item() / float(self._Y.size) * 100) + '%')
+        #print(f"A2: {A2.shape} {A2}, _Y: {self._Y.shape}, predictions: {predictions.shape}")
+        if self._Y.shape == predictions.shape:
+            print ('Accuracy: %d' % float(((self._Y @ predictions.T) + ((1 - self._Y) @(1 - predictions.T))).item() / float(self._Y.size) * 100) + '%')
         return predictions
-    
+
+    def plot_decision_boundary(self):
+        # Set min and max values and give it some padding
+        x_min, x_max = self._X[0, :].min() - 1, self._X[0, :].max() + 1
+        y_min, y_max = self._X[1, :].min() - 1, self._X[1, :].max() + 1
+        h = 0.01
+        print(f"x_min: {x_min}, x_max: {x_max}, y_min: {y_min}, y_max: {y_max}")
+        # Generate a grid of points with distance h between them
+        xx, yy = numpy.meshgrid(numpy.arange(x_min, x_max, h), numpy.arange(y_min, y_max, h))
+        # Predict the function value for the whole grid
+        model = lambda x: self.Predict(x.T)
+        Z = model(numpy.c_[xx.ravel(), yy.ravel()])
+        Z = Z.reshape(xx.shape)
+        # Plot the contour and training examples
+        plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
+        plt.ylabel('x2')
+        plt.xlabel('x1')
+        plt.scatter(self._X[0, :], self._X[1, :], c=self._Y, cmap=plt.cm.Spectral)
+        plt.title(f"Decision Boundary for hidden layer size {self._n_h}")
+
+    def TuneHiddenLayerSizes(self, sizes:int, epochs:int):
+        plt.figure(figsize=(16, 32))
+        #hidden_layer_sizes = [1, 2, 3, 4, 5]
+        # you can try with different hidden layer sizes
+        # but make sure before you submit the assignment it is set as "hidden_layer_sizes = [1, 2, 3, 4, 5]"
+        # hidden_layer_sizes = [1, 2, 3, 4, 5, 20, 50]
+        n_x = self._X.shape[0]
+        n_y = self._Y.shape[0]
+        self._epochs = epochs
+        for i, n_h in enumerate(sizes):
+            plt.subplot(5, 2, i+1)
+            plt.title('Hidden Layer of size %d' % n_h)
+            self._n_h = n_h
+            self._W1 = numpy.random.randn(self._n_h, n_x) * 0.01
+            self._b1 = numpy.zeros((self._n_h, 1))
+            self._W2 = numpy.random.randn(n_y, self._n_h) * 0.01
+            self._b2 = numpy.zeros((n_y, 1))
+            self.BuildModel()
+            self.plot_decision_boundary()
+            predictions = self.Predict()
+            accuracy = float(((self._Y @ predictions.T) + ((1 - self._Y) @(1 - predictions.T))).item() / float(self._Y.size) * 100)
+            print ("Accuracy for {} hidden units: {} %".format(n_h, accuracy))
+
     def _PrepareData(self):
         m = 400 # number of examples
         N = int(m/2) # number of points per class
@@ -97,6 +142,15 @@ class PlanarDataClassification():
         # Visualize the data:
         plt.scatter(self._X[0, :], self._X[1, :], c=self._Y, s=40, cmap=plt.cm.Spectral)
 
+    def _load_extra_datasets(self, N: int):
+        #N = 200
+        noisy_circles = sklearn.datasets.make_circles(n_samples=N, factor=.5, noise=.3)
+        noisy_moons = sklearn.datasets.make_moons(n_samples=N, noise=.2)
+        blobs = sklearn.datasets.make_blobs(n_samples=N, random_state=5, n_features=2, centers=6)
+        gaussian_quantiles = sklearn.datasets.make_gaussian_quantiles(mean=None, cov=0.5, n_samples=N, n_features=2, n_classes=2, shuffle=True, random_state=None)
+        no_structure = numpy.random.rand(N, 2), numpy.random.rand(N, 2)
+        return noisy_circles, noisy_moons, blobs, gaussian_quantiles, no_structure
+    
     def _compute_cost(self, A2):
         """
         Computes the cross-entropy cost given in equation (13)
@@ -119,7 +173,7 @@ class PlanarDataClassification():
                                         # E.g., turns [[17]] into 17  
         return cost
     
-    def _forward_propagation(self):
+    def _forward_propagation(self, X = None):
         """
         Argument:
         X -- input data of size (n_x, m)
@@ -129,16 +183,15 @@ class PlanarDataClassification():
         A2 -- The sigmoid output of the second activation
         cache -- a dictionary containing "Z1", "A1", "Z2" and "A2"
         """
-        # Retrieve each parameter from the dictionary "parameters"
-        #(≈ 4 lines of code)
-
+        if X is None:
+            X = self._X
         # Implement Forward Propagation to calculate A2 (probabilities)
         # (≈ 4 lines of code)
-        Z1 = self._W1 @ self._X + self._b1
+        Z1 = self._W1 @ X + self._b1
         A1 = numpy.tanh(Z1) # (n_h, m)
         Z2 = self._W2 @ A1 + self._b2
         A2 = sigmoid(Z2)
-        assert(A2.shape == (1, self._X.shape[1]))
+        assert(A2.shape == (1, X.shape[1]))
         cache = {"Z1": Z1,
                 "A1": A1,
                 "Z2": Z2,
@@ -206,29 +259,11 @@ class PlanarDataClassification():
         self._W2 -= self._learning_rate * dW2
         self._b2 -= self._learning_rate * db2
 
-    def _plot_decision_boundary(self, model):
-        print(f"X: {self._X.shape}, y: {self._Y.shape}")
-        # Set min and max values and give it some padding
-        x_min, x_max = self._X[0, :].min() - 1, self._X[0, :].max() + 1
-        y_min, y_max = self._X[1, :].min() - 1, self._X[1, :].max() + 1
-        h = 0.01
-        # Generate a grid of points with distance h between them
-        xx, yy = numpy.meshgrid(numpy.arange(x_min, x_max, h), numpy.arange(y_min, y_max, h))
-        # Predict the function value for the whole grid
-        Z = model(numpy.c_[xx.ravel(), yy.ravel()])
-        Z = Z.reshape(xx.shape)
-        # Plot the contour and training examples
-        plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
-        plt.ylabel('x2')
-        plt.xlabel('x1')
-        plt.scatter(self._X[0, :], self._X[1, :], c=self._Y, cmap=plt.cm.Spectral)
-
-    def Tmp(self):
-        # Plot the decision boundary
-        self._plot_decision_boundary(lambda x: self.Predict(parameters, x.T), X, Y)
-        plt.title(f"Decision Boundary for hidden layer size {self._n_h}")
-
 if __name__ == "__main__":
     classifier = PlanarDataClassification(1.2, 10000)
     classifier.BuildModel(True)
     classifier.Predict()
+    classifier.plot_decision_boundary()
+    plt.show()
+    classifier.TuneHiddenLayerSizes([4,5,7,9], 5000)
+    plt.show()

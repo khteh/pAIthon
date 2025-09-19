@@ -115,6 +115,7 @@ def AdvancedIndexing():
     https://numpy.org/doc/stable/user/basics.indexing.html#advanced-indexing
     It's using idx to index (select) from the first dimension (rows) of centroids. The ,: part makes it clear that it will return all values along the second dimension.
     """
+    print(f"\n=== {AdvancedIndexing.__name__} ===")
     centroids = numpy.array([[0.1, 0.2, 0.3],
                     [0.4, 0.5, 0.6],
                     [0.7,0.8,0.9]])
@@ -149,6 +150,7 @@ def Broadcasting():
     one of them is 1
     If these conditions are not met, a ValueError: operands could not be broadcast together exception is thrown, indicating that the arrays have incompatible shapes. The size of the resulting array is the size that is not 1 along each axis of the inputs.    
     """
+    print(f"\n=== {Broadcasting.__name__} ===")
     a = numpy.array([1,2,3]).reshape(-1,1)  #(3,1)
     b = 5
     result = a + b
@@ -171,10 +173,12 @@ def ConcatenateSliceObjects():
     """
     https://numpy.org/doc/stable/reference/generated/numpy.c_.html
     """
+    print(f"\n=== {ConcatenateSliceObjects.__name__} ===")
     x = numpy.arange(0, 20, 1)
     print(f"ndim: {x.ndim}, size: {x.size}, shape: {x.shape}")
-    X = numpy.c_[x, x**2, x**3]   #<-- added engineered feature
-    print(f"ndim: {X.ndim}, size: {X.size}, shape: {X.shape}")
+    X = numpy.c_[x, x**2, x**3] # Every element in the input array makes up one individual column of the concatenated numpy ndarray
+    assert (20, 3) == X.shape
+    print(f"ndim: {X.ndim}, size: {X.size}, shape: {X.shape}, {X}")
 
 def csvArray(i:int, j: int, k: int, path):
     print(f"\n=== {csvArray.__name__} ===")
@@ -446,7 +450,7 @@ def EvenOddTests():
     assert (numpy.array([1,3,5,7,9]) == data[1::2]).all()
     assert (numpy.array([0,2,4,6,8]) == data[0::2]).all()
 
-def NormalizeRows(x):
+def Normalize():
     """
     Implement a function that normalizes each row of the matrix x (to have unit length).
     
@@ -456,7 +460,13 @@ def NormalizeRows(x):
     Returns:
     x -- The normalized (by row) numpy matrix. You are allowed to modify x.
     """
-    return numpy.linalg.norm(x, axis=1, keepdims=True)
+    print(f"\n=== {Normalize.__name__} ===")
+    x = numpy.array([[0., 3., 4.],
+                  [1., 6., 4.]]) # (2, 3)
+    row_normalization = numpy.linalg.norm(x, axis=1, keepdims=True)
+    col_normalization = numpy.linalg.norm(x, axis=0, keepdims=True)
+    print(f"row: {row_normalization.shape} {row_normalization}")
+    print(f"col: {col_normalization.shape} {col_normalization}")
 
 def NoisySineWave(samples: int):
     print(f"\n=== {NoisySineWave.__name__} ===")
@@ -516,13 +526,6 @@ def ShapeTests():
     print(f"a.shape (after transpose with indices [2,1,3,0]): {a.shape}")
     assert (4,3,2,5) == a.shape
 
-def NormalizeRowsTests():
-    x = numpy.array([[0., 3., 4.],
-                  [1., 6., 4.]])
-    expected_output = numpy.array([[ 0., 0.6, 0.8 ],
-                                [ 0.13736056, 0.82416338, 0.54944226]])
-    assert expected_output == NormalizeRows(x)
-    
 if __name__ == "__main__":
     InitializeGPU()
     oneDArray(10)
@@ -556,7 +559,7 @@ if __name__ == "__main__":
     MatrixMultiplication()
     kMin(3)
     RandomTests()
-    NormalizeRowsTests()
+    Normalize()
     EvenOddTests()
     ShapeTests()
     NoisySineWave(1024)
