@@ -163,7 +163,7 @@ class LogisticRegressionNN():
         # initialize parameters with zeros
         # and use the "shape" function to get the first dimension of X_train
         # w, b = ...
-        w = rng.standard_normal((self._X_train.shape[0], 1)) * numpy.sqrt(2/self._X_train.shape[1])
+        w = rng.standard_normal((self._X_train.shape[0], 1)) * numpy.sqrt(2/self._X_train.shape[1]) # ReLU
         b = 0.0
         #(≈ 1 line of code)
         # Gradient descent 

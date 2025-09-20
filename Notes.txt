@@ -317,12 +317,6 @@ Types of Layers:
     (i) Faster computation.
     (ii) Need less training data - less prone to overfitting.
 
-Random Weights Initialization:
-- If initialize to zeros, all the hidden units will be computing the same function. dW will have the same rows after every epoch and therefore same as W.
-- b is ok to initialize to zeros.
-- W = numpy.random.randn((m,n)) * 0.01
-  - * 0.01 so as NOT to generate big numbers which will make NN slow to learn when using sigmoid or tanh activation functions.
-
 Dimensions:
 - n[l] = #units at layer l
 - W[l] = dW[l] = (n[l], n[l-i])
@@ -390,6 +384,11 @@ Dropout:
 - J is not well defined with dropouts. This affects debugging of J over epochs.
 (3) Data augmentation.
 
+Random Weights Initialization:
+- If initialize to zeros, all the hidden units will be computing the same function. dW will have the same rows after every epoch and therefore same as W.
+- b is ok to initialize to zeros.
+- W = numpy.random.randn((m,n)) * 0.01
+  - * 0.01 so as NOT to generate big numbers which will make NN slow to learn when using sigmoid or tanh activation functions.
 Vanishing / Exploding Gradients:
 - Deep NN very prone to this. If W is slightly < 1, it will vanish, otherwise it will explode going deeper in the the NN due to W @ X.
 - To help with this, use random initialization:

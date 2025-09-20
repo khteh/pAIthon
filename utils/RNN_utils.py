@@ -30,21 +30,18 @@ def initialize_parameters(n_a, n_x, n_y):
                         by -- Bias relating the hidden-state to the output, numpy array of shape (n_y, 1)
     """
     numpy.random.seed(1)
-    Wax = rng.standard_normal((n_a, n_x)) * 0.01 # input to hidden
-    Waa = rng.standard_normal((n_a, n_a)) * 0.01 # hidden to hidden
-    Wya = rng.standard_normal((n_y, n_a)) * 0.01 # hidden to output
+    Wax = rng.standard_normal((n_a, n_x)) * numpy.sqrt(2/n_x) # input to hidden
+    Waa = rng.standard_normal((n_a, n_a)) * numpy.sqrt(2/n_a) # hidden to hidden
+    Wya = rng.standard_normal((n_y, n_a)) * numpy.sqrt(2/n_a) # hidden to output
     b = numpy.zeros((n_a, 1)) # hidden bias
     by = numpy.zeros((n_y, 1)) # output bias
-    
     parameters = {"Wax": Wax, "Waa": Waa, "Wya": Wya, "b": b,"by": by}
-    
     return parameters
 
 def rnn_step_forward(parameters, a_prev, x):
     Waa, Wax, Wya, by, b = parameters['Waa'], parameters['Wax'], parameters['Wya'], parameters['by'], parameters['b']
     a_next = numpy.tanh((Wax @ x) + (Waa @ a_prev) + b) # hidden state. Similar to sigmoid graph but the output is [-1, 1]
     p_t = softmax((Wya @ a_next) + by) # unnormalized log probabilities for next chars # probabilities for next chars 
-    
     return a_next, p_t
 
 def rnn_step_backward(dy, gradients, parameters, x, a, a_prev):
