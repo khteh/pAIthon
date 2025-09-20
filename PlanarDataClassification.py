@@ -107,9 +107,9 @@ class PlanarDataClassification():
             plt.subplot(5, 2, i+1)
             plt.title('Hidden Layer of size %d' % n_h)
             self._n_h = n_h
-            self._W1 = numpy.random.randn(self._n_h, n_x) * 0.01
+            self._W1 = numpy.random.randn(self._n_h, n_x) * numpy.sqrt(2/n_x)
             self._b1 = numpy.zeros((self._n_h, 1))
-            self._W2 = numpy.random.randn(n_y, self._n_h) * 0.01
+            self._W2 = numpy.random.randn(n_y, self._n_h) * numpy.sqrt(2/self._W1.shape[0])
             self._b2 = numpy.zeros((n_y, 1))
             self.BuildModel()
             self.plot_decision_boundary()
@@ -134,9 +134,9 @@ class PlanarDataClassification():
         self._Y = self._Y.T
         n_x = self._X.shape[0]
         n_y = self._Y.shape[0]
-        self._W1 = numpy.random.randn(self._n_h, n_x) * 0.01
+        self._W1 = numpy.random.randn(self._n_h, n_x) * numpy.sqrt(2/n_x)
         self._b1 = numpy.zeros((self._n_h, 1))
-        self._W2 = numpy.random.randn(n_y, self._n_h) * 0.01
+        self._W2 = numpy.random.randn(n_y, self._n_h) * numpy.sqrt(2/self._W1.shape[0])
         self._b2 = numpy.zeros((n_y, 1))        
         #print(f"W1: {self._W1.shape}, W2: {self._W2.shape}, b1: {self._b1.shape}, b2: {self._b2.shape}")
         # Visualize the data:

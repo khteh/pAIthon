@@ -158,14 +158,20 @@ Strategy to debugging a learning algorithm:
 (5) Decrease lambda - Fixes high bias
 (6) Increase lambda - Fixes high variance.
 
-Hold-out cross validation splits data into training and testing data sets. How to split?
-k-fold cross-validation: Splitting data into k sets, and experimenting k times, using each set as a test set once, and using remaining data as training set.
+Cross-validation / development dataset is used to evaluate trained models to see which one is the best choice.
+Test dataset is used to evaluate the unbiased performance of the final system before deployed to production.
+These 2 must use the same distribution of data.
 
 Feature Scaling: When a feature has a large range of values, the weight/parameter calculated by the model will have small range. In this case, a small change in weight will have big change in the cost value.
 This causes the gradient descent to take longer time to find it's global minimum, i.e., converge slower. To oversome this, scale the input data. 2 ways:
 (1) Divide by the maximum value of the data range. This will produce scaled input data of [0, 1]
-(2) Mean normalization: Find the average value (ave). (x - ave) / (Xmax - Xmin). This will produce scaled input data of [-1, 1] which centers around 0.
-(3) Z-score normalization: Find the standard deviation (d) and the mean. (x - ave) / d.
+(2) Mean normalization. This will produce scaled input data of [-1, 1] which centers around 0.
+    - Find the average value: miu = numpy.sum(X)/m
+    - X -= miu
+(3) Variance normalization. This will produce features with variance = 1.
+    - sigma^2 = numpy.sum(X ** 2) / m
+    - X /= sigma^2
+(4) Z-score normalization: Find the standard deviation (d) and the mean. (x - ave) / d.
     Mean: sum(data) / len(data)
     standard deviation: sum((data[i] - mean) ** 2) / len(data)
 Rules of thumb: Aim for [-1, 1] input data range. These need to rescale:
@@ -372,7 +378,27 @@ To prevent underfitting (high bias):
 To prevent Overfitting (high variance):
 (1) Collect more data
 (2) Choose lambda appropriately.
-Dropout: Temporarily removing units - selected at random - from a NN to prevent over-reliance on certain units
+Dropout: 
+- Temporarily removing units - selected at random - from a NN to prevent over-reliance on certain units.
+- It spreadas the weights across all activations and not relying on any specific features and this shrinks the weights. Provide similar effects as L2 regularization.
+- Prominent implementation is Inverted Dropout:
+  - Layers: 3
+  - keep_prob = 0.8
+  - dropout = numpy.random.rand(A[l].shape[0], A[l].shape[1]) < keep_prob
+  - A[l] = A[l] * dropout <- This shuts down (1 - keep_prob) % of the activations.
+  - A[l] /= keep_prob <- This restores the (1 - keep_prob) values. This is the "inverted dropout".
+- J is not well defined with dropouts. This affects debugging of J over epochs.
+(3) Data augmentation.
+
+Vanishing / Exploding Gradients:
+- Deep NN very prone to this. If W is slightly < 1, it will vanish, otherwise it will explode going deeper in the the NN due to W @ X.
+- To help with this, use random initialization:
+  - n: #inputs of the neuron
+  (1) ReLU activation:
+    - W[l] = numpy.random.randn((shape)) * numpy.sqrt(2 / n[l-1])
+  (2) tanh activation:
+    - W[l] = numpy.random.randn((shape)) * numpy.sqrt(1 / n[l-1]). Sometimes called the Xavier initialization.
+
 playground.tensorflow.org
 Image Convolution: Applying a filter that adds each pixel value of an image to it's neighbours, weighted according to a kernel matrix.
                   - Extracts features from input. Output is a feature map
@@ -1243,6 +1269,8 @@ Focus on variance:
 - More training data
 - Regularization - L2, Dropout, Data augmentation.
 - Review / change NN architecture / hyperparameters search - RNN, CNN
+
+High bias and high variance can happen at the same time especially in differnt parts of high-dimesional dataset.
 
 Training error - human error = Avoidable bias
 Dev error - Training error = Variance

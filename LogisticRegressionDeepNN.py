@@ -48,7 +48,7 @@ class LogisticRegressionDeepNN():
         parameters = {}
         costs = []
         for l in range(1, L):
-            parameters['W' + str(l)] = numpy.random.randn(self._layers_dims[l], self._layers_dims[l-1]) * 0.01
+            parameters['W' + str(l)] = numpy.random.randn(self._layers_dims[l], self._layers_dims[l-1])  * numpy.sqrt(2/self._layers_dims[l-1])
             parameters['b' + str(l)] = numpy.zeros((self._layers_dims[l], 1))            
             assert(parameters['W' + str(l)].shape == (self._layers_dims[l], self._layers_dims[l - 1]))
             assert(parameters['b' + str(l)].shape == (self._layers_dims[l], 1))

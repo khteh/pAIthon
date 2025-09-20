@@ -468,6 +468,20 @@ def Normalize():
     print(f"row: {row_normalization.shape} {row_normalization}")
     print(f"col: {col_normalization.shape} {col_normalization}")
 
+def MeshGridTests():
+    print(f"\n=== {MeshGridTests.__name__} ===")
+    x_min, x_max = 0, 1024
+    y_min, y_max = -1, 1
+    h = 0.01
+    # Generate a grid of points with distance h between them
+    x_range = numpy.arange(x_min, x_max, 1)
+    y_range = numpy.arange(y_min, y_max, h)
+    print(f"x_range: {x_range.shape}, y_range: {y_range.shape}")
+    xx, yy = numpy.meshgrid(numpy.arange(x_min, x_max, 1), numpy.random(y_min, y_max, h))
+    #xx, yy = numpy.meshgrid(1024, numpy.arange(y_min, y_max, h))
+    print(f"xx: {xx.shape}, yy: {yy.shape}")
+    print(f"xx: {xx[:10]}, yy: {yy[:10]}")
+
 def NoisySineWave(samples: int):
     print(f"\n=== {NoisySineWave.__name__} ===")
     x_values = rng.uniform(low=0, high=(2 * math.pi), size=samples)
@@ -562,6 +576,7 @@ if __name__ == "__main__":
     Normalize()
     EvenOddTests()
     ShapeTests()
+    MeshGridTests()
     NoisySineWave(1024)
     NoisySineWaveNoise(1024)
     NoisySineWaves(1024)

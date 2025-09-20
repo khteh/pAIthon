@@ -52,7 +52,12 @@ f(X) = g(z) = 1 / (1 + e^(-z)) = P(y=1|x)
 -log(1 - f(X)) for y == 0 = Loss of P(y=0|x)
 = -ylog(f(X)) - (1 - y)log(1 - f(X)) = BinaryCrossentropy
 Cost, J(w,b) = Lost / m <= NOTE: NOT divided by 2m which is different from linear regression.
-Regularized Cost Function: =  Unregularized cost function + lambda * sum(w ** 2) / 2m
+Regularized Cost Function: =  Unregularized cost function + lambda * (||W|| ** 2) / 2m.
+- ||W|| ** 2 = sum(W ** 2) for all neurons in ALL layer - L2/Frobenius-norm regularization. Adding (|||b|| ** 2)/2m doesn't have much effect as most of the weights are in the high-dimensional W and b is jsut a real number, one per neuron.
+- L1 regularization will produce W with a lot of zeros - sparse. Used less often compared to L2.
+- lambda, regularization parameter is a hyperparameter to be tuned using the cross-validation/dev dataset to reduce variance.
+- Also called "weights decay" since W -= alpha * (dJ/dW  + (lambda * W[l])/m) -= (alpha * lambda * W[l])/m - alpha * dJ/dW. W is decayed by (1 - alpha *lambda / m)
+
 Derived from statistics using maximum likelihood estimation.
 Derivatives:
 - Let a = y^ : a for 'activation'
@@ -79,7 +84,7 @@ Cost, J(w,b) = Lost / m
 A[l] = g[l](Z[l])
 dA/dZ[l] = g[l]'(Z[l]) <- g[l]' is the derivative of the activation function used at layer l
 dL/dZ[l] = dL/dA[l] * dA/dZ[l] = dL/dA[l] * g[l]'(Z[l])
-dJ/dW[l] = (dJ/dZ[l] * dZ[l]/dW[l-1]) / m
+dJ/dW[l] = (dJ/dZ[l] * dZ[l]/dW[l-1]) / m + (lambda * W[l]) / m
 dJ/db[l] = (dJ/dZ[l] * dZ[l]/db) / m = sum(dJ/dZ[l]) / m
 
 dj_dw = ((predictions - Y) @ X + lambda_ * W) / X.shape[0]   <- (1,m) @ (m,n) + (1,n) = (1,n)
