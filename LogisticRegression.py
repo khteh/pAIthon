@@ -56,10 +56,18 @@ Regularized Cost Function: =  Unregularized cost function + lambda * sum(w ** 2)
 Derived from statistics using maximum likelihood estimation.
 Derivatives:
 - Let a = y^ : a for 'activation'
-(x1,w1,x2,w2,b) => z = x1w1 + x2w2 + b => a = sigmoid(z) => L(a,y) (Forward propagation)
-                   dL/dz = dL/da * da/dz  <= d(L)/da = - y/a + (1-y)/(1-a) (Backward propagation) Note: d (ln(a)) / da = 1 / a
-                   da/dz = dL/da * g[l]'(Z[l]) = a(1-a) 
-                   dL/dz = a - y
+
+Note:
+d (ln(a)) / da = 1 / a
+g'(Z) = dA/dZ = slope of g(x) at z
+      = a(1-a) if g(Z) is sigmoid
+
+                   L1								L2			                                   L3					
+(x1,w1,x2,w2,b) => z = x1w1 + x2w2 + b    => a = relu(z) => L(a,y) =>	z = x1w1 + x2w2 + b   => a = sigmoid(z) => L(a,y)
+                   dL/dz = dL/da * da/dz  <= d(L)/da = [0,1]   		dL/dz = dL/da * da/dz <= d(L)/da = -y/a + (1-y)/(1-a)
+                   da/dz = dL/da * g[l]'(Z[l])				        dL/dz = dL/da * g[l]'(Z[l])
+									                                      = -y/a + (1-y)/(1-a) * g[l]'(Z[l]))
+									                                      = -y/a + (1-y)/(1-a) * a(1-a)
 dL/dw1 = dL/dz * dz/dw1 = (a - y) * x1
 dL/dw2 = dL/dz * dz/dw2 = (a - y) * x2
 dL/db = dL/dz * dz/db = (a - y)

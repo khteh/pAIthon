@@ -42,15 +42,15 @@ def sigmoid_backward(dA, cache):
     cache -- 'Z' where we store for computing backward propagation efficiently
 
     Returns:
-    dZ -- Gradient of the cost with respect to Z
+    dZ -- Gradient of the cost with respect to Z (dJ/dz)
     """
     Z = cache
-    s = 1/(1+numpy.exp(-Z))
-    dZ = dA * s * (1-s)
+    A = sigmoid(Z)
+    dZ = dA * A * (1-A)
     assert (dZ.shape == Z.shape)
     return dZ
 
-def sigmoid(z):
+def sigmoid(Z):
     """
     Compute the sigmoid of z. 
     Sigmoid is for binary or multi-label classification, producing independent probabilities for each class.
@@ -67,8 +67,8 @@ def sigmoid(z):
     where function g is the sigmoid function. The sigmoid function is defined as:
     g(z) = 1 / (1 + exp(-z))
     """
-    z = numpy.clip( z, -500, 500 )           # protect against overflow
-    return 1.0 / (1.0 + numpy.exp(-z))
+    Z = numpy.clip(Z, -500, 500 )           # protect against overflow
+    return 1.0 / (1.0 + numpy.exp(-Z))
 
 def sigmoid_derivative(x):
     """
