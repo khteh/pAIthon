@@ -154,7 +154,7 @@ class CharacterGenerationRNN():
         Waa, Wax, Wya, by, b = parameters['Waa'], parameters['Wax'], parameters['Wya'], parameters['by'], parameters['b']
         vocab_size = by.shape[0]
         n_a = Waa.shape[1]
-        print(f"Waa: {Waa.shape}, Wax: {Wax.shape}, Wya: {Wya.shape}, by: {by.shape}, b: {b.shape}")
+        #print(f"Waa: {Waa.shape}, Wax: {Wax.shape}, Wya: {Wya.shape}, by: {by.shape}, b: {b.shape}")
         
         ### START CODE HERE ###
         # Step 1: Create the a zero vector x that can be used as the one-hot vector 
@@ -162,7 +162,7 @@ class CharacterGenerationRNN():
         x = numpy.zeros((vocab_size,1))
         # Step 1': Initialize a_prev as zeros (≈1 line)
         a_prev = numpy.zeros((n_a,1))
-        print(f"Wax: {Wax.shape}, x: {x.shape}, Waa: {Waa.shape}, a_prev: {a_prev.shape}, n_a: {n_a}")
+        #print(f"Wax: {Wax.shape}, x: {x.shape}, Waa: {Waa.shape}, a_prev: {a_prev.shape}, n_a: {n_a}")
         # Create an empty list of indices. This is the list which will contain the list of indices of the characters to generate (≈1 line)
         indices = []
         
@@ -193,8 +193,6 @@ class CharacterGenerationRNN():
             y = softmax(z)
             assert (vocab_size, 1) == y.shape
             #print(f"a: {a.shape}, z: {z.shape}, y: {y.shape}, {y}")
-            # For grading purposes
-            numpy.random.seed(counter + seed) 
             
             # Step 3: Sample the index of a character within the vocabulary from the probability distribution y
             # (see additional hints above)
@@ -328,7 +326,6 @@ class CharacterGenerationRNN():
         Returns:
         parameters -- learned parameters
         """
-        
         # Retrieve n_x and n_y from vocab_size
         n_x, n_y = vocab_size, vocab_size
         
@@ -342,7 +339,6 @@ class CharacterGenerationRNN():
         examples = [x.strip() for x in self._words]
         #print(f"examples: {examples}")
         # Shuffle list of all dinosaur names
-        #numpy.random.seed(0)
         numpy.random.shuffle(examples)
         
         # Initialize the hidden state of your LSTM
@@ -353,9 +349,6 @@ class CharacterGenerationRNN():
         
         # Optimization loop
         for j in range(num_iterations):
-            
-            ### START CODE HERE ###
-            
             # Set the index `idx` (see instructions above)
             idx = j % len(examples)
             #print(f"idx: {idx}")
@@ -374,11 +367,7 @@ class CharacterGenerationRNN():
             # Choose a learning rate of 0.01
             curr_loss, gradients, a_prev = self.Optimize(X, Y, a_prev, parameters, 0.01)
             
-            ### END CODE HERE ###
-            
             # debug statements to aid in correctly forming X, Y
-            if verbose and j in [0, len(examples) -1, len(examples)]:
-                print("j = " , j, "idx = ", idx,) 
             if verbose and j in [0]:
                 print("single_example =", single_example)
                 print("single_example_chars", single_example_chars)
@@ -390,7 +379,7 @@ class CharacterGenerationRNN():
 
             # Every 2000 Iteration, generate "n" characters thanks to self.Sample() to check if the model is learning properly
             if j % 2000 == 0:
-                print('Iteration: %d, Loss: %f' % (j, loss) + '\n')
+                print(f"\nIteration: {j}, Loss: {loss}")
                 # The number of dinosaur names to print
                 seed = 0
                 for name in range(dino_names):
@@ -399,7 +388,6 @@ class CharacterGenerationRNN():
                     last_dino_name = get_sample(sampled_indices, self._ix_to_char)
                     print(last_dino_name.replace('\n', ''))
                     seed += 1  # To get the same result (for grading purposes), increment the seed by one. 
-                print('\n')
         return parameters, last_dino_name
     
     def GenerateShakespearePoem(self):
@@ -410,7 +398,6 @@ class CharacterGenerationRNN():
 def clip_test(mValue):
     chargen = CharacterGenerationRNN("data/dinos.txt", 0.01, args.dinasaur, False)
     print(f"\nGradients for mValue={mValue}")
-    numpy.random.seed(3)
     dWax = rng.standard_normal((5, 3)) * 10
     dWaa = rng.standard_normal((5, 5)) * 10
     dWya = rng.standard_normal((2, 5)) * 10
@@ -438,7 +425,6 @@ def clip_test(mValue):
 
 def sample_test():
     chargen = CharacterGenerationRNN("data/dinos.txt", 0.01, args.dinasaur, False)
-    numpy.random.seed(24)
     _, n_a = 20, 100
     Wax, Waa, Wya = rng.standard_normal((n_a, chargen.VocabSize())), rng.standard_normal((n_a, n_a)), rng.standard_normal((chargen.VocabSize(), n_a))
     b, by = rng.standard_normal((n_a, 1)), rng.standard_normal((chargen.VocabSize(), 1))
@@ -456,7 +442,6 @@ def sample_test():
 
 def optimize_test():
     chargen = CharacterGenerationRNN("data/dinos.txt", 0.01, args.dinasaur, False)
-    numpy.random.seed(1)
     vocab_size, n_a = 27, 100
     a_prev = rng.standard_normal((n_a, 1))
     Wax, Waa, Wya = rng.standard_normal((n_a, vocab_size)), rng.standard_normal((n_a, n_a)), rng.standard_normal((vocab_size, n_a))
