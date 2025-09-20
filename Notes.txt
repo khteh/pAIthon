@@ -142,6 +142,7 @@ Many features + insufficient data -> overfitting
     Example: f_w_b = w1x + w2x^2 + w3x^3 + w4x^4 + b
     lambda = 0: Overfitting. Wiggly curve/graph which tries to fit every single data point in the training data set.
     lambda = 10^10: f_w_b = b Underfitting
+
 Gradient Descent:
 w = w - alpha * (dJ(w) / dw)
 Gradient Descent withh regularization:
@@ -149,6 +150,18 @@ w = w - alpha/m * (sum((f_w_b(x) - y) * x) + lambda * w[j])
   = w * (1 - alpha * lambda / m) - (alpha / m ) * sum((f_w_b(x) - y) * x)
   alpha: 0.01, lambda: 10, m: 100 => (1 - alpha * lambda / m) = (1 - 0.001) = 0.999
   This shows that every iteration of gradient descent, regularization reduces the value of w, thus reduces the impact of the feature.
+- Each iteration/epoch of gradient descent will process the entire X(m,n). Choose a batch size so that:
+  (1) Leverage the vectorization processing
+  (2) Faster iterations. Large batch size will take too long per iteration/epoch.
+  (3) Batch size should be power of 2 and fits in RAM.
+
+Exponentially Weighted Averages
+- V(t) = beta * V(t-1) + (1 - beta) * Theta(t)
+  - Computes data point with average over 1 / (1 - beta) data points.
+  - beta: 0.9 -> Averages over 10t of data
+  - beta: 0.98 -> Averages over 50t of data
+  - beta: 0.5 -> Averages over 2t of data
+  - Iniial warm-up data will be skewed. Use bias correction to mitigate that. V(t) / (1 - beta(t)).
 
 Strategy to debugging a learning algorithm:
 (1) Get more data - Fixes high variance.
