@@ -59,12 +59,14 @@ Derivatives:
 
 Note:
 d (ln(a)) / da = 1 / a
-g'(Z) = dA/dZ = slope of g(x) at z
+g'(Z) = dA/dZ = = dg(Z)/dZ = slope of g(x) at z
       = a(1-a) if g(Z) is sigmoid
 
-                   L1								L2			                                   L3					
+Check out C1_W3.pdf slide 27
+
+                   L1								L2			                                   L3
 (x1,w1,x2,w2,b) => z = x1w1 + x2w2 + b    => a = relu(z) => L(a,y) =>	z = x1w1 + x2w2 + b   => a = sigmoid(z) => L(a,y)
-                   dL/dz = dL/da * da/dz  <= d(L)/da = [0,1]   		dL/dz = dL/da * da/dz <= d(L)/da = -y/a + (1-y)/(1-a)
+                   dL/dz = dL/da * da/dz  <= d(L)/da = [0,1]   		dL/dz = dL/da * da/dz     <= d(L)/da = -y/a + (1-y)/(1-a)
                    da/dz = dL/da * g[l]'(Z[l])				        dL/dz = dL/da * g[l]'(Z[l])
 									                                      = -y/a + (1-y)/(1-a) * g[l]'(Z[l]))
 									                                      = -y/a + (1-y)/(1-a) * a(1-a)
