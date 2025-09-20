@@ -71,9 +71,9 @@ def conv_single_step():
     Z -- a scalar value, the result of convolving the sliding window (W, b) on a slice x of the input data
     """
     print(f"\n=== {conv_single_step.__name__} ===")
-    a_slice_prev = numpy.random.randn(4, 4, 3)
-    W = numpy.random.randn(4, 4, 3)
-    b = numpy.random.randn(1, 1, 1)
+    a_slice_prev = rng.standard_normal((4, 4, 3))
+    W = rng.standard_normal((4, 4, 3))
+    b = rng.standard_normal((1, 1, 1))
     #(≈ 3 lines of code)
     # Element-wise product between a_slice_prev and W. Do not add the bias yet.
     # s = None
@@ -106,8 +106,6 @@ def conv_forward(A_prev, W, b, hparams):
     cache -- cache of values needed for the conv_backward() function
     """
     print(f"\n=== {conv_forward.__name__} ===")
-    print(f"A_prev: {A_prev.shape}")
-    print(f"W: {W.shape}")
     # Retrieve dimensions from A_prev's shape (≈1 line)  
     (m, n_H_prev, n_W_prev, n_C_prev) = A_prev.shape
     
@@ -126,10 +124,10 @@ def conv_forward(A_prev, W, b, hparams):
     
     # Initialize the output volume Z with zeros. (≈1 line)
     Z = numpy.zeros((m,n_H,n_W,n_C))
-    print(f"Z: {Z.shape}")
+
     # Create A_prev_pad by padding A_prev
     A_prev_pad = Padding(A_prev, pad)
-    print(f"A_prev_pad.shape: {A_prev_pad.shape}")
+    #print(f"A_prev_pad.shape: {A_prev_pad.shape}")
     for i in range(A_prev_pad.shape[0]): # loop over the batch of training examples
         a_prev_pad = A_prev_pad[i]   # Select ith training example's padded activation
         #print(f"\n{i}: a_prev_pad.shape: {a_prev_pad.shape}")
@@ -147,7 +145,7 @@ def conv_forward(A_prev, W, b, hparams):
                 for c in range(n_C): # loop over channels (= #filters) of the output volume
                     # Use the corners to define the (3D) slice of a_prev_pad (See Hint above the cell). (≈1 line)
                     a_slice_prev = a_prev_pad[vstart:vend, hstart:hend, :]
-                    print(f"a_slice_prev.shape: {a_slice_prev.shape}")
+
                     # Convolve the (3D) slice with the correct filter W and bias b, to get back one output neuron. (≈3 line)
                     weights = W[:,:,:, c]
                     biases = b[:,:,:, c]
@@ -228,9 +226,9 @@ def pool_forward(A_prev, hparameters, mode = "max"):
     return A, cache
 
 def conv_forward_test():
-    A_prev = numpy.random.randn(2, 5, 7, 4)
-    W = numpy.random.randn(3, 3, 4, 8)
-    b = numpy.random.randn(1, 1, 1, 8)
+    A_prev = rng.standard_normal((2, 5, 7, 4))
+    W = rng.standard_normal((3, 3, 4, 8))
+    b = rng.standard_normal((1, 1, 1, 8))
     hparameters = {"pad" : 1,
                 "stride": 2}
 
@@ -246,7 +244,7 @@ def pool_forward_test():
     # Case 1: stride of 1
     print("CASE 1:\n")
     numpy.random.seed(1)
-    A_prev_case_1 = numpy.random.randn(2, 5, 5, 3)
+    A_prev_case_1 = rng.standard_normal((2, 5, 5, 3))
     hparameters_case_1 = {"stride" : 1, "f": 3}
 
     A, cache = pool_forward(A_prev_case_1, hparameters_case_1, mode = "max")
@@ -259,7 +257,7 @@ def pool_forward_test():
     print("A[1, 1] =\n", A[1, 1])
 
 if __name__ == "__main__":
-    data = numpy.random.randn(4, 3, 3, 2)
+    data = rng.standard_normal((4, 3, 3, 2))
     Padding(data, 3)
     conv_single_step()
     conv_forward_test()
