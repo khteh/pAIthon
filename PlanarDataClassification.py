@@ -1,5 +1,7 @@
 import numpy, copy, matplotlib.pyplot as plt, sklearn, sklearn.datasets, sklearn.linear_model
 from Activations import sigmoid
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 
 class PlanarDataClassification():
     _X = None
@@ -107,9 +109,9 @@ class PlanarDataClassification():
             plt.subplot(5, 2, i+1)
             plt.title('Hidden Layer of size %d' % n_h)
             self._n_h = n_h
-            self._W1 = numpy.random.randn(self._n_h, n_x) * numpy.sqrt(2/n_x)
+            self._W1 = rng.standard_normal((self._n_h, n_x)) * numpy.sqrt(2/n_x)
             self._b1 = numpy.zeros((self._n_h, 1))
-            self._W2 = numpy.random.randn(n_y, self._n_h) * numpy.sqrt(2/self._W1.shape[0])
+            self._W2 = rng.standard_normal((n_y, self._n_h)) * numpy.sqrt(2/self._W1.shape[0])
             self._b2 = numpy.zeros((n_y, 1))
             self.BuildModel()
             self.plot_decision_boundary()
@@ -118,6 +120,7 @@ class PlanarDataClassification():
             print ("Accuracy for {} hidden units: {} %".format(n_h, accuracy))
 
     def _PrepareData(self):
+        print(f"\n=== {self._PrepareData.__name__} ===")
         m = 400 # number of examples
         N = int(m/2) # number of points per class
         D = 2 # dimensionality
@@ -126,17 +129,17 @@ class PlanarDataClassification():
         a = 4 # maximum ray of the flower
         for j in range(2):
             ix = range(N*j,N*(j+1))
-            t = numpy.linspace(j*3.12,(j+1)*3.12,N) + numpy.random.randn(N)*0.2 # theta
-            r = a*numpy.sin(4*t) + numpy.random.randn(N)*0.2 # radius
-            self._X[ix] = numpy.c_[r*numpy.sin(t), r*numpy.cos(t)]
+            t = numpy.linspace(j*3.12,(j+1)*3.12, N) + rng.standard_normal((1, N))*0.2 # theta
+            r = a*numpy.sin(4*t) + rng.standard_normal((1, N))*0.2 # radius
+            self._X[ix] = numpy.concatenate([r*numpy.sin(t), r*numpy.cos(t)]).T
             self._Y[ix] = j           
         self._X = self._X.T
         self._Y = self._Y.T
         n_x = self._X.shape[0]
         n_y = self._Y.shape[0]
-        self._W1 = numpy.random.randn(self._n_h, n_x) * numpy.sqrt(2/n_x)
+        self._W1 = rng.standard_normal((self._n_h, n_x)) * numpy.sqrt(2/n_x)
         self._b1 = numpy.zeros((self._n_h, 1))
-        self._W2 = numpy.random.randn(n_y, self._n_h) * numpy.sqrt(2/self._W1.shape[0])
+        self._W2 = rng.standard_normal((n_y, self._n_h)) * numpy.sqrt(2/self._W1.shape[0])
         self._b2 = numpy.zeros((n_y, 1))        
         #print(f"W1: {self._W1.shape}, W2: {self._W2.shape}, b1: {self._b1.shape}, b2: {self._b2.shape}")
         # Visualize the data:

@@ -1,5 +1,7 @@
 import numpy, copy, matplotlib.pyplot as plt, h5py, scipy
 from Activations import sigmoid, relu, relu_backward, sigmoid_backward
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 
 class LogisticRegressionDeepNN():
     _train_path:str = None
@@ -48,7 +50,7 @@ class LogisticRegressionDeepNN():
         parameters = {}
         costs = []
         for l in range(1, L):
-            parameters['W' + str(l)] = numpy.random.randn(self._layers_dims[l], self._layers_dims[l-1])  * numpy.sqrt(2/self._layers_dims[l-1])
+            parameters['W' + str(l)] = rng.standard_normal((self._layers_dims[l], self._layers_dims[l-1]))  * numpy.sqrt(2/self._layers_dims[l-1])
             parameters['b' + str(l)] = numpy.zeros((self._layers_dims[l], 1))            
             assert(parameters['W' + str(l)].shape == (self._layers_dims[l], self._layers_dims[l - 1]))
             assert(parameters['b' + str(l)].shape == (self._layers_dims[l], 1))

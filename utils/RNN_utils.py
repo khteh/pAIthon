@@ -1,4 +1,6 @@
 import numpy
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 
 def smooth(loss, cur_loss):
     return loss * 0.999 + cur_loss * 0.001
@@ -28,9 +30,9 @@ def initialize_parameters(n_a, n_x, n_y):
                         by -- Bias relating the hidden-state to the output, numpy array of shape (n_y, 1)
     """
     numpy.random.seed(1)
-    Wax = numpy.random.randn(n_a, n_x)*0.01 # input to hidden
-    Waa = numpy.random.randn(n_a, n_a)*0.01 # hidden to hidden
-    Wya = numpy.random.randn(n_y, n_a)*0.01 # hidden to output
+    Wax = rng.standard_normal((n_a, n_x)) * 0.01 # input to hidden
+    Waa = rng.standard_normal((n_a, n_a)) * 0.01 # hidden to hidden
+    Wya = rng.standard_normal((n_y, n_a)) * 0.01 # hidden to output
     b = numpy.zeros((n_a, 1)) # hidden bias
     by = numpy.zeros((n_y, 1)) # output bias
     

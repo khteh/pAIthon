@@ -2,6 +2,8 @@ import numpy, spacy, csv, emoji
 from tqdm import tqdm
 from Softmax import softmax
 from utils.ConfusionMatrix import ConfusionMatrix
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 
 class Emojifier():
     """
@@ -95,7 +97,7 @@ class Emojifier():
         n_h = self._word_to_vec_map[any_word].shape[0]   # dimensions of the GloVe vectors 
         
         # Initialize parameters using Xavier initialization
-        W = numpy.random.randn(n_y, n_h) / numpy.sqrt(n_h)
+        W = rng.standard_normal((n_y, n_h)) / numpy.sqrt(n_h)
         b = numpy.zeros((n_y,))
         
         # Convert Y to Y_onehot with n_y classes

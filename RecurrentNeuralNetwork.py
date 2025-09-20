@@ -1,6 +1,8 @@
 import numpy
 from Activations import sigmoid
 from Softmax import softmax
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 """
 Input with n_x number of units
 For a single time step of a single input example, x(i)(t) is a one-dimensional input vector
@@ -264,14 +266,14 @@ def lstm_forward(x, a0, parameters):
     return a, y, c, caches
 
 def rnn_cell_forward_tests():
-    xt_tmp = numpy.random.randn(3, 10)
-    a_prev_tmp = numpy.random.randn(5, 10)
+    xt_tmp = rng.standard_normal((3, 10))
+    a_prev_tmp = rng.standard_normal((5, 10))
     parameters_tmp = {}
-    parameters_tmp['Waa'] = numpy.random.randn(5, 5)
-    parameters_tmp['Wax'] = numpy.random.randn(5, 3)
-    parameters_tmp['Wya'] = numpy.random.randn(2, 5)
-    parameters_tmp['ba'] = numpy.random.randn(5, 1)
-    parameters_tmp['by'] = numpy.random.randn(2, 1)
+    parameters_tmp['Waa'] = rng.standard_normal((5, 5))
+    parameters_tmp['Wax'] = rng.standard_normal((5, 3))
+    parameters_tmp['Wya'] = rng.standard_normal((2, 5))
+    parameters_tmp['ba'] = rng.standard_normal((5, 1))
+    parameters_tmp['by'] = rng.standard_normal((2, 1))
 
     a_next_tmp, yt_pred_tmp, cache_tmp = rnn_cell_forward(xt_tmp, a_prev_tmp, parameters_tmp)
     print("a_next[4] = \n", a_next_tmp[4])
@@ -280,14 +282,14 @@ def rnn_cell_forward_tests():
     print("yt_pred.shape = \n", yt_pred_tmp.shape)    
 
 def rnn_forward_tests():
-    x_tmp = numpy.random.randn(3, 10, 4)
-    a0_tmp = numpy.random.randn(5, 10)
+    x_tmp = rng.standard_normal((3, 10, 4))
+    a0_tmp = rng.standard_normal((5, 10))
     parameters_tmp = {}
-    parameters_tmp['Waa'] = numpy.random.randn(5, 5)
-    parameters_tmp['Wax'] = numpy.random.randn(5, 3)
-    parameters_tmp['Wya'] = numpy.random.randn(2, 5)
-    parameters_tmp['ba'] = numpy.random.randn(5, 1)
-    parameters_tmp['by'] = numpy.random.randn(2, 1)
+    parameters_tmp['Waa'] = rng.standard_normal((5, 5))
+    parameters_tmp['Wax'] = rng.standard_normal((5, 3))
+    parameters_tmp['Wya'] = rng.standard_normal((2, 5))
+    parameters_tmp['ba'] = rng.standard_normal((5, 1))
+    parameters_tmp['by'] = rng.standard_normal((2, 1))
 
     a_tmp, y_pred_tmp, caches_tmp = rnn_forward(x_tmp, a0_tmp, parameters_tmp)
     print("a[4][1] = \n", a_tmp[4][1])
@@ -298,20 +300,20 @@ def rnn_forward_tests():
     print("len(caches) = \n", len(caches_tmp))
 
 def lstm_cell_forward_tests():
-    xt_tmp = numpy.random.randn(3, 10)
-    a_prev_tmp = numpy.random.randn(5, 10)
-    c_prev_tmp = numpy.random.randn(5, 10)
+    xt_tmp = rng.standard_normal((3, 10))
+    a_prev_tmp = rng.standard_normal((5, 10))
+    c_prev_tmp = rng.standard_normal((5, 10))
     parameters_tmp = {}
-    parameters_tmp['Wf'] = numpy.random.randn(5, 5 + 3)
-    parameters_tmp['bf'] = numpy.random.randn(5, 1)
-    parameters_tmp['Wi'] = numpy.random.randn(5, 5 + 3)
-    parameters_tmp['bi'] = numpy.random.randn(5, 1)
-    parameters_tmp['Wo'] = numpy.random.randn(5, 5 + 3)
-    parameters_tmp['bo'] = numpy.random.randn(5, 1)
-    parameters_tmp['Wc'] = numpy.random.randn(5, 5 + 3)
-    parameters_tmp['bc'] = numpy.random.randn(5, 1)
-    parameters_tmp['Wy'] = numpy.random.randn(2, 5)
-    parameters_tmp['by'] = numpy.random.randn(2, 1)
+    parameters_tmp['Wf'] = rng.standard_normal((5, 5 + 3))
+    parameters_tmp['bf'] = rng.standard_normal((5, 1))
+    parameters_tmp['Wi'] = rng.standard_normal((5, 5 + 3))
+    parameters_tmp['bi'] = rng.standard_normal((5, 1))
+    parameters_tmp['Wo'] = rng.standard_normal((5, 5 + 3))
+    parameters_tmp['bo'] = rng.standard_normal((5, 1))
+    parameters_tmp['Wc'] = rng.standard_normal((5, 5 + 3))
+    parameters_tmp['bc'] = rng.standard_normal((5, 1))
+    parameters_tmp['Wy'] = rng.standard_normal((2, 5))
+    parameters_tmp['by'] = rng.standard_normal((2, 1))
 
     a_next_tmp, c_next_tmp, yt_tmp, cache_tmp = lstm_cell_forward(xt_tmp, a_prev_tmp, c_prev_tmp, parameters_tmp)
 
@@ -325,19 +327,19 @@ def lstm_cell_forward_tests():
     print("len(cache) = ", len(cache_tmp))
 
 def lstm_forward_tests():
-    x_tmp = numpy.random.randn(3, 10, 7)
-    a0_tmp = numpy.random.randn(5, 10)
+    x_tmp = rng.standard_normal((3, 10, 7))
+    a0_tmp = rng.standard_normal((5, 10))
     parameters_tmp = {}
-    parameters_tmp['Wf'] = numpy.random.randn(5, 5 + 3)
-    parameters_tmp['bf'] = numpy.random.randn(5, 1)
-    parameters_tmp['Wi'] = numpy.random.randn(5, 5 + 3)
-    parameters_tmp['bi']= numpy.random.randn(5, 1)
-    parameters_tmp['Wo'] = numpy.random.randn(5, 5 + 3)
-    parameters_tmp['bo'] = numpy.random.randn(5, 1)
-    parameters_tmp['Wc'] = numpy.random.randn(5, 5 + 3)
-    parameters_tmp['bc'] = numpy.random.randn(5, 1)
-    parameters_tmp['Wy'] = numpy.random.randn(2, 5)
-    parameters_tmp['by'] = numpy.random.randn(2, 1)
+    parameters_tmp['Wf'] = rng.standard_normal((5, 5 + 3))
+    parameters_tmp['bf'] = rng.standard_normal((5, 1))
+    parameters_tmp['Wi'] = rng.standard_normal((5, 5 + 3))
+    parameters_tmp['bi']= rng.standard_normal((5, 1))
+    parameters_tmp['Wo'] = rng.standard_normal((5, 5 + 3))
+    parameters_tmp['bo'] = rng.standard_normal((5, 1))
+    parameters_tmp['Wc'] = rng.standard_normal((5, 5 + 3))
+    parameters_tmp['bc'] = rng.standard_normal((5, 1))
+    parameters_tmp['Wy'] = rng.standard_normal((2, 5))
+    parameters_tmp['by'] = rng.standard_normal((2, 1))
 
     a_tmp, y_tmp, c_tmp, caches_tmp = lstm_forward(x_tmp, a0_tmp, parameters_tmp)
     print("a[4][3][6] = ", a_tmp[4][3][6])

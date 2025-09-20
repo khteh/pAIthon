@@ -2,6 +2,8 @@ import numpy, copy, matplotlib.pyplot as plt, h5py, scipy
 from PIL import Image
 from scipy import ndimage
 from Activations import sigmoid
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 
 class LogisticRegressionNN():
     _train_path:str = None
@@ -161,7 +163,7 @@ class LogisticRegressionNN():
         # initialize parameters with zeros
         # and use the "shape" function to get the first dimension of X_train
         # w, b = ...
-        w = numpy.random.randn(self._X_train.shape[0], 1) * numpy.sqrt(2/self._X_train.shape[1])
+        w = rng.standard_normal((self._X_train.shape[0], 1)) * numpy.sqrt(2/self._X_train.shape[1])
         b = 0.0
         #(≈ 1 line of code)
         # Gradient descent 

@@ -16,8 +16,8 @@ from tensorflow.keras.models import load_model
 Compute box scores by doing the elementwise product as described in Figure 4 ( 𝑝×𝑐 ).
 The following code may help you choose the right operator:
 
-a = numpy.random.randn(19, 19, 5, 1)
-b = numpy.random.randn(19, 19, 5, 80)
+a = rng.standard_normal((19, 19, 5, 1))
+b = rng.standard_normal((19, 19, 5, 80))
 c = a * b # shape of c will be (19, 19, 5, 80)
 This is an example of broadcasting (multiplying vectors of different sizes).
 

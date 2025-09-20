@@ -7,6 +7,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
 from Activations import sigmoid
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 """
 https://realpython.com/logistic-regression-python/
 
@@ -288,11 +290,12 @@ def test_LogisticGradientDescent():
     print(f"\ntest_LogisticGradientDescent() Updated parameters: w:{w_out}, b:{b_out}")
 
 def test_LogisticPrediction():
+    print(f"\n=== {test_LogisticPrediction.__name__} ===")
     # Test your predict code
-    #numpy.random.seed(1)
-    tmp_w = numpy.random.randn(2)
+    tmp_w = rng.standard_normal((1, 2))
+    print(f"tmp_w: {tmp_w.shape}")
     tmp_b = 0.3    
-    tmp_X = numpy.random.randn(4, 2) - 0.5
+    tmp_X = rng.standard_normal((4, 2)) - 0.5
     print(f"Predictions: {LogisticPredict(tmp_X, tmp_w, tmp_b)}")
     #print('Train Accuracy: %f'%(numpy.mean(tmp_p == y_train) * 100))
 

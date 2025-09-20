@@ -6,10 +6,9 @@ from tensorflow.keras.layers import Dense, Activation, Dropout, Input, Masking
 from tensorflow.keras.layers import LSTM
 from tensorflow.keras.utils import get_file
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-import numpy as np
-import random
-import sys
-import io
+import numpy
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 
 def build_data(text, Tx = 40, stride = 3):
     """
@@ -54,26 +53,24 @@ def vectorization(X, Y, n_x, char_indices, Tx = 40):
     """
     
     m = len(X)
-    x = np.zeros((m, Tx, n_x), dtype=np.bool)
-    y = np.zeros((m, n_x), dtype=np.bool)
+    x = numpy.zeros((m, Tx, n_x), dtype=numpy.bool)
+    y = numpy.zeros((m, n_x), dtype=numpy.bool)
     for i, sentence in enumerate(X):
         for t, char in enumerate(sentence):
             x[i, t, char_indices[char]] = 1
         y[i, char_indices[Y[i]]] = 1
-        
     return x, y 
-
 
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
-    preds = np.asarray(preds).astype('float64')
-    preds = np.log(preds) / temperature
-    exp_preds = np.exp(preds)
-    preds = exp_preds / np.sum(exp_preds)
-    probas = np.random.multinomial(1, preds, 1)
-    out = np.random.choice(range(len(chars)), p = probas.ravel())
+    preds = numpy.asarray(preds).astype('float64')
+    preds = numpy.log(preds) / temperature
+    exp_preds = numpy.exp(preds)
+    preds = exp_preds / numpy.sum(exp_preds)
+    probas = numpy.random.multinomial(1, preds, 1)
+    out = rng.choice(range(len(chars)), p = probas.ravel())
     return out
-    #return np.argmax(probas)
+    #return numpy.argmax(probas)
     
 def on_epoch_end(epoch, logs):
     # Function invoked at end of each epoch. Prints generated text.
@@ -92,7 +89,7 @@ def on_epoch_end(epoch, logs):
 
     #for i in range(400):
 """
-        #x_pred = np.zeros((1, Tx, len(chars)))
+        #x_pred = numpy.zeros((1, Tx, len(chars)))
 
         for t, char in enumerate(sentence):
             if char != '0':
