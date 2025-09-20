@@ -385,7 +385,7 @@ Dropout:
   - Layers: 3
   - keep_prob = 0.8
   - dropout = numpy.random.rand(A[l].shape[0], A[l].shape[1]) < keep_prob
-  - A[l] = A[l] * dropout <- This shuts down (1 - keep_prob) % of the activations.
+  - A[l] *= dropout <- This shuts down (1 - keep_prob) % of the activations.
   - A[l] /= keep_prob <- This restores the (1 - keep_prob) values. This is the "inverted dropout".
 - J is not well defined with dropouts. This affects debugging of J over epochs.
 (3) Data augmentation.
