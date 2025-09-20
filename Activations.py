@@ -13,8 +13,7 @@ def relu(Z):
     """
     A = numpy.maximum(0,Z)
     assert(A.shape == Z.shape)
-    cache = Z 
-    return A, cache
+    return A
 
 def relu_backward(dA, cache):
     """

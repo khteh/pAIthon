@@ -282,7 +282,7 @@ class LogisticRegressionDeepNN():
             A = sigmoid(Z)
         elif activation == "relu":
             Z, linear_cache = self._linear_forward(A_prev, W, b)
-            A, _ = relu(Z)
+            A = relu(Z)
         cache = (linear_cache, Z)
         return A, cache
 
