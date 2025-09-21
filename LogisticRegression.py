@@ -258,9 +258,9 @@ def LogisticPredict(X, W, b, threshold: float = 0.5):
 
 def test_LogisticRegressionCost():
     print(f"\n=== {test_LogisticRegressionCost.__name__} ===")
-    X_tmp = numpy.random.rand(5,6)
+    X_tmp = rng.random((5,6))
     y_tmp = numpy.array([0,1,0,1,0])
-    w_tmp = numpy.random.rand(X_tmp.shape[1]).reshape(-1,)-0.5
+    w_tmp = rng.random(X_tmp.shape[1]).reshape(-1,)-0.5
     b_tmp = 0.5
     lambda_tmp = 0.7
     cost_tmp = LogisticRegressionCost(X_tmp, y_tmp, w_tmp, b_tmp, lambda_tmp)
@@ -268,9 +268,9 @@ def test_LogisticRegressionCost():
 
 def test_LogisticRegressionGradient():
     print(f"\n=== {test_LogisticRegressionGradient.__name__} ===")
-    X_tmp = numpy.random.rand(5,3) # (m,n)
+    X_tmp = rng.random((5,3)) # (m,n)
     y_tmp = numpy.array([0,1,0,1,0])
-    w_tmp = numpy.random.rand(X_tmp.shape[1])
+    w_tmp = rng.random(X_tmp.shape[1])
     b_tmp = 0.5
     lambda_tmp = 0.7
     dj_dw, dj_db =  LogisticGradient(X_tmp, y_tmp, w_tmp, b_tmp, lambda_tmp)

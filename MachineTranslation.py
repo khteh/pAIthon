@@ -12,6 +12,8 @@ from tensorflow.keras.activations import softmax
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import load_model, Model
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 
 class MachineTranslation():
     """
@@ -350,7 +352,7 @@ class MachineTranslation():
         """
         print(f"\n=== {self.ModelStateTest.__name__} ===")
         # Create test inputs
-        X_test = numpy.random.rand(1, self._Tx, len(self._human_vocab))
+        X_test = rng.random((1, self._Tx, len(self._human_vocab)))
         s0_test = numpy.zeros((1, self._n_s))
         c0_test = numpy.zeros((1, self._n_s))
 

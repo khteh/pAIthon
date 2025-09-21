@@ -151,7 +151,7 @@ class PlanarDataClassification():
         noisy_moons = sklearn.datasets.make_moons(n_samples=N, noise=.2)
         blobs = sklearn.datasets.make_blobs(n_samples=N, random_state=5, n_features=2, centers=6)
         gaussian_quantiles = sklearn.datasets.make_gaussian_quantiles(mean=None, cov=0.5, n_samples=N, n_features=2, n_classes=2, shuffle=True, random_state=None)
-        no_structure = numpy.random.rand(N, 2), numpy.random.rand(N, 2)
+        no_structure = rng.random((N, 2)), rng.random((N, 2))
         return noisy_circles, noisy_moons, blobs, gaussian_quantiles, no_structure
     
     def _compute_cost(self, A2):
