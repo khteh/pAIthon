@@ -206,14 +206,28 @@ Feature Scaling: When a feature has a large range of values, the weight/paramete
 This causes the gradient descent to take longer time to find it's global minimum, i.e., converge slower. To oversome this, scale the input data. 2 ways:
 (1) Divide by the maximum value of the data range. This will produce scaled input data of [0, 1]
 (2) Mean normalization. This will produce scaled input data of [-1, 1] which centers around 0.
-    - Find the average value: miu = numpy.sum(X)/m
+    - Find the average value: miu = numpy.mean(X)
     - X -= miu
 (3) Variance normalization. This will produce features with variance = 1.
     - sigma^2 = numpy.sum(X ** 2) / m
-    - X /= sigma^2
+    - OR: sigma = numpy.std(X)
+    - X /= sigma
 (4) Z-score normalization: Find the standard deviation (d) and the mean. (x - ave) / d.
     Mean: sum(data) / len(data)
     standard deviation: sum((data[i] - mean) ** 2) / len(data)
+
+Batch Normalization:
+- NN hidden units' outputs, Z[l], normalized in the same way as the input data X.
+  - Z_normalized = (Z - miu) / sqrt(sigma^2 + epsilon)
+  - Z~ = gamma * Z_normalized + beta
+- Gamma abd beta are learnable parameters which help to scale mean and variance out of 0 and 1 to benefit from activation functions.
+- Helps make weights in later layers more resilient to changes in earlier layers due to covariate shifts.
+  - For example, training on greyscale images and predict on color pictures.
+  - This decoupling effect helps stabilize the learning process to have more firm ground on the truth functions, f(Y|X).
+- Provides a regularization side effect since it usually works on batches of data.
+  - The mean and standard deviation/variance calculated on batches of data introduce noise similar to dropout.
+- For test and prediction, which do NOT have/use batches of input, use exponential weighted average of gamma and beta.
+
 Rules of thumb: Aim for [-1, 1] input data range. These need to rescale:
 (1) [-100 , 100] : Too large
 (2) [-0.001, 0.001] : Too small
@@ -319,6 +333,10 @@ Neural Network (multilayer perceptron):
   (1) Data - especially labelled data (X,Y).
   (2) Computation - Speeds up Idea -> Code -> Experiment iterations.
   (3) Algorithms - Algorithmic innovation which makes computaion runs faster. For example, switching from Sigmoid to ReLU enables graduent descent to run faster by eliminating the long tails of Sigmoid.
+- Every neuron in every NN layer computes 2 things:
+  (1) Z[l](i)
+  (2) A[l](i) = g(Z)
+
 Non-Linear Activation functions:
 (1) Step function: g(x) = 1 if x >=0, else 0
 (2) Logistic Sigmoid: 
@@ -539,6 +557,11 @@ Tune model hyperparameters on Evaluation dataset.
 (1) Manually
 (2) Randomly with RandomSearchCV
 (3) Exhaustively with GridSearchCV - Brute force, trying every single combination.
+Use appropriate scale for fair random search.
+- Some paramameters like beta in Exponential Weighted Average algorithm, is sensitive when it is very close to 1. Linear search will not provide fair search in the tiny range of valid values of concern.
+- Use log scale. Example for learning_rate [0.0001, 1]:
+  - r = -4 * numpy.random.rand() <= [-4, 0]
+    alpha = 10^r <= [0.0001, 1]
 
 2 ways to save and load models:
 (1) With Python pickle module.

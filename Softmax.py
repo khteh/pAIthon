@@ -9,6 +9,11 @@ from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from Activations import softmax
 """
+L(y^, y) = -sum(yi * log(y^i)) for all #classes.
+This reduces to L(y^, y) = -yi * log(y^i) for the specific class labelled as true in the traiing dataset.
+So, y^i output from Softmax activation has to be big to make L small.
+J(W,b) = sum(L(y^, y)) / m
+
 SparseCategorialCrossentropy or CategoricalCrossEntropy
 Tensorflow has two potential formats for target values and the selection of the loss defines which is expected.
 

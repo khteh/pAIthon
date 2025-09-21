@@ -78,6 +78,7 @@ Check out C1_W3.pdf slide 27
                    da/dz = dL/da * g[l]'(Z[l])				        dL/dz = dL/da * g[l]'(Z[l])
 									                                      = -y/a + (1-y)/(1-a) * g[l]'(Z[l]))
 									                                      = -y/a + (1-y)/(1-a) * a(1-a)
+                                                                    dJ/dZ = y^ - y
 dL/dw1 = dL/dz * dz/dw1 = (a - y) * x1
 dL/dw2 = dL/dz * dz/dw2 = (a - y) * x2
 dL/db = dL/dz * dz/db = (a - y)
@@ -86,7 +87,7 @@ To generalize:
 Cost, J(w,b) = Lost / m
 A[l] = g[l](Z[l])
 dA/dZ[l] = g[l]'(Z[l]) <- g[l]' is the derivative of the activation function used at layer l
-dL/dZ[l] = dL/dA[l] * dA/dZ[l] = dL/dA[l] * g[l]'(Z[l])
+dL/dZ[l] = dL/dA[l] * dA/dZ[l] = dL/dA[l] * g[l]'(Z[l]) = y^ - y
 dJ/dW[l] = (dJ/dZ[l] * dZ[l]/dW[l-1]) / m + (lambda * W[l]) / m
 dJ/db[l] = (dJ/dZ[l] * dZ[l]/db) / m = sum(dJ/dZ[l]) / m
 
