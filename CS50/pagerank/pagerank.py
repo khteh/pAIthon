@@ -1,13 +1,13 @@
-import os
-import random, operator
-import re
-import sys
-import math
+import os, random, re, sys
 from math import inf
 from collections import defaultdict
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
+
 DAMPING = 0.85
 SAMPLES = 10000
 """
+$ pipenv run python -m pagerank <corpus?>
 $ pipenv run check50 --local ai50/projects/2024/x/pagerank
 """
 def main():
@@ -86,7 +86,7 @@ def sample_pagerank(corpus, damping_factor, n):
     Our random surfer now starts by choosing a page at random, and then, for each additional sample we’d like to generate, chooses a link from the current page at random with probability d, and chooses any page at random with probability 1 - d. 
     If we keep track of how many times each page has shown up as a sample, we can treat the proportion of states that were on a given page as its PageRank.
     """
-    page = random.choice(list(corpus.keys()))
+    page = rng.choice(list(corpus.keys()))
     result = {key:0 for key in corpus}
     result[page] = 1
     for i in range(n):

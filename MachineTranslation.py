@@ -438,7 +438,7 @@ class MachineTranslation():
         """
         dt = self._fake.date_object()
         try:
-            human_readable = format_date(dt, format=random.choice(self.FORMATS),  locale=self._locale) # locale=random.choice(LOCALES))
+            human_readable = format_date(dt, format=rng.choice(self.FORMATS),  locale=self._locale)
             human_readable = human_readable.lower()
             human_readable = human_readable.replace(',','')
             machine_readable = dt.isoformat()

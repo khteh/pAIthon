@@ -1,5 +1,6 @@
-import itertools
-import random
+import itertools, random
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 
 """
 $ pipenv run python -m runner
@@ -308,5 +309,5 @@ class MinesweeperAI():
         all_cells = set(itertools.product(range(self.height), range(self.width)))
         available_moves = list(all_cells - self.moves_made - self.mines)
         if available_moves:
-            return random.choice(available_moves)
+            return rng.choice(available_moves)
         return None

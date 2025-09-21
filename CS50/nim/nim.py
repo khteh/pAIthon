@@ -1,12 +1,12 @@
-import math
-import random
-import time
-import operator
+import random, time, numpy
 from math import inf
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
+
 """
+$ pipenv run python -m play
 $ pipenv run check50 --local ai50/projects/2024/x/nim
 """
-
 class Nim():
 
     def __init__(self, initial=[1, 3, 5, 7]):
@@ -170,10 +170,10 @@ If multiple actions have the same Q-value, any of those options is an acceptable
         max_value_actions = [k[1] for k,v in q.items() if k[0] == tuple(state) and v == value]
         #print(f"state: {state}, actions: {actions}, q: {q}, max: {value}, max_actions: {max_value_actions}")
         if not epsilon:
-            return random.choice(max_value_actions)
+            return tuple(rng.choice(max_value_actions))
         else:
             choice = random.choices([0,1], weights=[self.epsilon, 1 - self.epsilon], k=1)
-            return random.choice(actions) if choice[0] else random.choice(max_value_actions)
+            return tuple(rng.choice(actions)) if choice[0] else tuple(rng.choice(max_value_actions))
 def train(n):
     """
     Train an AI by playing `n` games against itself.
