@@ -454,9 +454,9 @@ Vanishing / Exploding Gradients:
 - To help with this, use random initialization:
   - n: #inputs of the neuron
   (1) ReLU activation:
-    - W[l] = numpy.random.randn((shape)) * numpy.sqrt(2 / n[l-1])
+    - W[l] = numpy.random.randn((shape)) * numpy.sqrt(2 / n[l-1]) <- "He Initialization" (He et al. 2015)
   (2) tanh activation:
-    - W[l] = numpy.random.randn((shape)) * numpy.sqrt(1 / n[l-1]). Sometimes called the Xavier initialization.
+    - W[l] = numpy.random.randn((shape)) * numpy.sqrt(1 / n[l-1]). <- Xavier initialization.
 
 playground.tensorflow.org
 Image Convolution: Applying a filter that adds each pixel value of an image to it's neighbours, weighted according to a kernel matrix.

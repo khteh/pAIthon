@@ -102,16 +102,16 @@ class PlanarDataClassification():
         # you can try with different hidden layer sizes
         # but make sure before you submit the assignment it is set as "hidden_layer_sizes = [1, 2, 3, 4, 5]"
         # hidden_layer_sizes = [1, 2, 3, 4, 5, 20, 50]
-        n_x = self._X.shape[0]
+        n_x = self._X.shape[0] # #features
         n_y = self._Y.shape[0]
         self._epochs = epochs
         for i, n_h in enumerate(sizes):
             plt.subplot(5, 2, i+1)
             plt.title('Hidden Layer of size %d' % n_h)
             self._n_h = n_h
-            self._W1 = rng.standard_normal((self._n_h, n_x)) * numpy.sqrt(2/n_x)
+            self._W1 = rng.standard_normal((self._n_h, n_x)) * numpy.sqrt(2/n_x) # He initialization. n_x is #features.
             self._b1 = numpy.zeros((self._n_h, 1))
-            self._W2 = rng.standard_normal((n_y, self._n_h)) * numpy.sqrt(2/self._W1.shape[0])
+            self._W2 = rng.standard_normal((n_y, self._n_h)) * numpy.sqrt(2/self._W1.shape[0]) # * layers_dims[l-1]
             self._b2 = numpy.zeros((n_y, 1))
             self.BuildModel()
             self.plot_decision_boundary()
