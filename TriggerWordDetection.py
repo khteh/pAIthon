@@ -4,12 +4,10 @@ from scipy.io import wavfile
 from pydub import AudioSegment
 from tensorflow.keras.models import model_from_json
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
-from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.models import Model, load_model, Sequential
 from tensorflow.keras.layers import Dense, Activation, Dropout, Input, Masking, TimeDistributed, LSTM, Conv1D
 from tensorflow.keras.layers import GRU, Bidirectional, BatchNormalization, Reshape
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.activations import relu
 from utils.TensorModelPlot import PlotModelHistory
 
 class TrigerWordDetection():
@@ -367,9 +365,9 @@ class TrigerWordDetection():
         noverlap = 120 # Overlap between windows
         nchannels = data.ndim
         if nchannels == 1:
-            pxx, freqs, bins, im = plt.specgram(data, nfft, fs, noverlap = noverlap)
+            pxx, freqs, bins, im = plt.specgram(data, NFFT=nfft, Fs=fs, noverlap = noverlap)
         elif nchannels == 2:
-            pxx, freqs, bins, im = plt.specgram(data[:,0], nfft, fs, noverlap = noverlap)
+            pxx, freqs, bins, im = plt.specgram(data[:,0], NFFT=nfft, Fs=fs, noverlap = noverlap)
         return pxx
     
     def _insert_audio_clip(self, background, audio_clip, previous_segments):

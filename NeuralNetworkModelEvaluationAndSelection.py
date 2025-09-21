@@ -1,7 +1,6 @@
 # for array computations and loading data
-import numpy
+import numpy, tensorflow as tf
 # for building and training neural networks
-import tensorflow as tf
 # custom functions
 # for building linear regression models and preparing data
 from sklearn.linear_model import LinearRegression
@@ -10,8 +9,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras import Sequential
-from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
-from tensorflow.keras.activations import sigmoid
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.GPU import InitializeGPU
 from utils.Plots import *

@@ -9,7 +9,7 @@ from tensorflow import keras
 from keras import saving
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.layers import Dense, Input, Layer
+from tensorflow.keras.layers import Dense, Input, Layer, Dot
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 import tabulate
@@ -155,17 +155,17 @@ class ContentBasedFiltering():
         ])
 
         # create the user input and point to the base network
-        input_user = tf.keras.layers.Input(shape=(self._num_user_features,))
+        input_user = Input(shape=(self._num_user_features,))
         vu = self._user_NN(input_user)
         vu = L2_Normalize()(vu, axis=1)
 
         # create the item input and point to the base network
-        input_item = tf.keras.layers.Input(shape=(self._num_item_features,))
+        input_item = Input(shape=(self._num_item_features,))
         vm = self._item_NN(input_item)
         vm = L2_Normalize()(vm, axis=1)
 
         # compute the dot product of the two vectors vu and vm
-        output = tf.keras.layers.Dot(axes=1)([vu, vm])
+        output = Dot(axes=1)([vu, vm])
 
         # specify the inputs and output of the model
         self._model = tf.keras.Model([input_user, input_item], output)

@@ -1,6 +1,7 @@
 import numpy, warnings
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from tensorflow.keras.layers import Input, Dense
 from tensorflow.keras import regularizers, Sequential
 from tensorflow.keras.activations import sigmoid
 from utils.GPU import InitializeGPU
@@ -88,7 +89,8 @@ def LogisticNeuron():
     """
     model = Sequential(
         [
-            tf.keras.layers.Dense(1, input_dim=1,  activation = 'sigmoid', name='L1', kernel_regularizer=regularizers.l2(0.01)) # Decrease to fix high bias; Increase to fix high variance.
+            Input(shape=(1,)),
+            tf.keras.layers.Dense(1, activation = 'sigmoid', name='L1', kernel_regularizer=regularizers.l2(0.01)) # Decrease to fix high bias; Increase to fix high variance.
         ]
     )
     # model.summary() shows the layers and number of parameters in the model. There is only one layer in this model and that layer has only one unit. The unit has two parameters, w and b

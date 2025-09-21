@@ -72,11 +72,9 @@ class HandWrittenDigitsNN():
         self._model = Sequential(
             [               
                 tf.keras.Input(shape=(400,)),    #specify input size
-                ### START CODE HERE ### 
                 Dense(25, activation='sigmoid', name="L1"), # Densely connected, or fully connected
                 Dense(15, activation='sigmoid', name="L2"),
                 Dense(1, name="L3"),
-                ### END CODE HERE ### 
             ], name = "my_model" 
         )
         self._model.compile(

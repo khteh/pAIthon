@@ -6,14 +6,11 @@ import tensorflow as tf
 import pandas as pd
 import matplotlib.pyplot as plt
 # for building linear regression models and preparing data
-from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras import Sequential
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
-from tensorflow.keras.activations import sigmoid
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.optimizers import Adam
 from utils.GPU import InitializeGPU

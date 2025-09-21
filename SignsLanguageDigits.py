@@ -1,5 +1,4 @@
-import argparse, numpy, h5py
-import tensorflow as tf
+import argparse, numpy, h5py, tensorflow as tf, matplotlib.pyplot as plt
 from pathlib import Path
 from matplotlib.pyplot import imshow
 from tensorflow.keras.preprocessing import image
@@ -58,7 +57,15 @@ class SignsLanguageDigits():
         print(f"Class#: {self._classes} {self._classes.shape}")
         print(f"Y_train: {self._Y_train[:10]}")
         print(f"Y_test: {self._Y_test[:10]}")
-
+        images_iter = iter(self._X_train)
+        labels_iter = iter(self._Y_train)
+        plt.figure(figsize=(10, 10))
+        for i in range(25):
+            ax = plt.subplot(5, 5, i + 1)
+            plt.imshow(next(images_iter).numpy().astype("uint8"))
+            plt.title(next(labels_iter).numpy().astype("uint8"))
+            plt.axis("off")
+            
     def _convert_labels_to_one_hot(self):
         self._Y_train = numpy.eye(len(self._classes))[self._Y_train.reshape(-1)].T
         self._Y_test = numpy.eye(len(self._classes))[self._Y_test.reshape(-1)].T
