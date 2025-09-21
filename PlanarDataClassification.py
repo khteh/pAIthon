@@ -132,7 +132,7 @@ class PlanarDataClassification():
             t = numpy.linspace(j*3.12,(j+1)*3.12, N) + rng.standard_normal((1, N))*0.2 # theta
             r = a*numpy.sin(4*t) + rng.standard_normal((1, N))*0.2 # radius
             self._X[ix] = numpy.concatenate([r*numpy.sin(t), r*numpy.cos(t)]).T
-            self._Y[ix] = j           
+            self._Y[ix] = j
         self._X = self._X.T
         self._Y = self._Y.T
         n_x = self._X.shape[0]

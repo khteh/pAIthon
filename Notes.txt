@@ -161,7 +161,34 @@ Exponentially Weighted Averages
   - beta: 0.9 -> Averages over 10t of data
   - beta: 0.98 -> Averages over 50t of data
   - beta: 0.5 -> Averages over 2t of data
-  - Iniial warm-up data will be skewed. Use bias correction to mitigate that. V(t) / (1 - beta(t)).
+  - Iniial warm-up data will be skewed. Use bias correction to mitigate that. V(t) / (1 - beta^t).
+
+Gradient Descent with Momentum:
+- Smooth out the oscillations of gradients towards the global minimum.
+- Vdw and Vdb initialized to 0, beta usually 0.9 (Average over last 10 gradients). Bias correction can be skipped/ignored.
+- Vdw = beta*Vdw + (1-beta)*dW; W -= alpha*Vdw
+- Vdb = beta*Vdb + (1-beta)*db; b -= alpha*Vdb
+Analogy to a ball rolling down a bowl:
+- beta : friction
+- Vdw, Vdb : velocity
+- Dw, db : acceleration.
+
+RMSProp (Root Mean Squared Prop):
+- Sdw and Sdb initialized to 0, beta usually 0.9 (Average over last 10 gradients). Bias correction can be skipped/ignored.
+- Use beta2 hyperparameter notationi to distinguish it from the beta used in Momentum.
+- Sdw = beta2*Sdw + (1-beta2)*dW^2; W -= alpha*dw/(sqrt(Sdw) + epsilon)
+- Sdb = beta2*Sdb + (1-beta2)*db^2; b -= alpha*db/(sqrt(Sdb) + epsilon)
+- Either Sdw and/or Sdb could have big oscillations and the division by the sqrt of it smooths out the W and b updates.
+
+Adam (Adaptive Moment Estimation):
+- Combines the best of both worlds - Momentum and RMSProp
+- Uses bias corrections for all Vdw, Vdb, Sdw and Sdb, i.e., V / (1 - beta^t)
+- W -= alpha*Vdw/sqrt(Sdw + epsilon)
+- b -= alpha*Vdb/sqrt(Sdb + epsilon)
+
+Learning Rate Decay:
+- Big alpha values in early epochs and slowly decreasing with increasing epoch#
+- This enables fast learning during the start of the training and better convergence to global minimum with smaller area of oscillations around it.
 
 Strategy to debugging a learning algorithm:
 (1) Get more data - Fixes high variance.
