@@ -8,7 +8,6 @@ from keras import saving
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.layers import Bidirectional, Concatenate, Permute, Dot, Input, LSTM, Multiply
 from tensorflow.keras.layers import RepeatVector, Dense, Activation, Lambda
-from tensorflow.keras.activations import softmax
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import load_model, Model
@@ -173,7 +172,7 @@ class MachineTranslation():
 
         # Please note, this is the post attention LSTM cell. These have to be REUSED in the following for loop instead of instantiating new layers.
         post_activation_LSTM_cell = LSTM(self._n_s, return_state = True) # Please do not modify this global variable.
-        output_layer = Dense(len(self._machine_vocab), activation=softmax)
+        output_layer = Dense(len(self._machine_vocab), activation=self._softmax)
 
         # Step 2: Iterate for Ty steps
         for t in range(self._Ty):
