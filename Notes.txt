@@ -220,6 +220,8 @@ Batch Normalization:
 - NN hidden units' outputs, Z[l], normalized in the same way as the input data X.
   - Z_normalized = (Z - miu) / sqrt(sigma^2 + epsilon)
   - Z~ = gamma * Z_normalized + beta
+- parameter b is cancelled out by mean and "- miu" calculation and is replaced with beta[l] in Z~ = gamma[l] * Z_normalized + beta[l]. So it is OK to drop it from forward propagation.
+- If gamma = sqrt(sigma^2 + epsilon) and beta = miu, then Z~[i] = Z[i]. So, in a way, this is learning an identty function.
 - Gamma abd beta are learnable parameters which help to scale mean and variance out of 0 and 1 to benefit from activation functions.
 - Helps make weights in later layers more resilient to changes in earlier layers due to covariate shifts.
   - For example, training on greyscale images and predict on color pictures.
