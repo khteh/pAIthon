@@ -75,10 +75,6 @@ class LogisticRegressionNN():
         cost = numpy.sum(-self._Y_train * numpy.log(predictions) - (1 - self._Y_train) * numpy.log(1 - predictions)) / m # scalar
 
         # BACKWARD PROPAGATION (TO FIND GRAD)
-        #(≈ 2 lines of code)
-        # dw = ...
-        # db = ...
-        # YOUR CODE STARTS HERE
         dw = ((predictions - self._Y_train) @ self._X_train.T) / m # (1,m) @ (m,n) + (1,n) = (1,n)
         db = numpy.sum(predictions - self._Y_train) / m # scalar
         #print(f"dw: {dw.shape}")

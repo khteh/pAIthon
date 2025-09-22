@@ -21,7 +21,6 @@ def random_mini_batches(X, Y, mini_batch_size = 64, seed = 0):
     Returns:
     mini_batches -- list of synchronous (mini_batch_X, mini_batch_Y)
     """
-    
     numpy.random.seed(seed)            # To make your "random" minibatches the same as ours
     m = X.shape[1]                  # number of training examples
     mini_batches = []
@@ -37,30 +36,17 @@ def random_mini_batches(X, Y, mini_batch_size = 64, seed = 0):
     # Cases with a complete mini batch size only i.e each of 64 examples.
     num_complete_minibatches = math.floor(m / mini_batch_size) # number of mini batches of size mini_batch_size in your partitionning
     for k in range(0, num_complete_minibatches):
-        # (approx. 2 lines)
-        # mini_batch_X =  
-        # mini_batch_Y =
-        # YOUR CODE STARTS HERE
         mini_batch_X = shuffled_X[:, mini_batch_size * k : mini_batch_size * (k+1)]
         mini_batch_Y = shuffled_Y[:, mini_batch_size * k : mini_batch_size * (k+1)]
-        
-        # YOUR CODE ENDS HERE
         mini_batch = (mini_batch_X, mini_batch_Y)
         mini_batches.append(mini_batch)
     
     # For handling the end case (last mini-batch < mini_batch_size i.e less than 64)
     if m % mini_batch_size != 0:
-        #(approx. 2 lines)
-        # mini_batch_X =
-        # mini_batch_Y =
-        # YOUR CODE STARTS HERE
         mini_batch_X = shuffled_X[:, mini_batch_size * num_complete_minibatches:]
         mini_batch_Y = shuffled_Y[:, mini_batch_size * num_complete_minibatches : ]
-        
-        # YOUR CODE ENDS HERE
         mini_batch = (mini_batch_X, mini_batch_Y)
         mini_batches.append(mini_batch)
-    
     return mini_batches
 
 def update_parameters_with_momentum(parameters, grads, v, beta, learning_rate):
