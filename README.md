@@ -2,10 +2,6 @@
 
 AI/ML/DL exploration playground.
 
-## Harvard Extended CS50 course works
-
-https://cs50.harvard.edu/ai/2024/
-
 ## Run
 
 - `pipenv run python -m <module>`
@@ -31,3 +27,7 @@ https://cs50.harvard.edu/ai/2024/
 - Bidirection LSTM
 - Translate from human-readable date locale string to ISO-format date string.
   ![Attention Map](./AttentionMap.png?raw=true "Attention Map")
+
+## Harvard Extended CS50 course works
+
+https://cs50.harvard.edu/ai/2024/
