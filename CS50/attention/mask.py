@@ -4,7 +4,7 @@ from utils.GPU import InitializeGPU
 from PIL import Image, ImageDraw, ImageFont
 from transformers import AutoTokenizer, TFBertForMaskedLM
 """
-$ pipenv run python -m mask
+$ pipenv run python -m CS50.attentio.mask
 $ pipenv run check50 --local ai50/projects/2024/x/attention
 """
 """
@@ -42,7 +42,7 @@ MODEL = "bert-base-uncased"
 K = 3
 
 # Constants for generating attention diagrams
-FONT = ImageFont.truetype("assets/fonts/OpenSans-Regular.ttf", 28)
+FONT = ImageFont.truetype("CS50/attention/assets/fonts/OpenSans-Regular.ttf", 28)
 GRID_SIZE = 40
 PIXELS_PER_WORD = 200
 

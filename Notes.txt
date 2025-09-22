@@ -928,14 +928,44 @@ Transfer Learning:
 (3) Retrain the whole NN if having large dataset.
 
 Object Detection:
-Sliding Windows Detection Algorithm - Computationally expansive due to sequential calculation of the parameters.
-Convolution implementation of the sliding windows - One single forward pass through the NN computes all the windows due to the property of convolution which is parameter sharing.
+- Classification with localization
+  - Figuring out where in the picture is the object detected and put a bounding box around it.
+- Detection: There could be multiple objects of different classes in the picture.
+- Softmax activation output of label Y which consists of:
+  (1) Object classes
+  (2) Coordinate and dimensions of the bounding box.
+  [Pc, bx, by, bh, bw, C1, C2, C3,...] Pc: Probability of presence of an object of any of the classes. When Pc=0, the rest of the values are don't care.
+- L(y^, y) - squared errors of the elements in Y. Or can use logistic regression L for Pc, log-like feature L for the classes and squared error for the bounding box.
+Sliding Windows Detection Algorithm 
+(1) Define a window size, crop the input image by the window and use that as an input to the ConvNet. Repeat the process by sliding the window over the entire input image.
+(2) Repeat (1) with a increasing window sizes so that objects would be detected by a window size somehow.
+- Computationally expansive due to sequential calculation of the parameters.
+Convolution implementation of the sliding windows.
+- Leverage on shared computations of all the grid cells.
 - It works by turning the last Dense / fully-connected layers into convolution layers.
+- The output will have different volume sizes to capture all the areas of the input image defined by the Layer-1 window size.
+- One single forward pass through the NN computes all the windows due to the parameter sharing property of convolution.
+- Effectively this is running the sliding window concurrently.
+YOLO (You Only Look Once):
+- Helps output more accurate bounding boxes.
+(1) Splits the input image into grid cells.
+(2) Label each of the grid cells, Y = [Pc, bx, by, bh, bw, C1, C2, C3,...]
+(3) Takes the midpoint of detected object and assign it to the grid cell which contains the midpoint. By using a fine-grained grid, this helps to avoid assigning multiple objects' midpoint assigned to the same cell.
+(4) Output is grid shape x Y shape
+(5) Every grid cell can only detect ONE object.
+(6) This allows the NN to output bounding boxes of any aspect ratio and more precise coodinates which are otherwise dictated by the strides of the sliding-window classifier.
+- Bounding box specification:
+  - bx, by: [0,1]
+  - bh, bw: could be > 1 since the detected object could span multiple grid cells.
+
 Intersection over Union
+- Compares the predicted bounding box with the label.
 - Used to evaluate the accuracy of object localization.
 - size(intersection box) / size(union box)
 - "Correct" if >= threshold (e.g: 0.5)
+
 Non-max suppression algorithm:
+- Helps eliminate duplicate detection of the the same object.
 - Discard all boxes with Pc <= 0.6
 - For each of the remaining boxes,
   - Pick the box with the higest Pc as the prediction.
@@ -944,19 +974,42 @@ Non-max suppression algorithm:
 
 Anchor Boxes:
 - Used to detect multiple objects in the same grid cell.
+- Only works for #objects = #anchors in a grid cell.
+- Allows the NN to specialize in learning different shapes of objects.
 - Detected object is assigned to a grid cell that contains the object's midpoint and anchor box for the grid cell with highest IoU with the object's shape. (grid cell, anchor box)
-
+- Output is grid shape x Y shape x #anchors: Y = [Pc, bx, by, bh, bw, C1, C2, C3,...] repeated for each anchor box.
+- Define anchor boxes manually or use K-means to group together types of object shapes it tends to detect and use that to select a set of anchor boxes which are most stereotypically representative of the multiple object classes the NN is set up to detect.
 Training dataset anatomy:
 - vertical grid cells x horizontal grid cells x #anchors x (5 + #classes). 5: (Pc, bx, by, bh, bw)
 
-Semantic Segmentation & U-Net:
-- The YOLO (You Only Look Once) algorithm shrinks the Nh and Nw. This reduces the spatial information.
-- Assign every single pixel to a class.
-Transpose Convolution:
-- Output dimension is greater than the input dimension.
-- Apply the filter on the padded output.
-- Convolve input with the filter, fill the element-wise multiplication result in the respective output cell. Ignore the pad cells. For any overlapping cell, due to stride, add the cell values.
+YOLO:
+(1) Get the Y's for each of the grid cell.
+(2) Remove the low-probability predictions.
+(3) For each class, use Non-max supression to generate the final predictions.
 
+Region Proposals:
+- R-CNN - Region with CNN.
+- Select just a few regions/windows that make sense to run through the CNN.
+- Propose regions and then classify them one at a time - SLOW.
+- Use Segmentation algorithm to figure out what could be objects in the input and run that region though the CNN.
+- Fast R-CNN:
+  - Propose regions and use convolution implementation of sliding windows to classify all of them at once - single pass through the CNN.
+  - The clustering step to propose the regions is still quite slow.
+- Faster R-CNN:
+  - Use CNN to propose regions (instead of the traditional segmentation algorithm).
+
+Semantic Segmentation & U-Net:
+- Assign every single pixel to a class.
+- The goal is to draw a careful outline around detected objects so as to know which pixels belong to the detected objects.
+- Label every pixel with one of the intended classes. This produces a segmentation map.
+- The YOLO (You Only Look Once) algorithm shrinks the Nh and Nw. This reduces the spatial information.
+- U-Net replaces with final layers of the CNN to blow up the dimensions so that the final output is the full-sized image.
+- Transpose Convolution (key component in U-Net):
+  - Output dimension is greater than the input dimension.
+  - Apply the filter on the padded output.
+  - Convolve input with the filter, fill the element-wise multiplication result in the respective output cell. Ignore the pad cells. For any overlapping cell, due to stride, add the cell values.
+- Use skip connections to pass early layers, hgih-resolution, low-level feature information to the later layers to reconstruct the contextual spatial information.
+- Input: (h,w,3), Output: (h,w,#classes): This serves to classify each pixel in the input image.
 ======================================================================================================================================================================================================
 Face Recognition:
 - Face verification supervised learning:
