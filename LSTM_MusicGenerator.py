@@ -15,6 +15,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 
+# https://github.com/cuthbertLab/music21/issues/1813
 class LSTM_MusicGenerator():
     _model = None
     def __init__():
