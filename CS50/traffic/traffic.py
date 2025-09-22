@@ -10,7 +10,7 @@ from tensorflow.keras.optimizers import Adam
 """
 https://cs50.harvard.edu/ai/projects/5/traffic/
 https://www.tensorflow.org/install/pip
-$ pipenv run python -m traffic gtsrb/
+$ pipenv run python -m CS50.traffic.traffic CS50/traffic/gtsrb/
 $ pipenv run check50 --local ai50/projects/2024/x/traffic
 """
 EPOCHS = 10

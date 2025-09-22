@@ -316,18 +316,13 @@ class MachineTranslation():
         output_length = Ty
         
         # Plot the attention_map
-        plt.clf()
-        plt.cla()
-        fig, ax = plt.subplots(1,1, figsize=(8, 8.5))
-        #ax = f.add_subplot(1, 1, 1)
+        fig, ax = plt.subplots(1,1, figsize=(8, 4), layout='constrained') # figsize = (width, height)
 
         # add image
-        i = ax.imshow(attention_map, interpolation='nearest', cmap='Blues')
+        img = ax.imshow(attention_map, interpolation='nearest', cmap='Blues')
 
         # add colorbar
-        cbaxes = fig.add_axes([0.2, 0, 0.6, 0.03])
-        cbar = fig.colorbar(i, cax=cbaxes, orientation='horizontal')
-        cbar.ax.set_xlabel('Alpha value (Probability output of the "softmax")', labelpad=2)
+        fig.colorbar(img, ax=ax, orientation='horizontal', label='Alpha value (Probability output of the "softmax")')
 
         # add labels
         ax.set_yticks(range(output_length))
@@ -418,8 +413,6 @@ class MachineTranslation():
         _n_s:int = None# -- hidden state size of the post-attention LSTM
         """
         self._load_dataset()
-        #Tx = 30
-        #Ty = 10
         self._preprocess_data()
         print(f"size: {self._size}, Tx: {self._Tx}, Ty: {self._Ty}, n_a: {self._n_a}, n_s: {self._n_s}, X: {self._X.shape}, Y: {self._Y.shape}, Xoh: {self._Xoh.shape}, Yoh: {self._Yoh.shape}")
         index = 0

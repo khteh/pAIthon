@@ -25,3 +25,9 @@ https://cs50.harvard.edu/ai/2024/
 
 - https://medium.com/@khteh/sine-wave-generative-adversarial-network-gan-8858bf5c867a
   ![Sine Wave GAN](./sinewave_gan.gif?raw=true "Sine Wave GAN")
+
+## Machine Translation
+
+- Bidirection LSTM
+- Translate from human-readable date locale string to ISO-format date string.
+  ![Attention Map](./AttentionMap.png?raw=true "Attention Map")
