@@ -101,8 +101,6 @@ def IoU(box1, box2):
     """
     (box1_x1, box1_y1, box1_x2, box1_y2) = box1
     (box2_x1, box2_y1, box2_x2, box2_y2) = box2
-
-    ### START CODE HERE
     inter_area = 0
     if box1_x1 <= box2_x1 and box1_y1 <= box2_y1:
         inter_width = box1_x2 - box2_x1
@@ -125,16 +123,12 @@ def IoU(box1, box2):
         if inter_width >= 0 and inter_height >= 0:
             inter_area = inter_width * inter_height       
     # Calculate the Union area by using Formula: Union(A,B) = A + B - Inter(A,B)
-    ## (≈ 3 lines)
     box1_area = (box1_x2 - box1_x1) * (box1_y2- box1_y1)
     box2_area = (box2_x2 - box2_x1) * (box2_y2- box2_y1)
     union_area = box1_area + box2_area - inter_area
     
     # compute the IoU
-    iou = inter_area / union_area
-    ### END CODE HERE
-    
-    return iou
+    return inter_area / union_area
 """
 The key steps are as follows:
 
@@ -302,9 +296,6 @@ def yolo_eval(yolo_outputs, image_shape = (720, 1280), max_boxes=10, score_thres
     boxes -- tensor of shape (None, 4), predicted box coordinates
     classes -- tensor of shape (None,), predicted class for each box
     """
-    
-    ### START CODE HERE
-    
     # Retrieve outputs of the YOLO model (≈1 line)
     box_xy, box_wh, box_confidence, box_class_probs = yolo_outputs
     
@@ -329,9 +320,6 @@ def yolo_eval(yolo_outputs, image_shape = (720, 1280), max_boxes=10, score_thres
                                   max_boxes, # Use max boxes
                                   iou_threshold  # Use iou_threshold=iou_threshold
                                  )
-    
-    ### END CODE HERE
-    
     return scores, boxes, classes
 
 def yolo_filter_boxes_test():

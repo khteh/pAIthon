@@ -154,20 +154,17 @@ class TrigerWordDetection():
         # Make background quieter
         background = background - 20
 
-        ### START CODE HERE ###
         # Step 1: Initialize y (label vector) of zeros (≈ 1 line)
         y = numpy.zeros((1, self._Ty))
 
         # Step 2: Initialize segment times as empty list (≈ 1 line)
         previous_segments = []
-        ### END CODE HERE ###
         
         # Select 0-4 random "activate" audio clips from the entire list of "activates" recordings
         number_of_activates = numpy.random.randint(0, 5)
         random_indices = numpy.random.randint(len(self._activates), size=number_of_activates)
         random_activates = [self._activates[i] for i in random_indices]
         
-        ### START CODE HERE ### (≈ 3 lines)
         # Step 3: Loop over randomly selected "activate" clips and insert in background
         for one_random_activate in random_activates:
             # Insert the audio clip on the background
@@ -177,19 +174,16 @@ class TrigerWordDetection():
             segment_start, segment_end = segment_time[0], segment_time[1]
             # Insert labels in "y" at segment_end
             y = self.insert_ones(y, segment_end)
-        ### END CODE HERE ###
 
         # Select 0-2 random negatives audio recordings from the entire list of "negatives" recordings
         number_of_negatives = numpy.random.randint(0, 3)
         random_indices = numpy.random.randint(len(self._negatives), size=number_of_negatives)
         random_negatives = [self._negatives[i] for i in random_indices]
 
-        ### START CODE HERE ### (≈ 2 lines)
         # Step 4: Loop over randomly selected negative clips and insert in background
         for random_negative in random_negatives:
             # Insert the audio clip on the background 
             background, _ = self._insert_audio_clip(background, random_negative, previous_segments)
-        ### END CODE HERE ###
         
         # Standardize the volume of the audio clip 
         background = self._match_target_amplitude(background, -20.0)

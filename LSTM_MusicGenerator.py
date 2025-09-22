@@ -19,7 +19,7 @@ class LSTM_MusicGenerator():
     _model = None
     def __init__():
         pass
-    def BuildModel():
+    def BuildModel(self):
         """
         Uses the trained "LSTM_cell" and "densor" from model() to generate a sequence of values.
         
@@ -48,7 +48,6 @@ class LSTM_MusicGenerator():
         c = c0
         x = x0
 
-        ### START CODE HERE ###
         # Step 1: Create an empty list of "outputs" to later store your predicted values (≈1 line)
         outputs = []
         
@@ -76,7 +75,3 @@ class LSTM_MusicGenerator():
             
         # Step 3: Create model instance with the correct "inputs" and "outputs" (≈1 line)
         self._model = Model(inputs=[x0,a0,c0], outputs=outputs)
-        
-        ### END CODE HERE ###
-        
-        return inference_model        

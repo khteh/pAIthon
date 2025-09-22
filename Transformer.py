@@ -242,7 +242,6 @@ class DecoderLayer(tf.keras.layers.Layer):
             attn_weights_block2 -- Tensor of shape(batch_size, num_heads, target_seq_len, input_seq_len)
         """
         print(f"enc_output: {enc_output.shape} {enc_output}")
-        # START CODE HERE
         # enc_output.shape == (batch_size, input_seq_len, embedding_dim)
         
         # BLOCK 1
@@ -272,8 +271,6 @@ class DecoderLayer(tf.keras.layers.Layer):
         
         # apply layer normalization (layernorm3) to the sum of the ffn output and the output of the second block
         out3 = self.layernorm3(ffn_output + mult_attn_out2)  # (batch_size, target_seq_len, embedding_dim)
-        # END CODE HERE
-
         return out3, attn_weights_block1, attn_weights_block2
 
 class Decoder(tf.keras.layers.Layer):
@@ -321,7 +318,6 @@ class Decoder(tf.keras.layers.Layer):
         seq_len = tf.shape(x)[1]
         attention_weights = {}
         
-        # START CODE HERE
         # create word embeddings 
         x = self.embedding(x)  # (batch_size, target_seq_len, embedding_dim)
         
@@ -346,7 +342,6 @@ class Decoder(tf.keras.layers.Layer):
             #update attention_weights dictionary with the attention weights of block 1 and block 2
             attention_weights['decoder_layer{}_block1_self_att'.format(i+1)] = block1
             attention_weights['decoder_layer{}_block2_decenc_att'.format(i+1)] = block2
-        # END CODE HERE
         
         # x.shape == (batch_size, target_seq_len, embedding_dim)
         return x, attention_weights
@@ -400,7 +395,6 @@ class Transformer(tf.keras.Model):
                                 each of shape Tensor of shape (batch_size, num_heads, target_seq_len, input_seq_len)
         
         """
-        # START CODE HERE
         # call self.encoder with the appropriate arguments to get the encoder output
         enc_output = self.encoder(input_sentence, training, enc_padding_mask)  # (batch_size, inp_seq_len, embedding_dim)
         
@@ -410,8 +404,6 @@ class Transformer(tf.keras.Model):
         
         # pass decoder output through a linear layer and softmax (~2 lines)
         final_output = self.final_layer(dec_output, training=training) # (batch_size, tar_seq_len, target_vocab_size)
-        # END CODE HERE
-
         return final_output, attention_weights
         
 def PositionalEncodingTests():

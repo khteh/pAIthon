@@ -87,8 +87,6 @@ def rnn_forward(x, a0, parameters):
     n_x, m, T_x = x.shape
     n_y, n_a = parameters["Wya"].shape
     
-    ### START CODE HERE ###
-    
     # initialize "a" and "y_pred" with zeros (≈2 lines)
     a = numpy.zeros((n_a, m, T_x))
     y_pred = numpy.zeros((n_y, m, T_x))
@@ -106,7 +104,6 @@ def rnn_forward(x, a0, parameters):
         y_pred[:,:,t] = yt_pred
         # Append "cache" to "caches" (≈1 line)
         caches.append(cache)
-    ### END CODE HERE ###
     
     # store values needed for backward propagation in cache
     caches = (caches, x)
@@ -159,7 +156,6 @@ def lstm_cell_forward(xt, a_prev, c_prev, parameters):
     n_x, m = xt.shape
     n_y, n_a = Wy.shape
 
-    ### START CODE HERE ###
     # Concatenate a_prev and xt (≈1 line)
     # Wa is a matrix of [Waa | Wax] stacked horizontally with shape (100, 10100)
     # [a(t-1, x(t))] is a matrix of [a(t-1) | x(t)] stacked vertically with shape (10100, 1)
@@ -196,7 +192,6 @@ def lstm_cell_forward(xt, a_prev, c_prev, parameters):
     # Compute prediction of the LSTM cell (≈1 line)
     # y^(t) = g(Wya @ a(t) + by)
     yt_pred = softmax(Wy @ a_next + by)
-    ### END CODE HERE ###
 
     # store values needed for backward propagation in cache
     cache = (a_next, c_next, a_prev, c_prev, ft, it, cct, ot, xt, parameters)
@@ -232,7 +227,6 @@ def lstm_forward(x, a0, parameters):
     # Initialize "caches", which will track the list of all the caches
     caches = []
     
-    ### START CODE HERE ###
     Wy = parameters['Wy'] # saving parameters['Wy'] in a local variable in case students use Wy instead of parameters['Wy']
     # Retrieve dimensions from shapes of x and parameters['Wy'] (≈2 lines)
     n_x, m, T_x = x.shape

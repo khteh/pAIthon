@@ -15,8 +15,6 @@ def estimate_gaussian(X):
         var (ndarray): (n,) Variance of all features
     """
     m, n = X.shape
-    #print(f"m: {m}, n: {n}")
-    ### START CODE HERE ### 
     sum = np.sum(X, axis=0) # axis=0
     #print(f"sum: {sum[:10]}, m: {m}")
     miu = sum / m
@@ -27,7 +25,6 @@ def estimate_gaussian(X):
         for row in range(m):
             variances[feature] += (X[row][feature] - miu[feature]) ** 2
         variances[feature] /= m
-    ### END CODE HERE ###
     print("Mean of each feature:", miu)
     print("Variance of each feature:", variances) 
     return miu, variances
@@ -52,10 +49,8 @@ def select_threshold(y_val, p_val):
     F1 = 0
     step_size = (max(p_val) - min(p_val)) / 1000
     for epsilon in np.arange(min(p_val), max(p_val), step_size):
-        ### START CODE HERE ### 
         predictions = p_val < epsilon
         F1 = F1Score(y_val, predictions)
-        ### END CODE HERE ### 
         if F1 > best_F1:
             best_F1 = F1
             best_epsilon = epsilon

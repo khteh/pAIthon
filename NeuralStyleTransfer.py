@@ -36,11 +36,7 @@ def compute_content_cost(content_output, generated_output):
     a_G_unrolled = tf.reshape(a_G, shape=[m,-1,n_C])
     
     # compute the cost with tensorflow (≈1 line)
-    J_content = tf.reduce_sum(tf.square(tf.subtract(a_C_unrolled, a_G_unrolled))) / (4 * n_H * n_W * n_C)
-    
-    ### END CODE HERE
-    
-    return J_content
+    return tf.reduce_sum(tf.square(tf.subtract(a_C_unrolled, a_G_unrolled))) / (4 * n_H * n_W * n_C)
 
 def gram_matrix(A):
     """
@@ -142,14 +138,7 @@ def total_cost(J_content, J_style, alpha = 10, beta = 40):
     Returns:
     J -- total cost as defined by the formula above.
     """
-    ### START CODE HERE
-    
-    #(≈1 line)
-    J = alpha * J_content + beta * J_style
-    
-    ### START CODE HERE
-
-    return J
+    return alpha * J_content + beta * J_style
 
 def get_layer_outputs(vgg, layer_names):
     """ Creates a vgg model that returns a list of intermediate output values."""

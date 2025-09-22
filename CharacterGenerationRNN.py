@@ -156,7 +156,6 @@ class CharacterGenerationRNN():
         n_a = Waa.shape[1]
         #print(f"Waa: {Waa.shape}, Wax: {Wax.shape}, Wya: {Wya.shape}, by: {by.shape}, b: {b.shape}")
         
-        ### START CODE HERE ###
         # Step 1: Create the a zero vector x that can be used as the one-hot vector 
         # Representing the first character (initializing the sequence generation). (≈1 line)
         x = numpy.zeros((vocab_size,1))

@@ -53,25 +53,20 @@ class ReinforcementLearning():
     def BuildModels(self):
         # Create the Q-Network
         self._q_network = Sequential([
-            ### START CODE HERE ###
             Input(shape=(self._state_size)),
             Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)), # Densely connected, or fully connected
             Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
             Dense(self._num_actions, activation = 'linear')
-            ### END CODE HERE ### 
             ])
 
         # Create the target Q^-Network
         self._target_q_network = Sequential([
-            ### START CODE HERE ### 
             Input(shape=(self._state_size)),
             Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
             Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
             Dense(self._num_actions, activation = 'linear')
-            ### END CODE HERE ###
             ])
 
-        ### START CODE HERE ### 
         self._optimizer=tf.keras.optimizers.Adam(learning_rate=self.ALPHA) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 
     def compute_loss(self, experiences, gamma):
@@ -110,9 +105,7 @@ class ReinforcementLearning():
         max_qsa = tf.reduce_max(self._target_q_network(next_states), axis=-1)
         
         # Set y = R if episode terminates, otherwise set y = R + γ max Q^(s,a).
-        ### START CODE HERE ### 
         y_targets = rewards + (1 - done_vals) *  gamma * max_qsa
-        ### END CODE HERE ###
         
         # Get the q_values and reshape to match y_targets
         q_values = self._q_network(states)
@@ -120,10 +113,7 @@ class ReinforcementLearning():
                                                     tf.cast(actions, tf.int32)], axis=1))
             
         # Compute the loss
-        ### START CODE HERE ### 
-        loss = MSE(y_targets, q_values)
-        ### END CODE HERE ### 
-        return loss
+        return MSE(y_targets, q_values)
     # @tf.function decorator to increase performance. Without this decorator our training will take twice as long. If you would like to know more about how to increase performance with @tf.function take a look at the TensorFlow documentation.
     @tf.function
     def agent_learn(self, experiences, gamma):

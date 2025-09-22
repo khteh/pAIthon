@@ -112,7 +112,6 @@ class Emojifier():
             
             for i in range(m):          # Loop over the training examples
                 
-                ### START CODE HERE ### (≈ 4 lines of code)
                 # Average the word vectors of the words from the i'th training example
                 # Use 'sentence_to_avg' you implemented above for this  
                 avg = self.sentence_to_avg(X[i])
@@ -124,7 +123,6 @@ class Emojifier():
 
                 # Add the cost using the i'th training label's one hot representation and "A" (the output of the softmax)
                 cost += Y_oh[i] @ numpy.log(a)
-                ### END CODE HERE ###
                 
                 # Compute gradients 
                 dz = a - Y_oh[i]

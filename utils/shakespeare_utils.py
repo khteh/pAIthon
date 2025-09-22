@@ -23,20 +23,13 @@ def build_data(text, Tx = 40, stride = 3):
     X -- list of training examples
     Y -- list of training labels
     """
-    
     X = []
     Y = []
-
-    ### START CODE HERE ### (≈ 3 lines)
     for i in range(0, len(text) - Tx, stride):
         X.append(text[i: i + Tx])
         Y.append(text[i + Tx])
-    ### END CODE HERE ###
-    
     print('number of training examples:', len(X))
-    
     return X, Y
-
 
 def vectorization(X, Y, n_x, char_indices, Tx = 40):
     """

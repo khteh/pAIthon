@@ -110,10 +110,8 @@ class Embeddings():
         # convert words to lowercase
         word_a, word_b, word_c = word_a.lower(), word_b.lower(), word_c.lower()
         
-        ### START CODE HERE ###
         # Get the word embeddings e_a, e_b and e_c (≈1-3 lines)
         e_a, e_b, e_c = word_to_vec_map[word_a], word_to_vec_map[word_b], word_to_vec_map[word_c]
-        ### END CODE HERE ###
         
         words = word_to_vec_map.keys()
         max_cosine_sim = -100              # Initialize max_cosine_sim to a large negative number

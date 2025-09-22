@@ -332,7 +332,6 @@ class ResidualNetwork50():
         X = layers.BatchNormalization(axis = 3)(X) # Default axis # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         X = Activation('relu')(X)
         
-        ### START CODE HERE
         ## Second component of main path (≈3 lines)
         ## Set the padding = 'same'
         X = Conv2D(filters = F2, kernel_size = f, strides = (1,1), padding = 'same', kernel_initializer = initializer(seed=0))(X)
@@ -347,7 +346,6 @@ class ResidualNetwork50():
         ## Final step: Add shortcut value to main path, and pass it through a RELU activation (≈2 lines)
         X = Add()([X, X_shortcut])
         X = Activation('relu')(X)
-        ### END CODE HERE
 
         return X
 
@@ -380,7 +378,6 @@ class ResidualNetwork50():
         X = layers.BatchNormalization(axis = 3)(X) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         X = Activation('relu')(X)
         #print(f"X1: {X.shape}")
-        ### START CODE HERE
         
         ## Second component of main path (≈3 lines)
         X = Conv2D(filters = F2, kernel_size = f, strides = (1, 1), padding='same', kernel_initializer = initializer(seed=0))(X)
@@ -397,7 +394,6 @@ class ResidualNetwork50():
         X_shortcut = Conv2D(filters = F3, kernel_size = 1, strides = (s, s), padding='valid', kernel_initializer = initializer(seed=0))(X_shortcut)
         X_shortcut = layers.BatchNormalization(axis = 3)(X_shortcut) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         #print(f"shortcut: {X_shortcut.shape}")
-        ### END CODE HERE
 
         # Final step: Add shortcut value to main path (Use this order [X, X_shortcut]), and pass it through a RELU activation
         X = Add()([X, X_shortcut])
@@ -438,8 +434,6 @@ class ResidualNetwork50():
         X = self._identity_block(X, 3, [64, 64, 256])
         X = self._identity_block(X, 3, [64, 64, 256])
 
-        ### START CODE HERE
-        
         # Use the instructions above in order to implement all of the Stages below
         # Make sure you don't miss adding any required parameter
         
@@ -474,8 +468,6 @@ class ResidualNetwork50():
         # AVGPOOL (≈1 line). Use "X = AveragePooling2D()(X)"
         X = AveragePooling2D((2,2))(X)
         
-        ### END CODE HERE
-
         # output layer
         X = Flatten()(X)
         X = Dense(len(self._classes), kernel_initializer = glorot_uniform(seed=0))(X)
