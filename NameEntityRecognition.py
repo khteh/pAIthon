@@ -78,6 +78,7 @@ class NameEntityRecognition():
         pred_labels = [[self._id2tag.get(index, "Empty") for index in predictions[i]] for i in range(len(predictions))]
         p = plt.hist(numpy.array(pred_labels).flatten())
         plt.xticks(rotation='vertical')
+        plt.tight_layout()
         plt.show()
 
     def _PrepareData(self):
@@ -109,6 +110,7 @@ class NameEntityRecognition():
         p = plt.hist(numpy.array(self._true_labels).flatten())
         plt.xticks(rotation='vertical')
         plt.title("True Labels")
+        plt.tight_layout()
         plt.show()
         print(Counter(numpy.array(self._true_labels).flatten()))
 
