@@ -37,6 +37,7 @@ audioop-lts = "*"
 seqeval = "*"
 transformers = "*"
 datasets = "*"
+music21 = "*"
 
 [dev-packages]
 check50 = "*"
