@@ -14,6 +14,27 @@ from tensorflow.keras.models import load_model, Model
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
+@saving.register_keras_serializable(name="_softmax")
+def softmax(x, axis=1):
+    """Softmax activation function.
+    # Arguments
+        x : Tensor.
+        axis: Integer, axis along which the softmax normalization is applied.
+    # Returns
+        Tensor, output of softmax transformation.
+    # Raises
+        ValueError: In case `dim(x) == 1`.
+    """
+    ndim = K.ndim(x)
+    if ndim == 2:
+        return K.softmax(x)
+    elif ndim > 2:
+        e = K.exp(x - K.max(x, axis=axis, keepdims=True))
+        s = K.sum(e, axis=axis, keepdims=True)
+        return e / s
+    else:
+        raise ValueError('Cannot apply softmax to a tensor that is 1D')
+
 class MachineTranslation():
     """
     Nerual Machine Translation - Date translation
@@ -95,7 +116,7 @@ class MachineTranslation():
         self._concatenator = Concatenate(axis=-1)
         self._densor1 = Dense(10, activation = "tanh") # Similar to sigmoid graph but the output is [-1, 1]
         self._densor2 = Dense(1, activation = "relu")
-        self._activator = Activation(self._softmax, name='attention_weights') # We are using a custom softmax(axis = 1) loaded in this notebook
+        self._activator = Activation(softmax, name='attention_weights') # We are using a custom softmax(axis = 1) loaded in this notebook
         self._dot = Dot(axes = 1)
         self._model_path = path
 
@@ -172,7 +193,7 @@ class MachineTranslation():
 
         # Please note, this is the post attention LSTM cell. These have to be REUSED in the following for loop instead of instantiating new layers.
         post_activation_LSTM_cell = LSTM(self._n_s, return_state = True) # Please do not modify this global variable.
-        output_layer = Dense(len(self._machine_vocab), activation=self._softmax)
+        output_layer = Dense(len(self._machine_vocab), activation=softmax)
 
         # Step 2: Iterate for Ty steps
         for t in range(self._Ty):
@@ -217,17 +238,17 @@ class MachineTranslation():
             )
         self._model.summary()
 
-    def Train(self):
+    def Train(self, rebuild: bool = False):
         print(f"\n=== {self.Train.__name__} ===")
-        if self._model:
+        if self._model and rebuild:
             s0 = numpy.zeros((self._size, self._n_s))
             c0 = numpy.zeros((self._size, self._n_s))
             outputs = list(self._Yoh.swapaxes(0,1))
             self._model.fit([self._Xoh, s0, c0], outputs, epochs=self._epochs, batch_size=self._batch_size)
             self.LoadWeights("models/machine_translation_weights.h5")
-        #if self._model_path:
-        #    self._model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/100327
-        #    print(f"Model saved to {self._model_path}.")
+            if self._model_path:
+                self._model.save(self._model_path) # https://github.com/tensorflow/tensorflow/issues/100327
+                print(f"Model saved to {self._model_path}.")
 
     def LoadWeights(self, path:str):
         """
@@ -373,27 +394,6 @@ class MachineTranslation():
                 "Make sure you are using s and c, and NOT using s0 and c0 in Step 2.B."
             )
     
-    @saving.register_keras_serializable(name="_softmax")
-    def _softmax(self, x, axis=1):
-        """Softmax activation function.
-        # Arguments
-            x : Tensor.
-            axis: Integer, axis along which the softmax normalization is applied.
-        # Returns
-            Tensor, output of softmax transformation.
-        # Raises
-            ValueError: In case `dim(x) == 1`.
-        """
-        ndim = K.ndim(x)
-        if ndim == 2:
-            return K.softmax(x)
-        elif ndim > 2:
-            e = K.exp(x - K.max(x, axis=axis, keepdims=True))
-            s = K.sum(e, axis=axis, keepdims=True)
-            return e / s
-        else:
-            raise ValueError('Cannot apply softmax to a tensor that is 1D')
-
     def _PrepareData(self):
         print(f"\n=== {self._PrepareData.__name__} ===")
         """
@@ -537,7 +537,7 @@ def model_test(retrain:bool):
     mt = MachineTranslation("models/MachineTranslation.keras", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100, 10) # Increasing epochs does not improve accuracy. Have to examine the training dataset!
     model = mt.BuildModel(retrain)
     mt.ModelStateTest()
-    mt.Train()
+    mt.Train(retrain)
     print(f"date.today(): {date.today()}")
     print(f"datetime.now().date: {datetime.now().date()}")
     EXAMPLES = ['3 May 1979', '5 April 09', '21th of August 2016', 'Tue 10 Jul 2007', 'Saturday May 9 2018', 'March 3 2001', 'March 3rd 2001', '1 March 2001', "25th December 2020", "31st October 2021", "3rd November 2022"]
@@ -557,4 +557,4 @@ if __name__ == "__main__":
 
     print(tf.version.GIT_VERSION, tf.version.VERSION)
     one_step_attention_test()
-    model_test(True) #args.retrain) https://github.com/tensorflow/tensorflow/issues/100327
+    model_test(args.retrain) # https://github.com/tensorflow/tensorflow/issues/100327
