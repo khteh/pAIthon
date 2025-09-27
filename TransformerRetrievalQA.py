@@ -2,7 +2,7 @@ import tensorflow as tf, matplotlib.pyplot as plt
 from datasets import load_from_disk
 from transformers import DistilBertTokenizerFast, TFDistilBertForQuestionAnswering
 from utils.GPU import InitializeGPU, SetMemoryLimit
-class TransformerRetrievalQA():
+class TransformerExtractiveQA():
     """
     The goal of *extractive* QA is to identify the portion of the text that contains the answer to a question. 
     For example, when tasked with answering the question 'When will Jane go to Africa?' given the text data 'Jane visits Africa in September', the question answering model will highlight 'September'.
@@ -119,7 +119,7 @@ class TransformerRetrievalQA():
 if __name__ == "__main__":
     InitializeGPU()
     SetMemoryLimit(4096)
-    transformer = TransformerRetrievalQA("data/QuestionAnswer", 32, 10)
+    transformer = TransformerExtractiveQA("data/QuestionAnswer", 32, 10)
     transformer.BuildTrainModel()
     transformer.Predict('The hallway is south of the garden. The garden is south of the bedroom.', 'What is south of the bedroom?')
     transformer.Predict('The arctic is north of Singapore. Singapore is north of the antarctica. Japan is east of Singapore. Hawaii is west of Singapore', 'What is in the middle?')
