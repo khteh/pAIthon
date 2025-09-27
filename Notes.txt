@@ -1232,7 +1232,7 @@ Machine Translation can be thought of as a "conditional language model".
 - Maximize P(y|x). Greedy search word by word is exponentially large depending on the vocabulary size.
 Beam Search:
 - Approximate / heuristic search algorithm.
-- Beam width, B, best #choices to consider int every time step. Use B copies of the network for parallel calculation in every time step.
+- Beam width, B, best #choices to consider in every time step. Use B copies of the network for parallel calculation in every time step.
 - B=1 reduces this to greedy search.
 - First step: P(y1|x) y1 is [word1, word2, word3], length of it determined by B
 - Second step: P(y1,y2|x) = P(y1|x) * p(y2|x,y1)
