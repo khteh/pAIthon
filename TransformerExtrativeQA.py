@@ -50,6 +50,7 @@ class TransformerExtractiveQA():
                 opt.apply_gradients(zip(grads, self._model.trainable_weights))
                 if step % 20 == 0:
                     print("Training loss (for one batch) at step %d: %.4f"% (step, float(loss_start)))
+        plt.title("Loss over batches")
         plt.plot(losses)
         plt.show()
     
@@ -65,6 +66,7 @@ class TransformerExtractiveQA():
     def _PrepareData(self):
         # Load a dataset and print the first example in the training set
         self._data = load_from_disk(self._path)
+        print()
         print(self._data['train'][0])
         # To make the data easier to work with, you will flatten the dataset to transform it from a dictionary structure to a table structure.
         self._data_flattened = self._data.flatten()
@@ -77,17 +79,10 @@ class TransformerExtractiveQA():
 
         columns_to_return = ['input_ids','attention_mask', 'start_positions', 'end_positions']
         self._train_ds.set_format(type='tf', columns=columns_to_return)
-        print(f"_train_ds: {self._train_ds.shape}, self._train_ds['start_positions']: {type(self._train_ds['start_positions'])}")
-        print(self._train_ds[200])
+        print(f"train_ds type: {type(self._train_ds)}, shape: {self._train_ds.shape}\ncolumns: {self._train_ds.column_names}\nfeatures:{self._train_ds.features}")
         # https://github.com/huggingface/datasets/issues/7772
-        # train_features = {x: self._train_ds[x] for x in ['input_ids', 'attention_mask']}
-        # start_pos = tf.convert_to_tensor(self._train_ds['start_positions'], dtype=tf.int64)
-        # start_pos = tf.reshape(start_pos, [-1, 1])
-        # end_pos = tf.convert_to_tensor(self._train_ds['end_positions'], dtype=tf.int64)
-        # end_pos = tf.reshape(start_pos, [-1, 1])
-        # train_labels = {"start_positions": start_pos, # XXX: https://huggingface.co/docs/datasets/v1.3.0/torch_tensorflow.html
-        #                'end_positions': end_pos} # XXX: https://huggingface.co/docs/datasets/v1.3.0/torch_tensorflow.html
-        # self._train_tfdataset = tf.data.Dataset.from_tensor_slices((train_features, train_labels)).batch(self._batch_size)
+        # XXX: https://huggingface.co/docs/datasets/v1.3.0/torch_tensorflow.html
+        # XXX: https://huggingface.co/docs/datasets/v1.3.0/torch_tensorflow.html
         self._train_tfdataset = self._train_ds.to_tf_dataset(
             columns=['input_ids','attention_mask'],
             label_cols=['start_positions','end_positions'],
@@ -124,7 +119,7 @@ class TransformerExtractiveQA():
 if __name__ == "__main__":
     InitializeGPU()
     SetMemoryLimit(4096)
-    transformer = TransformerExtractiveQA("data/QuestionAnswer", 8, 3)
+    transformer = TransformerExtractiveQA("data/QuestionAnswer", 32, 10)
     transformer.BuildTrainModel()
     transformer.Predict('The hallway is south of the garden. The garden is south of the bedroom.', 'What is south of the bedroom?')
-    transformer.Predict('The arctic is north of Singapore. Singapore is north of the antarctic. Japan is east of Singapore. Hawaii is west of Singapore', 'What is in the middle?')
+    transformer.Predict('The arctic is north of Singapore. Singapore is north of the antarctica. Japan is east of Singapore. Hawaii is west of Singapore', 'What is in the middle?')
