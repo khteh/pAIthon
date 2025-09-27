@@ -1,7 +1,12 @@
 import tensorflow as tf, matplotlib.pyplot as plt
 from datasets import load_from_disk
 from transformers import DistilBertTokenizerFast, TFDistilBertForQuestionAnswering
+from utils.GPU import InitializeGPU, SetMemoryLimit
 class TransformerExtractiveQA():
+    """
+    The goal of *extractive* QA is to identify the portion of the text that contains the answer to a question. 
+    For example, when tasked with answering the question 'When will Jane go to Africa?' given the text data 'Jane visits Africa in September', the question answering model will highlight 'September'.
+    """
     _path:str = None
     _data = None
     _data_flattened = None
@@ -74,10 +79,21 @@ class TransformerExtractiveQA():
         self._train_ds.set_format(type='tf', columns=columns_to_return)
         print(f"_train_ds: {self._train_ds.shape}, self._train_ds['start_positions']: {type(self._train_ds['start_positions'])}")
         print(self._train_ds[200])
-        train_features = {x: self._train_ds[x] for x in ['input_ids', 'attention_mask']}
-        train_labels = {"start_positions": tf.reshape(self._train_ds['start_positions'], shape=[-1,1]), # XXX: https://huggingface.co/docs/datasets/v1.3.0/torch_tensorflow.html
-                        'end_positions': tf.reshape(self._train_ds['end_positions'], shape=[-1,1])} # XXX: https://huggingface.co/docs/datasets/v1.3.0/torch_tensorflow.html
-        self._train_tfdataset = tf.data.Dataset.from_tensor_slices((train_features, train_labels)).batch(self._batch_size)
+        # https://github.com/huggingface/datasets/issues/7772
+        # train_features = {x: self._train_ds[x] for x in ['input_ids', 'attention_mask']}
+        # start_pos = tf.convert_to_tensor(self._train_ds['start_positions'], dtype=tf.int64)
+        # start_pos = tf.reshape(start_pos, [-1, 1])
+        # end_pos = tf.convert_to_tensor(self._train_ds['end_positions'], dtype=tf.int64)
+        # end_pos = tf.reshape(start_pos, [-1, 1])
+        # train_labels = {"start_positions": start_pos, # XXX: https://huggingface.co/docs/datasets/v1.3.0/torch_tensorflow.html
+        #                'end_positions': end_pos} # XXX: https://huggingface.co/docs/datasets/v1.3.0/torch_tensorflow.html
+        # self._train_tfdataset = tf.data.Dataset.from_tensor_slices((train_features, train_labels)).batch(self._batch_size)
+        self._train_tfdataset = self._train_ds.to_tf_dataset(
+            columns=['input_ids','attention_mask'],
+            label_cols=['start_positions','end_positions'],
+            shuffle=True,
+            batch_size=self._batch_size
+        )                
 
     def _get_question_and_facts(self, story):
         dic = {}
@@ -106,6 +122,9 @@ class TransformerExtractiveQA():
             'end_positions': end_positions}    
     
 if __name__ == "__main__":
+    InitializeGPU()
+    SetMemoryLimit(4096)
     transformer = TransformerExtractiveQA("data/QuestionAnswer", 8, 3)
     transformer.BuildTrainModel()
     transformer.Predict('The hallway is south of the garden. The garden is south of the bedroom.', 'What is south of the bedroom?')
+    transformer.Predict('The arctic is north of Singapore. Singapore is north of the antarctic. Japan is east of Singapore. Hawaii is west of Singapore', 'What is in the middle?')

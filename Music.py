@@ -12,42 +12,57 @@ def __parse_midi_details(data_fn):
     assert len(midi_data.getElementsByClass(stream.Part)) == len(midi_data.parts)
     allnotes = []
     allchords = []
-    melody_voice = []
+    melody_voice = {}
     idxPart = 0
-    timeSig: stream.Part = None
-    mmark: stream.Part = None
-    for part in midi_data.getElementsByClass(stream.Part):
+    timeSig = []
+    mmark = []
+    for part in midi_data.recurse().getElementsByClass(stream.Part):
         print(f"\npart {idxPart}: {part}")
         part.show("text")
         idxPart += 1
         idxMeasure = 0
-        for measure in midi_data.recurse().getElementsByClass(stream.Measure):
+        for measure in part.recurse().getElementsByClass(stream.Measure):
             print(f"measure {idxMeasure}: {measure}")
             measure.show("text")
             idxMeasure += 1
-            tmp = measure.getElementsByClass(meter.TimeSignature)
-            if tmp:
-                timeSig = tmp
-            tmp = measure.getElementsByClass(tempo.MetronomeMark)
-            if tmp:
-                mmark = tmp
+            timeSig.append(measure.getElementsByClass(meter.TimeSignature))
+            mmark.append(measure.getElementsByClass(tempo.MetronomeMark))
             idxVoice = 0
             for voice in measure.recurse().getElementsByClass(stream.Voice):
                 print(f"voice {idxVoice}: {voice.offset}, {voice}")
                 voice.show("text")
                 idxVoice += 1
-                melody_voice.insert(int(voice.offset), voice)
+                if voice.offset not in melody_voice:
+                    melody_voice[voice.offset] = [voice]
+                else:
+                    melody_voice[voice.offset].append(voice)
+                notes = voice.recurse().getElementsByClass(note.Note).notes
+                chords = voice.recurse().getElementsByClass(chord.Chord)
+                #for i in notes:
+                allnotes.append(notes)
+                #for i in chords:
+                allchords.append(chords)
+            """
+            for voice in measure.getElementsByClass(stream.Voice):
+                print(f"voice {idxVoice}: {voice.offset}, {voice}")
+                voice.show("text")
+                idxVoice += 1
+                if voice.offset not in melody_voice:
+                    melody_voice.add(voice.offset, voice)
                 notes = voice.getElementsByClass(note.Note).notes
                 chords = voice.getElementsByClass(chord.Chord)
                 for i in notes:
                     allnotes.append(i)
                 for i in chords:
                     allchords.append(i)
-    print(f"\nmmark:")
-    mmark.stream().show("text")
-    print(f"\ntimeSig:")
-    timeSig.stream().show("text")
+            """
+    #print(f"\nmmark:")
+    #mmark.stream().show("text")
+    #print(f"\ntimeSig:")
+    #timeSig.stream().show("text")
+    print(f"\n{len(timeSig)} timeSig, {len(mmark)} mmark")
     print(f"\n{len(allchords)} chords, {len(allnotes)} notes, {len(melody_voice)} melody_voice") # 8075 chords, 15390 notes, 9766 melody_voice
+    print(f"\nmelody_voice: {melody_voice}")
 
 def __parse_midi_part(data_fn, partIndex:int = None):
     print(f"\n=== {__parse_midi_part.__name__} ===")
@@ -80,7 +95,7 @@ def __parse_midi_part(data_fn, partIndex:int = None):
             print(f"voice {idxVoice}: {voice.offset}, {voice}")
             voice.show("text")
             idxVoice += 1
-            melody_voice.insert(int(voice.offset), voice)
+            melody_voice.insert(voice.offset, voice)
             notes = voice.getElementsByClass(note.Note).notes
             chords = voice.getElementsByClass(chord.Chord)
             for i in notes:
@@ -172,8 +187,8 @@ def __parse_midi_part(data_fn, partIndex:int = None):
     # stream.Part(), not stream.Voice().
     # Accompanied solo is in range [478, 548)
     #solo_stream = measure_stream.voices.stream()
-    print(f"\nsolo_stream: {len(solo_stream)}")
-    #solo_stream.show("text")
+    print(f"\n{len(solo_stream)} solo_stream")
+    solo_stream.show("text")
 
     # Group by measure so you can classify. 
     # Note that measure 0 is for the time signature, metronome, etc. which have
@@ -574,8 +589,8 @@ def load_music_utils(file):
     return (X, Y, N_tones, indices_tones, chords)
 
 if __name__ == "__main__":
-    #__parse_midi_details('data/original_metheny.mid')
-    __parse_midi_part('data/original_metheny.mid', 5) # AssertionError: 28 chords, 21 measures
+    __parse_midi_details('data/original_metheny.mid')
+    #__parse_midi_part('data/original_metheny.mid', 5) # AssertionError: 28 chords, 21 measures
     """
     X, Y, n_values, indices_values, chords = load_music_utils('data/original_metheny.mid') # AssertionError: 28 chords, 21 measures
     print('number of training examples:', X.shape[0])
