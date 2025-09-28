@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from sklearn.datasets import make_blobs
-from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from Activations import softmax
@@ -42,8 +42,8 @@ def NNSoftmax(X_train, y_train):
     print(f"\n=== {NNSoftmax.__name__} ===")
     model = Sequential(
         [
-            Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
-            Dense(15, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)),
+            Dense(25, activation = 'relu', kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+            Dense(15, activation = 'relu', kernel_regularizer=l2(0.01)),
             Dense(4)   # Linear activation ("pass-through") if not specified
         ]
     )
@@ -75,8 +75,8 @@ def NNStableSoftmax(X_train, y_train):
     print(f"\n=== {NNStableSoftmax.__name__} ===")
     preferred_model = Sequential(
         [ 
-            Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
-            Dense(15, activation = 'relu', kernel_regularizer=regularizers.l2(0.01)),
+            Dense(25, activation = 'relu', kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+            Dense(15, activation = 'relu', kernel_regularizer=l2(0.01)),
             Dense(4, activation = 'linear') # Linear activation ("pass-through") if not specified
         ]
     )

@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras import Sequential
-from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.regularizers import l2
 from utils.GPU import InitializeGPU
 from utils.Plots import *
 # reduce display precision on numpy arrays
@@ -122,8 +122,8 @@ class NeuralNetworkModelEvaluationAndSelection():
         tf.random.set_seed(20)
         model_1 = Sequential(
             [
-                Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)), # Densely connected, or fully connected
-                Dense(15, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+                Dense(25, activation = 'relu', kernel_regularizer=l2(0.1)), # Densely connected, or fully connected
+                Dense(15, activation = 'relu', kernel_regularizer=l2(0.1)),
                 Dense(1, activation = 'linear')
             ],
             name='model_1'
@@ -131,10 +131,10 @@ class NeuralNetworkModelEvaluationAndSelection():
 
         model_2 = Sequential(
             [
-                Dense(20, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(12, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(12, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(20, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+                Dense(20, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(12, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(12, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(20, activation = 'relu', kernel_regularizer=l2(0.1)),
                 Dense(1, activation = 'linear')
             ],
             name='model_2'
@@ -142,11 +142,11 @@ class NeuralNetworkModelEvaluationAndSelection():
 
         model_3 = Sequential(
             [
-                Dense(32, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(16, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(8, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(4, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(12, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+                Dense(32, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(16, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(8, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(4, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(12, activation = 'relu', kernel_regularizer=l2(0.1)),
                 Dense(1, activation = 'linear')
             ],
             name='model_3'

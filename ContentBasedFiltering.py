@@ -10,7 +10,7 @@ from keras import saving
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.layers import Dense, Input, Layer, Dot
-from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 import tabulate
 pd.set_option("display.precision", 1)
@@ -143,14 +143,14 @@ class ContentBasedFiltering():
         num_outputs = 32
         tf.random.set_seed(1)
         self._user_NN = tf.keras.models.Sequential([
-            Dense(256, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)), # Densely connected, or fully connected
-            Dense(128, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+            Dense(256, activation = 'relu', kernel_regularizer=l2(0.1)), # Densely connected, or fully connected
+            Dense(128, activation = 'relu', kernel_regularizer=l2(0.1)),
             Dense(num_outputs, activation = 'linear')
         ])
 
         self._item_NN = tf.keras.models.Sequential([
-            Dense(256, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-            Dense(128, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+            Dense(256, activation = 'relu', kernel_regularizer=l2(0.1)),
+            Dense(128, activation = 'relu', kernel_regularizer=l2(0.1)),
             Dense(num_outputs, activation = 'linear')
         ])
 

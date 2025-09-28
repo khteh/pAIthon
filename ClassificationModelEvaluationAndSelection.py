@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras import Sequential
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
-from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.optimizers import Adam
 from utils.GPU import InitializeGPU
 from utils.Plots import plot_bc_dataset
@@ -101,8 +101,8 @@ class ClassificationModelEvaluationAndSelection():
         tf.random.set_seed(20)
         model_1 = Sequential(
             [
-                Dense(25, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)), # Densely connected, or fully connected
-                Dense(15, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+                Dense(25, activation = 'relu', kernel_regularizer=l2(0.1)), # Densely connected, or fully connected
+                Dense(15, activation = 'relu', kernel_regularizer=l2(0.1)),
                 Dense(1, activation = 'linear')
             ],
             name='model_1'
@@ -110,10 +110,10 @@ class ClassificationModelEvaluationAndSelection():
 
         model_2 = Sequential(
             [
-                Dense(20, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(12, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(12, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(20, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+                Dense(20, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(12, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(12, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(20, activation = 'relu', kernel_regularizer=l2(0.1)),
                 Dense(1, activation = 'linear')
             ],
             name='model_2'
@@ -121,11 +121,11 @@ class ClassificationModelEvaluationAndSelection():
 
         model_3 = Sequential(
             [
-                Dense(32, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(16, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(8, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(4, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-                Dense(12, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+                Dense(32, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(16, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(8, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(4, activation = 'relu', kernel_regularizer=l2(0.1)),
+                Dense(12, activation = 'relu', kernel_regularizer=l2(0.1)),
                 Dense(1, activation = 'linear')
             ],
             name='model_3'

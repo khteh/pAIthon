@@ -4,7 +4,7 @@ from sklearn.datasets import make_blobs
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from utils.lab_utils_multiclass_TF import *
@@ -54,7 +54,7 @@ class MulticlassClassification():
         tf.random.set_seed(1234)  # applied to achieve consistent results
         model = Sequential(
             [
-                Dense(2, activation = 'relu',   name = "L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+                Dense(2, activation = 'relu',   name = "L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
                 Dense(4, activation = 'linear', name = "L2")  # Linear activation ("pass-through") if not specified
             ]
         )

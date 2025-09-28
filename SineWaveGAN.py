@@ -6,6 +6,7 @@ import tensorflow.keras.layers as layers
 import matplotlib.pyplot as plt
 from utils.Image import CreateGIF, ShowImage
 from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.regularizers import l2
 from utils.GPU import InitializeGPU
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
@@ -29,11 +30,11 @@ class Discriminator():
         self._samples = samples
         self.model = models.Sequential([
             layers.Input(shape=(self._samples, 2)),
-            layers.Dense(256, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+            layers.Dense(256, activation='relu', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
             layers.Dropout(0.3),
-            layers.Dense(128, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
+            layers.Dense(128, activation='relu', name="L2", kernel_regularizer=l2(0.01)),
             layers.Dropout(0.3),
-            layers.Dense(64, activation='relu', name="L3", kernel_regularizer=regularizers.l2(0.01)),
+            layers.Dense(64, activation='relu', name="L3", kernel_regularizer=l2(0.01)),
             layers.Dropout(0.3),
             layers.Dense(1, activation='linear', name="L4")]) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
         """
@@ -87,8 +88,8 @@ class Generator():
         self._samples = samples
         self.model = models.Sequential([
                 layers.Input(shape=(self._samples,2)),
-                layers.Dense(16, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
-                layers.Dense(32, activation='relu', name="L2", kernel_regularizer=regularizers.l2(0.01)),
+                layers.Dense(16, activation='relu', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+                layers.Dense(32, activation='relu', name="L2", kernel_regularizer=l2(0.01)),
                 # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
                 # The output will consist of a vector with two elements that can be any value ranging from negative infinity to infinity, which will represent (x̃₁, x̃₂).
                 layers.Dense(2, name="L3")]) # Linear activation ("pass-through") if not specified
@@ -250,8 +251,8 @@ if __name__ == "__main__":
     InitializeGPU()
     checkpoint_dir = './checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
-    #sinewaveGAN = SineWaveGAN(NUM_SINE_WAVES, BATCH_SIZE, SAMPLES, EPOCHS, checkpoint_prefix)
-    #sinewaveGAN.PrepareTrainingData()
-    #sinewaveGAN.Train()
+    sinewaveGAN = SineWaveGAN(NUM_SINE_WAVES, BATCH_SIZE, SAMPLES, EPOCHS, checkpoint_prefix)
+    sinewaveGAN.PrepareTrainingData()
+    sinewaveGAN.Train()
     ShowImage(f'output/SineWaveGAN/sinewave_gan_epoch_{EPOCHS:04d}.png')
     CreateGIF("output/SineWaveGAN/sinewave_gan.gif", 'output/SineWaveGAN/sinewave_gan_epoch_*.png')

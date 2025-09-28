@@ -9,7 +9,7 @@ from tensorflow.keras.losses import MSE
 from tensorflow.keras.optimizers import Adam # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 from tensorflow.keras import Sequential
 from tensorflow.keras.layers import Dense, Input
-from tensorflow.keras import layers, losses, optimizers, regularizers
+from tensorflow.keras.regularizers import l2
 
 # XXX: I have NOT tested this file because installation of swig gymnasium[box2d] failed. Will return to this when I have the time. 
 class ReinforcementLearning():
@@ -54,16 +54,16 @@ class ReinforcementLearning():
         # Create the Q-Network
         self._q_network = Sequential([
             Input(shape=(self._state_size)),
-            Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)), # Densely connected, or fully connected
-            Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+            Dense(64, activation = 'relu', kernel_regularizer=l2(0.1)), # Densely connected, or fully connected
+            Dense(64, activation = 'relu', kernel_regularizer=l2(0.1)),
             Dense(self._num_actions, activation = 'linear')
             ])
 
         # Create the target Q^-Network
         self._target_q_network = Sequential([
             Input(shape=(self._state_size)),
-            Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
-            Dense(64, activation = 'relu', kernel_regularizer=regularizers.l2(0.1)),
+            Dense(64, activation = 'relu', kernel_regularizer=l2(0.1)),
+            Dense(64, activation = 'relu', kernel_regularizer=l2(0.1)),
             Dense(self._num_actions, activation = 'linear')
             ])
 
