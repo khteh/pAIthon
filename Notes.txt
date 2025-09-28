@@ -1314,7 +1314,7 @@ Positional Encoding:
 ======================================================================================================================================================================================================
 ML Strategy:
 Orthogonalization: What to tune to achieve a specific effect.
-(1) Fit training  set well on cost function
+(1) Fit training set well on cost function
     - Bigger network
     - Different optimizers
     - NO: early stopping - This is not orthogonal as it will affect (2) below
@@ -1375,7 +1375,7 @@ Dev error     : 10%
 Focus on bias:
 - Bigger model
 - Train longer
-- Bettern optimization algorithms: Add momentum or RMSProp or use bettern algo like Adam.
+- Bettern optimization algorithms: Add momentum or RMSProp or use better algo like Adam.
 - Review / change NN architecture / hyperparameters search - RNN, CNN
 
 Example 2:
