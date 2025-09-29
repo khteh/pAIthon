@@ -77,7 +77,6 @@ class ContentBasedFiltering():
         with open('./data/ContentBasedFiltering/content_user_train_header.txt', newline='') as f:
             self._user_features = list(csv.reader(f))[0]
         self._item_vecs = genfromtxt('./data/ContentBasedFiltering/content_item_vecs.csv', delimiter=',')
-
         self._movie_dict = defaultdict(dict)
         count = 0
     #    with open('./data/ContentBasedFiltering/movies.csv', newline='') as csvfile:
