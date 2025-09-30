@@ -229,5 +229,5 @@ class LogisticRegressionNN():
         return Y_prediction
     
 if __name__ == "__main__":
-    classifier = LogisticRegressionNN("data/train_catvnoncat.h5", "data/test_catvnoncat.h5", 0.005, 2000)
+    classifier = LogisticRegressionNN("data/train_catvnoncat.h5", "data/test_catvnoncat.h5", 0.001, 2000)
     classifier.BuildTrainModel(True)

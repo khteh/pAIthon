@@ -355,6 +355,6 @@ class LogisticRegressionDeepNN():
         return parameters
     
 if __name__ == "__main__":
-    classifier = LogisticRegressionDeepNN("data/train_catvnoncat.h5", "data/test_catvnoncat.h5", 0.0075, 3000)
+    classifier = LogisticRegressionDeepNN("data/train_catvnoncat.h5", "data/test_catvnoncat.h5", 0.001, 3000)
     classifier.BuildTrainModel(True)
     p_train, p_test = classifier.Predict()
