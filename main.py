@@ -122,8 +122,8 @@ def ArrayExtension():
 
 def CountSubStrings(src, substr, repetition):
     print(f"\n=== {CountSubStrings.__name__} ===")
-    src = src * repetition
-    print(f"{substr} occurs in {src} {src.count(substr)} times")
+    src *= repetition
+    print(f"'{substr}' appears in `{src}` {src.count(substr)} times")
 
 if __name__ == "__main__":
     sort_dict_by_tuple_values()
