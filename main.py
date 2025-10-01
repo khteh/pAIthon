@@ -115,10 +115,16 @@ def TupleArithmetic():
     print(t2)
 
 def ArrayExtension():
+    print(f"\n=== {ArrayExtension.__name__} ===")
     array = ['accuracy'] * 10
     assert 10 == len(array)
     print(f"array: {array}")
-    
+
+def CountSubStrings(src, substr, repetition):
+    print(f"\n=== {CountSubStrings.__name__} ===")
+    src = src * repetition
+    print(f"{substr} occurs in {src} {src.count(substr)} times")
+
 if __name__ == "__main__":
     sort_dict_by_tuple_values()
     permutations([0], list(range(1, len(portnames)))) # This will start the recursion with 0 ("PAN") as the first stop
@@ -129,3 +135,4 @@ if __name__ == "__main__":
     #univariate_plot() This blocks
     TupleArithmetic()
     ArrayExtension()
+    CountSubStrings("banana", "an", 4)
