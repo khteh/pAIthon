@@ -1,6 +1,4 @@
 import numpy, tensorflow as tf
-import IPython
-import sys
 import matplotlib.pyplot as plt
 from music21 import *
 from grammar import *
