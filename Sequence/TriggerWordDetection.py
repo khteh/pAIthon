@@ -192,7 +192,7 @@ class TrigerWordDetection():
         file_handle = background.export("train" + ".wav", format="wav")
         
         # Get and plot spectrogram of the new recording (background with superposition of positive and negatives)
-        x = self._graph_spectrogram("train.wav")
+        x = self._graph_spectrogram("./data/train.wav")
         return x, y
    
     def BuildModel(self):
