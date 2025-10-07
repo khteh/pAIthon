@@ -845,7 +845,7 @@ Pooling:
 - Preserve detected features.
 (1) Max or Average.
 (2) Hyperparameters: f and s
-(3) No parameters to learn. Gradient descent does not learn change anything of it in this layer.
+(3) No parameters to learn. Gradient descent does not learn or change anything of it in this layer.
 (4) Padding. Usually not used with Max pooling.
 (5) Reduces/Shrinks Nh[l] and Nw[l]
 
