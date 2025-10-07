@@ -887,6 +887,10 @@ These benefits result in:
 (1) Allow convolutional NN to be trained with smaller training datasets and less susceptible to overfitting.
 (2) Good at capturing translation invariance. For example, input dataset shifted a few pixels but the same features are detected.
 
+Gradients will decrease/increase exponentially at a function of #layers.
+Exploding gradients: Can easily been solved by gradients clipping using some threshold.
+Vanishing gradients: Gradients at the output will have very little/vanishing impact nn the weights at the early layers of the NN after back-propagating many layers back to the early layers. Much harder to solve.
+
 Residual Network:
 - In a plain NN, as the networks gets deeper, the optimization algorithm (gradient descent, etc), has a much harder time in training. The training gets worse when the network gets deeper.
 - ResNet helps mitigate this vanishing and exploding gradient problem.
@@ -1144,7 +1148,7 @@ Recurrent NN:
   Wax = weights used to compute output(a) using x
   Wya = weights used to compute output(y) using a
   a(t) = g(Waa @ a(t-1) + Wax @ x(t) + ba) <= Usually tanh is used. Sometimes ReLU
-  y^(t) = g(Wya @ a(t) + by) <= Sigmoid fo binary classification, softmax for multi-class
+  y^(t) = g(Wya @ a(t) + by) <= Sigmoid for binary classification, softmax for multi-class
 - Simplify a(t) = g(Waa @ a(t-1) + Wax @ x(t) + ba) = g(Wa @ [a(t-1), x(t)] + ba)
   Example:
   - if a(t-1) is 100-element vector, Waa would be (100, 100)
@@ -1155,7 +1159,8 @@ Recurrent NN:
 - L(t)(y^(t), y(t)) => use BinaryCrossEntropy loss function
   L(y^(t), y(t)) = sum(L(t)(y^(t), y(t))) for all time steps.
 - Backpropagation through time using gradient descent to update parameters.
-language Model and Sequence Generation:
+Language Model and Sequence Generation:
+- Laungage model predicts probability of a sequence of tokens - P(y1,y2,y3,...).
 - L(y^(t), y(t)) = -sum(y(t) * log(y^(t)))
   L = sum(L(y^(t), y(t))) for all time steps.
 - P(y(1), y(2), y(3)) = P(y1) * P(y2 | y1) * P(y3 | y1,y2)
@@ -1167,9 +1172,11 @@ Basic RNN is not very good at capturing long-range dependencies. This is similar
 Exploding gradients can also happen which is easily spotted because the parameters blow up which result in some NaN due to numerical overflows. Use gradient clipping to solve it. If gradient vectors larger than some threshold, rescale them.
 
 Gated Recurrent Unit:
+- Helps with vanishing gradients problem.
 - Modification of RNN
 - Helps RNN capture long-range dependencies and solve the vanishing gradient problem.
 - C = memory cell
+  - Multi-dimensional. Each element in the vector can be used to "remmeber" different context - singular/plural, food, present/past tense, people, etc.
 - It outputs an activation a(t)
 - C(t) = a(t) : [1, N] vector. Each index serves to remember different types of contexts. For example, singular/plural, food, places, etc
 - C~(t) = tanh(Wc @ [C(t-1), x(t)] + bc) <= candidate replacement of current C(t) <- simplified version
@@ -1191,6 +1198,7 @@ Long Short Term Memory (LSTM)
 
 Bidirectional RNN:
 - Both forward and backward passes can by RNN or GRU or LSTM.
+- Need the entire sequence of data to work. For example, need to wait for speech to pause to start computing the prediction of the past speech.
 - y^(t) = g(Wy * [a(t), a'(t)] + by): a'(t) is the backward pass activation value.
 - LSTM BRNN is commonly used in NLP.
 - Needs the complete sequence to work. For example, if used in speech recognition system, have to wait for the speaker to stop talking to start processing the sentences.
