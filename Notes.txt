@@ -830,6 +830,30 @@ Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(64 - 4)/2 + 1 = 31
 Nd[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(64 - 4)/2 + 1 = 31 
 Output volume = Nh[l] x Nw[l] x Nd[l] x Nc[l] = 31 x 31 x 31 x 16
 
+2D:
+Input: 14x14x3
+Filter: 1 5x5x3 s:1 p:0
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 0 - 5)/1 + 1 = 10
+Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 0 - 5)/1 + 1 = 10
+Output volume = Nh[l] x Nw[l] x Nc[l] = 10 x 10 x Nc[l]
+
+Input: 10x10x16
+Filter: 1 5x5x16 s:1 p:0
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(10 + 0 - 5)/1 + 1 = 6
+Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(10 + 0 - 5)/1 + 1 = 6
+Output volume = Nh[l] x Nw[l] x Nc[l] = 10 x 10 x Nc[l]
+
+1D:
+Input: 14x1
+Filter: 5x1 s:1 p:0
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 0 - 5)/1 + 1 = 10
+Output volume = Nh[l] x Nw[l] x Nc[l] = 10 x Nc[l]
+
+Input: 10x16
+Filter: 5x16 s:1 p:0
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(10 + 0 - 5)/1 + 1 = 6
+Output volume = Nh[l] x Nw[l] x Nc[l] = 6 x Nc[l]
+
 Typically in Convolutional NN, the size of the data will reduce deeper into the NN while the filter# will increase.
 
 Types of layers in a Convolutional NN:
