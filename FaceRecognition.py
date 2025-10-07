@@ -22,10 +22,10 @@ class FaceRecognition():
         The output is a matrix of shape  (𝑚,128) that encodes each input face image into a 128-dimensional vector.
         By using a 128-neuron fully connected layer as its last layer, the model ensures that the output is an encoding vector of size 128. You then use the encodings to compare two face images as follows:
         """
-        with open('./keras-facenet-h5/model.json', 'r', newline='') as f:
+        with open('./models/keras-facenet-h5/model.json', 'r', newline='') as f:
             loaded_model_json = f.read()
             self._model = model_from_json(loaded_model_json)
-        self._model.load_weights('./keras-facenet-h5/model.h5')
+        self._model.load_weights('./models/keras-facenet-h5/model.h5')
         print(f"Model input: {self._model.inputs}")
         print(f"Model output: {self._model.outputs}")
 
