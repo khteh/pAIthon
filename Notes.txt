@@ -1204,27 +1204,30 @@ Bidirectional RNN:
 - Needs the complete sequence to work. For example, if used in speech recognition system, have to wait for the speaker to stop talking to start processing the sentences.
 ======================================================================================================================================================================================================
 NLP & Word Embeddings
-Word Embeddings is a featurized representation of the words.
-Learn concepts / features of each word to draw similarity, etc.
-Orignal model trained on large corpera of texts, use transfer learning for other tasks which have smaller set of training dataset.
+- One-hot encoding does not provide relationship information. Any product of any 2 vectors is always zero.
+- Word Embeddings is a featurized representation of the words.
+- Learn concepts / features of each word to draw similarity, etc.
+- Orignal model trained on large corpera of texts (un-labelled), ~100B words, use transfer learning for other tasks which have smaller training dataset (~100K words).
+- Example: Gender, Food, Fruit, Furniture, Animal, Noun, Verb, Country, City, etc.
+- t-SNE visualization - Maps the features to a 2D visualization of the vocabulary. It shows clusters of words with relative same features.
 
 Analogies using word feature vectors.
 Analogy reasoning.
-- Man is to woman as King is to Queen.
+- Man is to woman as King is to ?.
 e(man) - e(woman) ~= e(king) - e(?)
-Find w which maximizes similarity(e(?), e(king) - e(man) + e(woman))
+Find word(w) which maximizes similarity(e(w), e(king) - e(man) + e(woman))
 
-similarity function:
-(1) Cosine similarity
+Similarity function:
+(1) Cosine similarity.
 (2) Squared differences || U-V || ** 2
 E: Embeddings matrix. (feature size, vocab size)
 O: one-hot encoding vector of each of the word in the vocabulary. (vocab size, 1)
 e(word) = E @ O -> (feature size, 1)
 
-To build a language model, use last few words
+To build a language model, use a context of last N words.
 To learn a word embedding, use any of the following:
 (1) #words on the left & right
-(2) Last 1 word
+(2) Last/Previous 1 word
 (3) Nearby 1 word - Skip-grams model.
 
 Word2Vec
@@ -1236,29 +1239,33 @@ Skip-grams model
 - The goal of this supervised learning is not to optimze the learning problem per se, but to use this learning problem to learn good word embeddings.
 - The supervised learning problem is to learn to map Context (Input x), c to Target (Output y), t
 - O(c) -> E -> e(c) = E @ O(c) -> softmax -> y^
-- softmax: p(t|c) = exp(theta(t).T @ e(c)) / sum(theta(j).T @ e(c)); theta(t) = parameter associated with output t, i.e., the chance of output t being the label.; sum over the vocabulary size.
+- softmax: p(t|c) = exp(theta(t).T @ e(c)) / sum(exp(theta(j).T @ e(c))); theta(t) = parameter associated with output t, i.e., the chance of output t being the label.; sum over the vocabulary size.
 - L(y^, y) = - sum(y * log(y^)) over the vocabulary size.
 - y: (vocabulary size, 1)
-- Problems: The denominator, sum(theta(j).T @ e(c)), is slow.
-  - Use binary tree to solve it. Hierarchical softmax. Time complexity is log(N) instead of N.
+- Problems: The denominator, sum(exp(theta(j).T @ e(c))), is slow.
+  - Use binary tree to solve it - Hierarchical softmax. Time complexity is log(N) instead of N.
   - The tree is organized with commonly used words close to the root of the tree, less common ones close to the leafs.
 
 Negative Sampling:
 - Sample a context and target word.
 - X: Context word (c), target word (t)  Y: 1/0
-- Positive example Randomly sample a target word in a window size from the context word.
-- Negative examples (k): pick a word randomly from the vocabulary. k = 5-20 for small datasets, 2-5 for large datasets.
+- Positive example (Y=1) Randomly sample a target word in a window size from the context word.
+- Negative examples (Y=0) (k): pick a word randomly from the vocabulary. k = 5-20 for small datasets, 2-5 for large datasets.
 - Logistic regression of P(y=1 | c, t) = sigmoid(theta(t).T @ e(c))
 - Negative : Positive = 5:1
-- vocabulary size sigmoid is cheaper than softmax. In every iteration, only train on k+1 input.
-- Sampling target words for negative examples based on P(wi) = (f(wi)^(3/4)) / (sum(f(wj)^(3/4))) sum over the vocabulary size.
+- Vocabulary size sigmoid is cheaper than softmax. In every iteration, only train on k+1 input.
+- Sampling target words for negative examples based on P(wi) = (f(wi)^(3/4)) / (sum(f(wj)^(3/4))) sum over the vocabulary size. f(wi) is observed frequency of w in the training dataset.
 
 GloVe (Global vectors for word representation)
 - Not used as much as SKip-grams and Negative Sampling.
 
+Language Model:
+- a[0] : zero vector
+- x[t] = y[t-1]
+
 Machine Translation can be thought of as a "conditional language model".
 - Instead of start of with a vector of zeros, start off with the encoded source language.
-- The encoded source language serves as a(0) to the RNN/sequence model.
+- The encoded source language serves as a[0] to the RNN/sequence model, i.e., the Language Model above as the decoder.
 - Instead of predicting the probability of any novel sentence, it predicts the probability of translated sentence conditioned on the input source language.
 - P(y|x), x: source language sentence, y: translated language sentence, both are embedding vectors.
 - Maximize P(y|x). Greedy search word by word is exponentially large depending on the vocabulary size.
@@ -1270,38 +1277,46 @@ Beam Search:
 - Second step: P(y1,y2|x) = P(y1|x) * p(y2|x,y1)
 - Arg Max sum(P(yt|x,y1,...yt-1)) for all time steps, t1...Ty. Ty = #words in output sentence.
 - P(yt|x,y1,...yt-1) will result in very small floating point number which will cause accuracy issue - numerical rounding error.
+  - Use log(P(yt|x,y1,...yt-1)) for calculation. Maximizing log(P(y|x)) is maximising P(y|x).
+  - Arg Max sum(log(P(yt|x,y1,...yt-1)))
 - Second problem is that this algorithm will incline towards shorter-sentence predictions since fewer factors of P(|) will result in larger number compared to longer-sentence predictions.
-- Arg Max sum(log(P(yt|x,y1,...yt-1))) fixes the numerical rounding issue.
-- Arg Max sum(log(P(yt|x,y1,...yt-1))) / (Ty ^ alpha) -> fixes the long-sentence penalty issue.
+  - Arg Max sum(log(P(yt|x,y1,...yt-1))) / (Ty ^ alpha) -> fixes the long-sentence penalty issue.
 Error Analysis:
 - B or RNN at fault?
 - Best: y*; prediction: y^
 (1) Compute P(y*|x) and P(y^|x)
-(2) P(y*|x) > P(y^|x): This aligns with the result but Beam search choise y^. So, it is at fault. Increase beam width, B.
+(2) P(y*|x) > P(y^|x): This aligns with the result but Beam search chooses y^. So, it is at fault. Increase beam width, B.
 (3) P(y*|x) <= P(y^|x): RNN computes the wrong result. So, it is at fault, the objective function.
 Note: Need to consider length normalization as well (1 / Ty^alpha).
 Machine Translation Evaluation:
-- BLEU Score - Bilingual Evaluation, Understudy
+- BLEU Score - Bilingual Evaluation, Understudy.
+- Measures how similar is the MT to reference translations.
+- Count the #times <foo>gram appears in any of the reference text. Limit/Clip that count to the max of times the matching <foo>gram appear in any of the reference text.
 - Given a machine generated translation, automatically compute a score that measures how good the translation is.
-- Used to evaluate text-generation applications.
-- Pn = sum(Count<clip>(n-gram)) / sum(Count(n-gram)) where n-gram appears in prediction sequence. Count<clip> = max count the n-gram appears in any of the reference translations.
-- Pn = 1 if y^ exactly the same as any of the reference translation.
+- Used to evaluate text-generation applications where there could be multiple equally good output/generated text by the RNN to find the best match. 
+  - Not for single-truth evaluation like speech recognition which is evaluated by exact match of the transription to the speech.
+- Pn = sum(Count<clip>(n-gram)) / sum(Count(n-gram)) where n-gram appears in prediction sequence, y^. Count<clip> = max count the n-gram appears in any of the reference translations.
+- Pn = 1 if y^ exactly the same as any of the reference translations.
 - Combined BLEU score = BP * e^(1/n * sum(Pn)) for all lengths of n-grams.
-- BP, brevity penalty = 1 if MT_output_length > reference output length; 
+- BP, brevity penalty, penalizes translations which are too short as short translations are easy match to any of the references.
+- BP = 1 if MT_output_length > reference output length;
 - BP = e^(1- reference_output_length/MT_output_length) otherwise.
 
 Naive encoder-decoder RNN is good at translating short sentences. BLEU score will drop when the source text gets longer.
+
 Attention model helps with translating long text.
-- Use Bidirectional RNN.
+- Use Bidirectional RNN for the encoder (source sequence) and forward-only RNN for decoder (output sequence).
 - a(t') = [a(t') | a_backward(t')]; t' = time step of the source/input language sequence.
-- alpha(t,t') = weight / amount of attention y(t) should pay to a(t')
+- alpha(t,t') = weight / amount of attention y(t) should pay to a(t'). 
+  - softmax(exp(e^(t,t')))
+  - Use a NN to compute e^(t,t') with hidden state of the decode time-step, S(t-1) and a(t')
 - C(t) = sum(alpha(t,t') @ a(t'))
 
 Speech Recognition.
 - Use spectogram.
 CTC cost for speech recognition:
 - Connectionist temporal classification.
-- Usually output text is shorter than the input sequence. For example, with 100Hz, 10s of speech will end up with Tx = 10,000.
+- Usually output text is shorter than the input sequence. For example, with 100Hz, 10s of speech will end up with Tx = 1000.
 - For RNN Ty to match Tx, use repeated character and collapse the repeated characters not separated by "space"/"blank".
 - Example: "The quick brown fox": ttt_h_eee____ ___qqq__uuu__ -> The qu
 ======================================================================================================================================================================================================
@@ -1311,8 +1326,9 @@ Transformer Network
 - Attention + CNN
   - Self attention
   - Multi-head attention
-Self-Attention:
+Self-Attention ("head"):
 - A(q,K,V) = attention-based vector representation of a word.
+  - Similar to word embeddings but with context.
   - Calculate for each word in the input sequence. A(1),...A(5) in parallel.
   - q: query, K: key, V: value
   - q(i) = Wq @ x(i)
@@ -1331,6 +1347,9 @@ Note:
 (2) Transformer Details:
     - Position encoding of the word in the input sequence. This is needed in transformer architecture since the computation is done in parallel and thus losing the position information in the original sequence.
     - i repeats itself once to encode 2 dimensions using the sine and cosine functions (same i is used for sine and cosine). To calculate i, use a helper index k, which is simply counting over the dimentions of the word embedding from 0 to d-1. i = k // 2.
+    - As i increases, sin and consine frequency decreases.
+    - P(t) is a vector of all the values of the sine and consine at time (t) for all k.
+    - P(t) is added directly into X(t) so that each of the word vectors is influenced / coloured with the relative position in the sentence.
     i: 0
     k = 2i = 0
     k = 2i + 1 = 1

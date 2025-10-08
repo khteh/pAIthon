@@ -19,6 +19,7 @@ class Embeddings():
             self._word_to_vec_map = {}
             self._read_glove_vecs()
             # The [paper](https://papers.nips.cc/paper/6228-man-is-to-computer-programmer-as-woman-is-to-homemaker-debiasing-word-embeddings.pdf), which the debiasing algorithm is from, assumes all word vectors to have L2 norm as 1 and hence the need for the calculations below:
+            # The bias axis can be higher than 1-D and is usually found using a complicated algorithm called SVU, singluar value decomposition, which is closely related to PCA (Principal component analysis).
             self._word_to_vec_map_unit_vectors = {
                 word: embedding / numpy.linalg.norm(embedding, ord=2)
                 for word, embedding in tqdm(self._word_to_vec_map.items())
@@ -151,8 +152,10 @@ class Embeddings():
 
     def NeutralizeGenderBias(self, word):
         """
-        Removes the bias of "word" by projecting it on the space orthogonal to the bias axis. 
+        Removes the bias of "word" by projecting it on the space orthogonal to the bias axis.
         This function ensures that gender neutral words are zero in the gender subspace.
+        Only apply this to words which are not definitional / intrinsically biased. Use linear classification to identify words to neutralize.
+
         𝑒𝑏𝑖𝑎𝑠_𝑐𝑜𝑚𝑝𝑜𝑛𝑒𝑛𝑡=𝑒⋅𝑔||𝑔||22∗𝑔(2)
         𝑒𝑑𝑒𝑏𝑖𝑎𝑠𝑒𝑑=𝑒−𝑒𝑏𝑖𝑎𝑠_𝑐𝑜𝑚𝑝𝑜𝑛𝑒𝑛𝑡(3)
 
@@ -183,6 +186,8 @@ class Embeddings():
 
     def Equalize(self, pair):
         """
+        This makes the pair of words to have difference only in the specific bias. Move the pairs to have equal distance from the non-bias axes.
+
         Next, let's see how debiasing can also be applied to word pairs such as "actress" and "actor." Equalization is applied to pairs of words that you might want to have differ only through the gender property. 
         As a concrete example, suppose that "actress" is closer to "babysit" than "actor." By applying neutralization to "babysit," you can reduce the gender stereotype associated with babysitting. But this still does not guarantee that "actor" and "actress" are equidistant from "babysit." 
         The equalization algorithm takes care of this.
@@ -281,7 +286,7 @@ def triads_analogy_tests():
 def bias():
     nlp = Embeddings('data/glove.6B.50d.txt')
     nlp.Bias(['john', 'marie', 'sophie', 'ronaldo', 'priya', 'rahul', 'danielle', 'reza', 'katy', 'yasmin'])
-    nlp.Bias(['lipstick', 'guns', 'science', 'arts', 'literature', 'warrior','doctor', 'tree', 'receptionist', 'technology',  'fashion', 'teacher', 'engineer', 'pilot', 'computer', 'singer', 'scientist'])
+    nlp.Bias(['lipstick', 'guns', 'science', 'arts', 'literature', 'warrior','doctor', 'nurse', 'tree', 'receptionist', 'technology',  'engineer', 'fashion', 'teacher', 'pilot', 'computer', 'singer', 'scientist'])
 
 def equalize():
     nlp = Embeddings('data/glove.6B.50d.txt')

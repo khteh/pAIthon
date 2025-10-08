@@ -17,6 +17,14 @@ import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
 from utils.TensorModelPlot import PlotModelHistory
 
+"""
+(1) Using word embeddings:
+O(c) -> E -> e(c) = E @ O(c) -> Average(e(w)) -> softmax (1 - 5) -> y^
+- Drawback: Ignore word ordering in the sentence.
+
+(2) RNN:
+O(c) -> E -> e(c) = E @ O(c) -> One-to-many RNN -> softmax (1 - 5) -> y^
+"""
 def BagOfWords():
     """
     Text sentence vectorization
