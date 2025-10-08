@@ -257,7 +257,8 @@ def sentences_to_indices_test():
 
     max_len = 4
     # def __init__(self, path: str = None, train:str = None, test:str = None, word_to_vec_map = None, word_to_index = None, max_len:int = None, learning_rate:float = 0.01):
-    nlp = LSTMEmojifier('data/glove.6B.50d.txt', None, None, None, word_to_index, max_len)
+    # https://nlp.stanford.edu/projects/glove/
+    nlp = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', None, None, None, word_to_index, max_len)
        
     sentences = numpy.array(["I like deep learning", "deep ´0.= love machine", "machine learning smile", "$"]);
     indexes = nlp.sentences_to_indices(sentences)
@@ -287,7 +288,8 @@ def pretrained_embedding_layer_test():
     for idx, val in enumerate(list(word_to_vec_map.keys())):
         word_to_index[val] = idx;
     # def __init__(self, path: str = None, train:str = None, test:str = None, word_to_vec_map = None, word_to_index = None, max_len:int = None, learning_rate:float = 0.01):
-    nlp = LSTMEmojifier('data/glove.6B.50d.txt', None, None, word_to_vec_map, word_to_index)
+    # https://nlp.stanford.edu/projects/glove/
+    nlp = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', None, None, word_to_vec_map, word_to_index)
     embedding_layer = nlp.pretrained_embedding_layer()
     
     assert type(embedding_layer) == Embedding, "Wrong type"
@@ -301,7 +303,8 @@ def pretrained_embedding_layer_test():
 
 def model_tests():
     # def __init__(self, path: str = None, train:str = None, test:str = None, word_to_vec_map = None, word_to_index = None, max_len:int = None, learning_rate:float = 0.01):
-    model = LSTMEmojifier('data/glove.6B.50d.txt', 'data/Emojifier/train_emoji.csv', 'data/Emojifier/tesss.csv')
+    # https://nlp.stanford.edu/projects/glove/
+    model = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', 'data/Emojifier/train_emoji.csv', 'data/Emojifier/tesss.csv')
     model.BuildModel()
     model.Train(50, 32)
     model.Evaluate()

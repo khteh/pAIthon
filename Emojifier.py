@@ -219,7 +219,8 @@ class Emojifier():
                 self._word_to_vec_map[curr_word] = numpy.array(line[1:], dtype=numpy.float64)
 
 def sentence_to_avg_tests():
-    nlp = Emojifier('data/glove.6B.50d.txt')
+    # https://nlp.stanford.edu/projects/glove/
+    nlp = Emojifier('/usr/src/GloVe/glove.6B.300d.txt')
     avg = nlp.sentence_to_avg("Morrocan couscous is my favorite dish")
     print("avg = \n", avg)
     # Create a controlled word to vec map
@@ -269,7 +270,8 @@ def model_tests():
     X_train, Y_train = nlp.read_csv('data/Emojifier/train_emoji.csv')
     X_test, Y_test = nlp.read_csv('data/Emojifier/tesss.csv')
 
-    nlp = Emojifier('data/glove.6B.50d.txt')
+    # https://nlp.stanford.edu/projects/glove/
+    nlp = Emojifier('/usr/src/GloVe/glove.6B.300d.txt')
     pred, W, b = nlp.BuildModel(X_train, Y_train)
     #print(f"Y_train prediction: {pred}")
     print("Training set:")

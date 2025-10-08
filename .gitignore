@@ -2,7 +2,7 @@
 *.crt
 *.key
 *.tgj
-data/glove.6B.50d.txt
+data/glove.6B.*d.txt
 data/XY_dev
 data/XY_train
 models/**/tf_model.h5

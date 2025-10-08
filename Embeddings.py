@@ -278,18 +278,21 @@ def complete_analogy_tests():
     print("\033[92mAll tests passed")
 
 def triads_analogy_tests():
-    nlp = Embeddings('data/glove.6B.50d.txt')
+    # https://nlp.stanford.edu/projects/glove/
+    nlp = Embeddings('/usr/src/GloVe/glove.6B.300d.txt')
     triads_to_try = [('italy', 'italian', 'spain'), ('india', 'delhi', 'japan'), ('man', 'woman', 'boy'), ('small', 'smaller', 'large')]
     for triad in triads_to_try:
         print ('{} -> {} :: {} -> {}'.format( *triad, nlp.complete_analogy(*triad, nlp.Word2VecMap())))
 
 def bias():
-    nlp = Embeddings('data/glove.6B.50d.txt')
+    # https://nlp.stanford.edu/projects/glove/
+    nlp = Embeddings('/usr/src/GloVe/glove.6B.300d.txt')
     nlp.Bias(['john', 'marie', 'sophie', 'ronaldo', 'priya', 'rahul', 'danielle', 'reza', 'katy', 'yasmin'])
     nlp.Bias(['lipstick', 'guns', 'science', 'arts', 'literature', 'warrior','doctor', 'nurse', 'tree', 'receptionist', 'technology',  'engineer', 'fashion', 'teacher', 'pilot', 'computer', 'singer', 'scientist'])
 
 def equalize():
-    nlp = Embeddings('data/glove.6B.50d.txt')
+    # https://nlp.stanford.edu/projects/glove/
+    nlp = Embeddings('/usr/src/GloVe/glove.6B.300d.txt')
     nlp.Equalize(("male", "female"))
     nlp.Equalize(("man", "woman"))
     nlp.Equalize(("father", "mother"))
