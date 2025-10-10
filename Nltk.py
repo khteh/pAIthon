@@ -1,7 +1,8 @@
-import nltk
+import nltk,re,string
 from random import shuffle
 from statistics import mean
-from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import twitter_samples    # sample Twitter dataset from NLTK
+from nltk.tokenize import sent_tokenize, word_tokenize, TweetTokenizer
 from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from sklearn.naive_bayes import BernoulliNB,ComplementNB,MultinomialNB
@@ -380,6 +381,50 @@ def SentimentAnalysisUsingScikitLearnClassifiers(features):
         accuracy = nltk.classify.accuracy(c, features[train_count:])
         print(f"{name}: {accuracy:.2%}")
 
+def ProcessTweets():
+    print(f"\n=== {ProcessTweets.__name__} ===")
+    # select the set of positive and negative tweets
+    all_positive_tweets = twitter_samples.strings('positive_tweets.json')
+    all_negative_tweets = twitter_samples.strings('negative_tweets.json')
+    print(f"{len(all_positive_tweets)} positive tweets. {len(all_negative_tweets)} negative tweets.")
+    tweet = all_positive_tweets[2277]
+    print(f"tweet: {tweet}")
+    # Remove hyperlinks, twitter marks and styles like the hashtag, retweet marks
+    # remove old style retweet text "RT"
+    tweet2 = re.sub(r'^RT[\s]+', '', tweet)
+
+    # remove hyperlinks
+    tweet2 = re.sub(r'https?://[^\s\n\r]+', '', tweet2)
+
+    # remove hashtags
+    # only removing the hash # sign from the word
+    tweet2 = re.sub(r'#', '', tweet2)
+    print(f"Cleaned tweet: {tweet2}")
+
+    # instantiate tokenizer class
+    tokenizer = TweetTokenizer(preserve_case=False, strip_handles=True, reduce_len=True)
+
+    # tokenize tweets
+    tweet_tokens = tokenizer.tokenize(tweet2)
+
+    tweets_clean = []
+    stopwords_english = stopwords.words('english') 
+    for word in tweet_tokens: # Go through every word in your tokens list
+        if (word not in stopwords_english and  # remove stopwords
+            word not in string.punctuation):  # remove punctuation
+            tweets_clean.append(word)
+    print(f"tokens without stopword and punctuation: {tweets_clean}")
+
+    # Instantiate stemming class
+    stemmer = PorterStemmer() 
+
+    # Create an empty list to store the stems
+    tweets_stem = [] 
+    for word in tweets_clean:
+        stem_word = stemmer.stem(word)  # stemming word
+        tweets_stem.append(stem_word)  # append to the list
+    print(f"Stemmed tweet: {tweets_stem}")
+    
 if __name__ == "__main__":
     Tokenization()
     Stemming()
@@ -394,3 +439,4 @@ if __name__ == "__main__":
     features, top_100_positive = BuildFeatures()
     CustomizeSentimentAnalysis(features, top_100_positive)
     SentimentAnalysisUsingScikitLearnClassifiers(features)
+    ProcessTweets()

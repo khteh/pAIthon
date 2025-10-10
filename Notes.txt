@@ -25,6 +25,43 @@ Prior Odds: 5:95
 Likelihood Ratio: P(A|B) / P(A|C) : (80/100) / (10/100) = (80/100) * (100/10) = 80/10 = 8
 Posterior Odds: 40:95
 
+25% of the positive tweets contain the word "happy". 13% of the tweets contain the word "happy". 40% of the total #tweets are positive. What's the probability of "happy to learn NLP" being positive?
+Knowing - P(visible effect|unknown cause) : P(happy|positive) = .25
+P(happy) = .13
+P(positive) = .4
+P(unknown cause | visible effect) : P(positive|happy) = P(happy|positive) * P(positive) / P(happy) = .25 * .4 / .13 = .769 = 77%
+
+Prior Ratio = P(pos) / P(neg)
+- Important only in unbalanced dataset since the division is not 1.
+
+Naive Bayes:
+- Supervised Learning.
+- Shares many similarities with Logistic Regression.
+- "Naive" because it makes assumptions about:
+  (1) The features being independent.
+  (2) Relative frequencies in the corpora.
+      - Training dataset is artifically balanced. In reality, the data are not balanced and much noisier.
+- Naive Bayes inference condition rule for binary classification: P(X(i)|pos)/P(X(i)|neg) multiplied for all i.
+  - Positive if > 1. Negative if < 1. Neutral if 1.
+- P(pos) / P(neg) * P(X(i)|pos)/P(X(i)|neg) is the full Naive Bayes formula for binary classification.
+- A simple, fast and powerful method to establish a baseline quickly.
+- A probabilistic model used for classification.
+- To avoid numerical underflow due to multiplication of floating point values < 1, use Log Likelihood.
+  - lambda = log(P(Xi|pos)/P(Xi|neg))
+  - log(P(pos)/P(neg)) + sum(log(P(Xi|pos)/P(Xi|neg)))
+  - Positive if > 0. Negative if < 0. Neutral if 0.
+- Example use cases:
+  - Sentiment analysis
+  - Author identification.
+  - Information retrieval.
+    - P(document[i] | query)
+  - Word disambiguation.
+    - P(context1|text) / P(context2|text)
+
+Laplacian Smoothing:
+- Used to avoid 0 conditional probability.
+- P(X(i)|class) = (freq(X(i), class) + 1) / (Nclass + N); N = total #samples in the dataset, Nclass = frequency of all X in the class.
+
 Joint Probability:
 P(A|b) = P(A, b) / P(b) : Comma signifies ^
        = alpha * P(A, b), where alpha = 1/P(b) which is just some constant.
