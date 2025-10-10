@@ -1,6 +1,8 @@
 import numpy
 from pathlib import Path
 from utils.UniVariatePlot import UniVariatePlot
+from utils.CosineSimilarity import cosine_similarity
+
 portnames = ["PAN", "AMS", "CAS", "NYC", "HEL"]
 D = [
         [0,8943,8019,3652,10545],
@@ -125,6 +127,21 @@ def CountSubStrings(src, substr, repetition):
     src *= repetition
     print(f"'{substr}' appears in `{src}` {src.count(substr)} times")
 
+def CosineSimilarityTests():
+    print(f"\n=== {CosineSimilarityTests.__name__} ===")
+    usa = numpy.array([5,6])
+    washington = numpy.array([10,5])
+    turkey = numpy.array([3,1])
+    russia = numpy.array([5,5])
+    japan = numpy.array([4,3])
+    ankara = numpy.array([9,1])
+    # usa - washington = ? - ankara
+    # ? = usa - washington + ankara
+    country = usa - washington + ankara
+    print(f"embedding of country of ankara: {country}")
+    for c in [turkey, russia, japan]:
+        print(f"{c}: {cosine_similarity(country, c)}")
+
 if __name__ == "__main__":
     sort_dict_by_tuple_values()
     permutations([0], list(range(1, len(portnames)))) # This will start the recursion with 0 ("PAN") as the first stop
@@ -136,3 +153,4 @@ if __name__ == "__main__":
     TupleArithmetic()
     ArrayExtension()
     CountSubStrings("banana", "an", 4)
+    CosineSimilarityTests()

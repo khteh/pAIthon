@@ -1,0 +1,7 @@
+Vector Space
+- Measures of "similarity" among words/documents in terms of angle and/or distance.
+Co-occurrence matrix
+Word by Word design:
+- #times they appear together within a certain distance k.
+Word by Document design:
+- #times they appear together within a certain category.

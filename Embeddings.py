@@ -1,5 +1,6 @@
 import numpy, spacy
 from tqdm import tqdm
+from utils.CosineSimilarity import cosine_similarity
 class Embeddings():
     _nlp = None
     _path:str = None
@@ -30,16 +31,6 @@ class Embeddings():
         else:
             raise RuntimeError("Please provide a word_to vec map or path to load from!")
 
-    def _cosine_similarity(self, u: numpy.ndarray, v: numpy.ndarray) -> float:
-        """Compute the cosine similarity between two vectors"""
-        # Special case. Consider the case u = [0, 0], v=[0, 0]
-        if numpy.all(u == v):
-            return 1
-        norm_u = numpy.linalg.norm(u, ord=2)
-        norm_v = numpy.linalg.norm(v, ord=2)
-        # Avoid division by 0
-        return 0 if numpy.isclose(norm_u * norm_v, 0, atol=1e-32) else (u @ v) / (norm_u * norm_v)
-
     def Word2VecMap(self):
         return self._word_to_vec_map
     
@@ -53,29 +44,29 @@ class Embeddings():
         truck_embedding = nlp.vocab["truck"].vector    
         print(f"dog embedding: shape: {dog_embedding.shape} {dog_embedding[:10]}")
 
-        dog_cat_similarity = self._cosine_similarity(dog_embedding, cat_embedding)
+        dog_cat_similarity = cosine_similarity(dog_embedding, cat_embedding)
         print(f"dog - cat similarity: {dog_cat_similarity}")
 
-        delicious_tasty_similarity = self._cosine_similarity(delicious_embedding, tasty_embedding)
+        delicious_tasty_similarity = cosine_similarity(delicious_embedding, tasty_embedding)
         print(f"delicious - tasty similarity: {delicious_tasty_similarity}")
         #assert delicious_tasty_similarity > dog_cat_similarity # unlike the dog and cat embeddings, delicious and tasty have similar word embeddings because you can use them interchangeably.
         
-        apple_delicious_similarity = self._cosine_similarity(apple_embedding, delicious_embedding)
+        apple_delicious_similarity = cosine_similarity(apple_embedding, delicious_embedding)
         print(f"apple - delicious similarity: {apple_delicious_similarity}")
 
-        apple_tasty_similarity = self._cosine_similarity(apple_embedding, tasty_embedding)
+        apple_tasty_similarity = cosine_similarity(apple_embedding, tasty_embedding)
         print(f"apple - tasty similarity: {apple_tasty_similarity}")
 
-        apple_dog_similarity = self._cosine_similarity(apple_embedding, dog_embedding)
+        apple_dog_similarity = cosine_similarity(apple_embedding, dog_embedding)
         print(f"apple - dog similarity: {apple_dog_similarity}")
         assert apple_dog_similarity < dog_cat_similarity
 
-        truck_delicious_similarity = self._cosine_similarity(truck_embedding, delicious_embedding)
+        truck_delicious_similarity = cosine_similarity(truck_embedding, delicious_embedding)
         print(f"truck - delicious similarity: {truck_delicious_similarity}")
         assert truck_delicious_similarity < apple_delicious_similarity
         assert truck_delicious_similarity < apple_tasty_similarity
 
-        truck_tasty_similarity = self._cosine_similarity(truck_embedding, tasty_embedding)
+        truck_tasty_similarity = cosine_similarity(truck_embedding, tasty_embedding)
         print(f"truck - tasty similarity: {truck_tasty_similarity}")
         assert truck_tasty_similarity < apple_delicious_similarity
         assert truck_tasty_similarity < apple_tasty_similarity
@@ -126,7 +117,7 @@ class Embeddings():
                 continue
             
             # Compute cosine similarity between the vector (e_b - e_a) and the vector ((w's vector representation) - e_c)  (≈1 line)
-            cosine_sim = self._cosine_similarity((e_b - e_a), (word_to_vec_map[w] - e_c))
+            cosine_sim = cosine_similarity((e_b - e_a), (word_to_vec_map[w] - e_c))
             
             # If the cosine_sim is more than the max_cosine_sim seen so far,
                 # then: set the new max_cosine_sim to the current cosine_sim and the best_word to the current word (≈3 lines)
@@ -146,7 +137,7 @@ class Embeddings():
         for w in words:
             if w in self._word_to_vec_map:
                 # Positive values mean closer to woman; negative values mean closer to man
-                print (f"{w}: {self._cosine_similarity(self._word_to_vec_map[w], self._gender)}, {self._cosine_similarity(self.NeutralizeGenderBias(w), self._bias_axis)}")
+                print (f"{w}: {cosine_similarity(self._word_to_vec_map[w], self._gender)}, {cosine_similarity(self.NeutralizeGenderBias(w), self._bias_axis)}")
             else:
                 print(f"Skipping {w} not in vocabulary")
 
@@ -181,8 +172,8 @@ class Embeddings():
             return e_debiased
         else:
             print(f"Skipping {word} not in vocabulary")
-        #print(f"cosine similarity between {w} and gender, before neutralizing: {self._cosine_similarity(self._word_to_vec_map[w], self._gender)}")
-        #print(f"cosine similarity between {w} and bias_axis, after neutralizing: {self._cosine_similarity(e_debiased, self._bias_axis)}")
+        #print(f"cosine similarity between {w} and gender, before neutralizing: {cosine_similarity(self._word_to_vec_map[w], self._gender)}")
+        #print(f"cosine similarity between {w} and bias_axis, after neutralizing: {cosine_similarity(e_debiased, self._bias_axis)}")
 
     def Equalize(self, pair):
         """
@@ -232,8 +223,8 @@ class Embeddings():
         e1 = corrected_e_w1B + mu_orth
         e2 = corrected_e_w2B + mu_orth
         print("cosine similarities after equalizing:")
-        print(f"cosine_similarity({w1}, gender) = {self._cosine_similarity(e1, self._bias_axis)}")
-        print(f"cosine_similarity({w2}, gender) = {self._cosine_similarity(e2, self._bias_axis)}")
+        print(f"cosine_similarity({w1}, gender) = {cosine_similarity(e1, self._bias_axis)}")
+        print(f"cosine_similarity({w2}, gender) = {cosine_similarity(e2, self._bias_axis)}")
         #return e1, e2
 
     def _read_glove_vecs(self):

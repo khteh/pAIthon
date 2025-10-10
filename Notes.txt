@@ -366,6 +366,11 @@ Principal Component Analysis:
 (5) Less common applications:
     (i) Data compression - Reduce storage and/or transmission cost
     (ii) Speed up training of a supervised learning model.
+(6) Matrices have eigenvectors and eigenvalues.
+    Eigenvector: Provide direction of uncorrelated features of the data.
+    Eigenvalue: The variance of the dataset on those features. It tells the amount of information retained by each feature.
+    Dot-product between embeddings and eigenvectors gives projection on uncorrelated features.
+    
 =========================================================================================================================================================================================================================================
 Neural Network (multilayer perceptron):
 - Scale drives DL progess.
@@ -1157,6 +1162,12 @@ L2 Distance
 - A measure of the straight-line distance between two points in a multi-dimensional space.
 - sqrt(sum((A - B) ** 2))
 - dist = numpy.linalg.norm(a-b, ord=2)
+- Biased by the size difference between a and b. Cosine similarity mitigates this.
+
+Dot-product:
+v @ w = ||v|| * ||w|| * cos(beta)
+cos(beta) = (v @ w) / (||v|| * ||w||)
+          = (v @ w) / (np.linalg.norm(a) * np.linalg.norm(b))
 ======================================================================================================================================================================================================
 Sequence Models
 Use Cases:
