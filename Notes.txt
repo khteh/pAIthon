@@ -323,6 +323,15 @@ cost function: J(c, uk) = sum(|x[i] - u[k]|  ** 2 ) / m
 Every step along the way reduces J(c, uk).
 To minimize local minimum and choose the best cluster centroids, use multiple random initializations and choose the cluster with the lowest J(c,u). i.e., run the algorithm multiple times, maybe 50 to 1000.
 
+Locality Sensitive Hashing:
+- Find neighbours in high-dimensional spaces.
+- Use multiple planes and a single hash value.
+- Vector perpendicular to a plane is a Normal Vector, P.
+- P @ V.T:
+  - +ve: in the same side as P, -ve: Opposite side of P. 0: On the plane.
+  - >= 0: h = 0; -ve: h = 0. Use numpy.sign().
+  - hash value = sum(2 ** i x h[i]) for all i.
+
 Anomaly Detection:
 Density Estimation: Model p(x) from data. Probability of x[i] being seen in the dataset.
 p(x[i]) < epsilon : Anomaly
@@ -1168,6 +1177,9 @@ Dot-product:
 v @ w = ||v|| * ||w|| * cos(beta)
 cos(beta) = (v @ w) / (||v|| * ||w||)
           = (v @ w) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+Frobenius Norm:
+= ||x|| = sqrt(sum(X[i][j] ** 2)) for every element in the matrix
 ======================================================================================================================================================================================================
 Sequence Models
 Use Cases:

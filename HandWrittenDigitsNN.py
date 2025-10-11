@@ -8,6 +8,9 @@ from tensorflow.keras.optimizers import Adam
 import matplotlib.pyplot as plt
 from utils.GPU import InitializeGPU
 from utils import *
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
+
 logging.getLogger("tensorflow").setLevel(logging.ERROR)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 tf.autograph.set_verbosity(0)

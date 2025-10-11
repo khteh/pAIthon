@@ -1,5 +1,8 @@
 import numpy, pickle
 import matplotlib.pyplot as plt
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
+
 def get_vectors(embeddings, words):
     """
     Input:
@@ -57,12 +60,12 @@ def compute_pca(X, n_components=2):
     return X_reduced
 
 if __name__ == "__main__":
-    X = numpy.random.rand(3, 10)
+    X = rng.random((3, 10))
     X_reduced = compute_pca(X, n_components=2)
     print(f"Original matrix was {X.shape} and it became: {X_reduced}")
     words = ['oil', 'gas', 'happy', 'sad', 'city', 'town', 'village', 'country', 'continent', 'petroleum', 'joyful']
 
-    word_embeddings = pickle.load(open("./data/word_embeddings_subset.p", "rb"))
+    word_embeddings = pickle.load(open("./data/word_embeddings_subset.p", "rb")) # Complete dataset available at https://code.google.com/archive/p/word2vec/
     print(f"{len(word_embeddings)} embeddings")  # there should be 243 words that will be used in this assignment
     # given a list of words and the embeddings, it returns a matrix with all the embeddings
     X = get_vectors(word_embeddings, words)
