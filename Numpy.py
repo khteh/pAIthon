@@ -1,18 +1,17 @@
-import numpy, math, tensorflow as tf
+import numpy, math, tensorflow as tf, matplotlib.pyplot as plt
 from math import floor
 from pathlib import Path
 from utils.GPU import InitializeGPU
 import numpy.lib.recfunctions as reconcile
 from numpy.random import Generator, PCG64DXSM
-import matplotlib.pyplot as plt
 rng = Generator(PCG64DXSM())
 """
 https://numpy.org/doc/stable/user/basics.indexing.html
 Numpy main data type is ndarray
 shape (n,m,...) goes from outer-most (n) to inner-most dimension (m,...).
 numpy.random.seed() is used to create reproducible random numbers aligned with the seed.
-numpy.random.randint(a, size=(n,m)): Generates random numbers of range[0, a) and shape=(n,m)
-numpy.random.random((n,m)): Generates random numbers of range[0,1) of shape=(n,m)
+rng.integers(a, size=(n,m)): Generates random numbers of range[0, a) and shape=(n,m)
+rng.random((n,m)): Generates random numbers of range[0,1) of shape=(n,m)
 // : Floor division - Removes the decimals / round down
 numpy.var(): Variance = A measure of the average degree to which each number is diff to the mean. Higher variance: wider range of numbers
 numpy.std(): Standard deviation = A measure of how spread out a group of numbers is from the mean. = sqrt(numpy.var())
@@ -477,7 +476,7 @@ def MeshGridTests():
     x_range = numpy.arange(x_min, x_max, 1)
     y_range = numpy.arange(y_min, y_max, h)
     print(f"x_range: {x_range.shape}, y_range: {y_range.shape}")
-    xx, yy = numpy.meshgrid(numpy.arange(x_min, x_max, 1), numpy.random(y_min, y_max, h))
+    xx, yy = numpy.meshgrid(numpy.arange(x_min, x_max, 1), numpy.arange(y_min, y_max, h))
     #xx, yy = numpy.meshgrid(1024, numpy.arange(y_min, y_max, h))
     print(f"xx: {xx.shape}, yy: {yy.shape}")
     print(f"xx: {xx[:10]}, yy: {yy[:10]}")

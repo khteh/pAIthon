@@ -8,7 +8,6 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.metrics import mean_squared_error
 from numpy.random import Generator, PCG64DXSM
 from utils.kMeans import *
-#rng = numpy.random.default_rng(seed=19)
 rng = Generator(PCG64DXSM())
 """
 https://realpython.com/videos/knn-python-overview/

@@ -1,14 +1,7 @@
-import numpy, pandas as pd
-from pathlib import Path
+import numpy
 import matplotlib.pyplot as plt
-from collections import Counter
-from utils.FileUtil import Download
-from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.metrics import mean_squared_error
 from numpy.random import Generator, PCG64DXSM
 from utils.kMeans import *
-#rng = numpy.random.default_rng(seed=19)
 rng = Generator(PCG64DXSM())
 
 class kMeansClustering():

@@ -243,7 +243,6 @@ def conv_forward_test():
 def pool_forward_test():
     # Case 1: stride of 1
     print("CASE 1:\n")
-    numpy.random.seed(1)
     A_prev_case_1 = rng.standard_normal((2, 5, 5, 3))
     hparameters_case_1 = {"stride" : 1, "f": 3}
 

@@ -68,7 +68,7 @@ def sample(chars, preds, temperature=1.0):
 def on_epoch_end(epoch, logs):
     # Function invoked at end of each epoch. Prints generated text.
     None
-    #start_index = random.randint(0, len(text) - Tx - 1)
+    #start_index = rng.integers(0, len(text) - Tx - 1, size=1)
     
     #generated = ''
     #sentence = text[start_index: start_index + Tx]

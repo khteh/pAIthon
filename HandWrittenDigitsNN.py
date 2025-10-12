@@ -54,7 +54,7 @@ class HandWrittenDigitsNN():
         fig.tight_layout(pad=0.1)
         for i,ax in enumerate(axes.flat):
             # Select random indices
-            random_index = numpy.random.randint(m)
+            random_index = rng.integers(m, size=1)
             
             # Select rows corresponding to the random indices and
             # reshape the image
@@ -110,7 +110,7 @@ class HandWrittenDigitsNN():
 
         for i,ax in enumerate(axes.flat):
             # Select random indices
-            random_index = numpy.random.randint(m)
+            random_index = rng.integers(m, size=1)
             
             # Select rows corresponding to the random indices and
             # reshape the image

@@ -1,12 +1,13 @@
-import csv
-import sys
-
+import csv, sys, numpy
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from collections import Counter
 
 TEST_SIZE = 0.4
-
+"""
+$ pipenv run python -m shopping shopping.csv
+$ pipenv run check50 --local ai50/projects/2024/x/shopping
+"""
 
 def main():
 
@@ -16,9 +17,14 @@ def main():
 
     # Load data from spreadsheet and split into train and test sets
     evidence, labels = load_data(sys.argv[1])
+    evidence = numpy.array(evidence)
+    labels = numpy.array(labels)
     X_train, X_test, y_train, y_test = train_test_split(
         evidence, labels, test_size=TEST_SIZE
     )
+    y_train = numpy.ravel(y_train)
+    y_test = numpy.ravel(y_test)
+    print(f"X_train: {X_train.shape} y_train: {y_train.shape} X_test: {X_test.shape}, y_test: {y_test.shape}")
 
     # Train model and make predictions
     model = train_model(X_train, y_train)

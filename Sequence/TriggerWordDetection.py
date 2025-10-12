@@ -10,6 +10,8 @@ from tensorflow.keras.layers import Dense, Activation, Dropout, Input, Masking, 
 from tensorflow.keras.layers import GRU, Bidirectional, BatchNormalization, Reshape
 from tensorflow.keras.optimizers import Adam
 from utils.TensorModelPlot import PlotModelHistory
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
 
 class TrigerWordDetection():
     _path:str = None
@@ -78,7 +80,7 @@ class TrigerWordDetection():
         Returns:
         segment_time -- a tuple of (segment_start, segment_end) in ms
         """
-        segment_start = numpy.random.randint(low=0, high=10000-segment_ms)   # Make sure segment doesn't run past the 10sec background 
+        segment_start = rng.integers(low=0, high=10000-segment_ms, size=1)   # Make sure segment doesn't run past the 10sec background 
         segment_end = segment_start + segment_ms - 1
         return (segment_start, segment_end)
     
@@ -162,8 +164,8 @@ class TrigerWordDetection():
         previous_segments = []
         
         # Select 0-4 random "activate" audio clips from the entire list of "activates" recordings
-        number_of_activates = numpy.random.randint(0, 5)
-        random_indices = numpy.random.randint(len(self._activates), size=number_of_activates)
+        number_of_activates = rng.integers(0, 5, size=1)
+        random_indices = rng.integers(len(self._activates), size=number_of_activates)
         random_activates = [self._activates[i] for i in random_indices]
         
         # Step 3: Loop over randomly selected "activate" clips and insert in background
@@ -177,8 +179,8 @@ class TrigerWordDetection():
             y = self.insert_ones(y, segment_end)
 
         # Select 0-2 random negatives audio recordings from the entire list of "negatives" recordings
-        number_of_negatives = numpy.random.randint(0, 3)
-        random_indices = numpy.random.randint(len(self._negatives), size=number_of_negatives)
+        number_of_negatives = rng.integers(0, 3, size=1)
+        random_indices = rng.integers(len(self._negatives), size=number_of_negatives)
         random_negatives = [self._negatives[i] for i in random_indices]
 
         # Step 4: Loop over randomly selected negative clips and insert in background

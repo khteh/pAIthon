@@ -241,7 +241,7 @@ def play(ai, human_player=None):
     """
     # If no player order set, choose human's order randomly
     if human_player is None:
-        human_player = random.randint(0, 1)
+        human_player = rng.integers(low=0, high=1, size=1)
 
     # Create new game
     game = Nim()

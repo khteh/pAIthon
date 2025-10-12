@@ -2,6 +2,9 @@ import numpy, copy
 from collections import defaultdict, OrderedDict
 from itertools import groupby, zip_longest
 from music21 import *
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
+
 # https://github.com/evancchow/jazzml
 # https://github.com/jisungk/deepjazz
 
@@ -564,12 +567,11 @@ def data_processing(corpus, values_indices, m = 60, Tx = 30):
     # cut the corpus into semi-redundant sequences of Tx values
     Tx = Tx 
     N_values = len(set(corpus))
-    numpy.random.seed(0)
     X = numpy.zeros((m, Tx, N_values), dtype=numpy.bool)
     Y = numpy.zeros((m, Tx, N_values), dtype=numpy.bool)
     for i in range(m):
 #         for t in range(1, Tx):
-        random_idx = numpy.random.choice(len(corpus) - Tx)
+        random_idx = rng.choice(len(corpus) - Tx)[0]
         corp_data = corpus[random_idx:(random_idx + Tx)]
         for j in range(Tx):
             idx = values_indices[corp_data[j]]
