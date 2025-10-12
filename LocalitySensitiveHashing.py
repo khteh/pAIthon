@@ -1,4 +1,4 @@
-import pdb, pickle, string, time, nltk, numpy, pandas as pd
+import pickle, nltk, numpy
 from nltk.corpus import stopwords, twitter_samples
 from os import getcwd
 from utils.CosineSimilarity import cosine_similarity
@@ -6,7 +6,7 @@ from Classification.NaiveBayes import process_tweet
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
-filePath = f"{getcwd()}/../data/"
+filePath = f"{getcwd()}/data/"
 nltk.data.path.append(filePath)
 
 class LocalitySensitiveHashing():
@@ -17,8 +17,10 @@ class LocalitySensitiveHashing():
     _all_positive_tweets = None
     _all_negative_tweets = None
     _all_tweets = None
+    _ind2Tweet = None # Key: index (integer) that identifies a specific tweet; Value: embedding for that document
+    _document_embeddings = None # each row is a document vector
     _n_planes: int = None
-    _planes_l = None
+    _planes_l = None # Row: tweet, Column: #plane
     _universes: int = None
     _hash_tables = None
     _id_tables = None
@@ -34,33 +36,35 @@ class LocalitySensitiveHashing():
         self._all_positive_tweets = twitter_samples.strings('positive_tweets.json')
         self._all_negative_tweets = twitter_samples.strings('negative_tweets.json')
         self._all_tweets = self._all_positive_tweets + self._all_negative_tweets
-        #tweet_embedding = self._get_document_embedding(custom_tweet, en_embeddings_subset)
-        self._document_vecs, self._ind2Tweet = self._get_document_vecs(self._all_tweets, self._en_embeddings_subset)
-        self._planes_l = [numpy.random.normal(size=(len(self._ind2Tweet[1]), self._n_planes)) for _ in range(self._universes)]
-        self._create_hash_id_tables(self._universes)
-        print(f"length of dictionary {len(self._ind2Tweet)}")
-        print(f"shape of document_vecs {self._document_vecs.shape}")
+        self._get_document_embeddings()
+        # Create multiple (self._universes) sets of planes (the planes that divide up the region).
+        # You can think of these as self._universes separate ways of dividing up the vector space with a different set of planes.
+        # Each element of this list contains a matrix with 300 rows (the word vector have 300 dimensions), and self._n_planes columns (there are self._n_planes planes in each "universe").
+        self._planes_l = [rng.normal(size=(len(self._ind2Tweet[1]), self._n_planes)) for _ in range(self._universes)]
+        self._create_hash_id_tables()
+        print(f"{len(self._ind2Tweet)} tweets, document_embeddings: {self._document_embeddings.shape}, {len(self._planes_l)} planes")
 
     def GetSimilarExistingTweet(self, tweet:str):
+        print(f"\n=== {self.GetSimilarExistingTweet.__name__} ===")
         process_tweet(tweet)
         tweet_embedding = self._get_document_embedding(tweet, self._en_embeddings_subset)
-        idx = numpy.argmax(cosine_similarity(self._document_vecs, tweet_embedding))
+        idx = numpy.argmax(cosine_similarity(self._document_embeddings, tweet_embedding))
         return self._all_tweets[idx]
 
     def SearchDocuments(self, id: int, k: int, universe_count: int):
+        print(f"\n=== {self.SearchDocuments.__name__} ===")
+        universe_count = min(self._universes, universe_count)
         doc_to_search = self._all_tweets[id]
-        vec_to_search = self._document_vecs[id]        
+        vec_to_search = self._document_embeddings[id]        
         nearest_neighbor_ids = self._approximate_knn(id, vec_to_search, k, universe_count)
-        print(f"Nearest neighbors for document {id}")
-        print(f"Document contents: {doc_to_search}")
+        print(f"Nearest neighbors for document {id}: {doc_to_search}")
         print("")
         for neighbor_id in nearest_neighbor_ids:
-            print(f"Nearest neighbor at document id {neighbor_id}")
-            print(f"document contents: {self._all_tweets[neighbor_id]}")
+            print(f"Nearest neighbor at document id {neighbor_id}: {self._all_tweets[neighbor_id]}")
 
     def _approximate_knn(self, doc_id, v, k, num_universes_to_use):
         """Search for k-NN using hashes."""
-        #assert num_universes_to_use <= N_UNIVERSES
+        assert num_universes_to_use <= self._universes
 
         # Vectors that will be checked as possible nearest neighbor
         vecs_to_consider_l = list()
@@ -174,7 +178,7 @@ class LocalitySensitiveHashing():
             doc_embedding += en_embeddings.get(word, 0)
         return doc_embedding   
 
-    def _get_document_vecs(self, all_docs, en_embeddings):
+    def _get_document_embeddings(self):
         '''
         Input:
             - all_docs: list of strings - all tweets in our dataset.
@@ -185,41 +189,38 @@ class LocalitySensitiveHashing():
         '''
         # the dictionary's key is an index (integer) that identifies a specific tweet
         # the value is the document embedding for that document
-        ind2Doc_dict = {}
+        self._ind2Tweet = {}
 
         # this is list that will store the document vectors
-        document_vec_l = []
+        document_vecs = []
 
-        for i, doc in enumerate(all_docs):
+        for i, doc in enumerate(self._all_tweets):
 
             ### START CODE HERE ###
             # get the document embedding of the tweet
-            doc_embedding = self._get_document_embedding(doc, en_embeddings)
+            doc_embedding = self._get_document_embedding(doc, self._en_embeddings_subset)
 
             # save the document embedding into the ind2Tweet dictionary at index i
-            ind2Doc_dict[i] = doc_embedding
+            self._ind2Tweet[i] = doc_embedding
 
             # append the document embedding to the list of document vectors
-            document_vec_l.append(doc_embedding)
+            document_vecs.append(doc_embedding)
 
         # convert the list of document vectors into a 2D array (each row is a document vector)
-        document_vec_matrix = numpy.vstack(document_vec_l)
-        return document_vec_matrix, ind2Doc_dict
+        self._document_embeddings = numpy.vstack(document_vecs)
 
     def _hash_value_of_vector(self, v, planes):
         """Create a hash for a vector; hash_id says which random hash to use.
         Input:
-            - v:  vector of tweet. It's dimension is (1, N_DIMS)
-            - planes: matrix of dimension (N_DIMS, N_n_planes) - the set of planes that divide up the region
+            - v:  vector of tweet. It's dimension is (1, len(self._ind2Tweet[1]))
+            - planes: matrix of dimension (len(self._ind2Tweet[1]), self._n_planes) - the set of planes that divide up the region
         Output:
             - res: a number which is used as a hash for your vector
-
         """
-        ### START CODE HERE ###
         # for the set of planes,
         # calculate the dot product between the vector and the matrix containing the planes
-        # remember that planes has shape (300, 10)
-        # The dot product will have the shape (1,10)    
+        # remember that planes has shape (300, self._n_planes)
+        # The dot product will have the shape (1, self._n_planes)    
         dot_product = v @ planes
             
         # get the sign of the dot product (1,10) shaped vector
@@ -236,8 +237,7 @@ class LocalitySensitiveHashing():
         # initialize the hash value to 0
         hash_value = 0
 
-        n_n_planes = len(h)
-        for i in range(n_n_planes):
+        for i in range(len(h)):
             # increment the hash value by 2^i * h_i        
             hash_value += 2 ** i * h[i]
             
@@ -286,13 +286,18 @@ class LocalitySensitiveHashing():
             id_table[h].append(i) # @REPLACE None
         return hash_table, id_table
     
-    def _create_hash_id_tables(self, n_universes):
+    def _create_hash_id_tables(self):
+        """
+        Create multiple (self._universes) sets of planes (the planes that divide up the region).
+        You can think of these as self._universes separate ways of dividing up the vector space with a different set of planes.
+        Each element of this list contains a matrix with 300 rows (the word vector have 300 dimensions), and self._n_planes columns (there are self._n_planes planes in each "universe").
+        """
         self._hash_tables = []
         self._id_tables = []
-        for universe_id in range(n_universes):  # there are 25 hashes
-            print('working on hash universe #:', universe_id)
-            planes = self._planes_l[universe_id]
-            hash_table, id_table = self._make_hash_table(self._document_vecs, planes)
+        for id in range(self._universes):  # there are 25 hashes
+            print(f"working on hash universe #: {id}")
+            planes = self._planes_l[id] # Planes of a specific tweet
+            hash_table, id_table = self._make_hash_table(self._document_embeddings, planes)
             self._hash_tables.append(hash_table)
             self._id_tables.append(id_table)
 
