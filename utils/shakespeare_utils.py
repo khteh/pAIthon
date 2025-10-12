@@ -54,13 +54,13 @@ def vectorization(X, Y, n_x, char_indices, Tx = 40):
         y[i, char_indices[Y[i]]] = 1
     return x, y 
 
-def sample(preds, temperature=1.0):
+def sample(chars, preds, temperature=1.0):
     # helper function to sample an index from a probability array
     preds = numpy.asarray(preds).astype('float64')
     preds = numpy.log(preds) / temperature
     exp_preds = numpy.exp(preds)
     preds = exp_preds / numpy.sum(exp_preds)
-    probas = numpy.random.multinomial(1, preds, 1)
+    probas = rng.multinomial(1, preds, 1)
     out = rng.choice(range(len(chars)), p = probas.ravel())
     return out
     #return numpy.argmax(probas)

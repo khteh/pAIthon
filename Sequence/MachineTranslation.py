@@ -513,8 +513,8 @@ def one_step_attention_test():
     # lr=0.005, beta_1=0.9,beta_2=0.999,decay=0.01
     mt = MachineTranslation("models/MachineTranslation.keras", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100, 10)
 
-    a = numpy.random.uniform(1, 0, (m, Tx, 2 * n_a)).astype(numpy.float32)
-    s_prev = numpy.random.uniform(1, 0, (m, n_s)).astype(numpy.float32) * 1
+    a = rng.uniform(low=0, high=1, size=(m, Tx, 2 * n_a)).astype(numpy.float32)
+    s_prev = rng.uniform(low=0, high=1, size=(m, n_s)).astype(numpy.float32) * 1
     context = mt.one_step_attention(a, s_prev)
     
     expected_output = numpy.load('data/expected_output_ex1.npy')

@@ -38,6 +38,7 @@ class CharacterGenerationRNN():
     _path:str = None
     _data_size: int = None
     _words = None
+    _chars = None
     _vocab_size: int = None
     _char_to_ix = None
     _ix_to_char = None
@@ -64,23 +65,22 @@ class CharacterGenerationRNN():
         if self._dinasaur:
             with open(self._path, 'r', newline='') as f: # dinos.txt
                 data = f.read().lower()
-                chars = list(set(data))
-                chars = sorted(chars)
+                self._chars = sorted(list(set(data)))
                 self._words = data.split("\n")
-                self._data_size, self._vocab_size = len(data), len(chars)
-                self._char_to_ix = { ch:i for i,ch in enumerate(chars) }
-                self._ix_to_char = { i:ch for i,ch in enumerate(chars) }
+                self._data_size, self._vocab_size = len(data), len(self._chars)
+                self._char_to_ix = { ch:i for i,ch in enumerate(self._chars) }
+                self._ix_to_char = { i:ch for i,ch in enumerate(self._chars) }
             print('There are %d total characters and %d unique characters in your data.' % (self._data_size, self._vocab_size))
         elif self._shakespeare:
             print("Loading text data...")
             with open(self._path, encoding='utf-8') as f:
                 text = f.read().lower()
                 #print('corpus length:', len(text))
-                chars = sorted(list(set(text)))
-                self._vocab_size = len(chars)
-                self._char_to_ix = { ch:i for i,ch in enumerate(chars) }
-                self._ix_to_char = { i:ch for i,ch in enumerate(chars) }
-                #print('number of unique characters in the corpus:', len(chars))
+                self._chars = sorted(list(set(text)))
+                self._vocab_size = len(self._chars)
+                self._char_to_ix = { ch:i for i,ch in enumerate(self._chars) }
+                self._ix_to_char = { i:ch for i,ch in enumerate(self._chars) }
+                #print('number of unique characters in the corpus:', len(self._chars))
                 print("Creating training set...")
                 for i in range(0, len(text) - self._Tx, self._stride):
                     self._X.append(text[i: i + self._Tx])
@@ -107,8 +107,8 @@ class CharacterGenerationRNN():
         Tx -- integer, sequence length
         
         Returns:
-        x -- array of shape (m, Tx, len(chars))
-        y -- array of shape (m, len(chars))
+        x -- array of shape (m, Tx, len(self._chars))
+        y -- array of shape (m, len(self._chars))
         """
         m = len(self._X)
         x = numpy.zeros((m, self._Tx, self._vocab_size), dtype=numpy.bool)
@@ -297,7 +297,7 @@ class CharacterGenerationRNN():
                     x_pred[0, t, self._char_to_ix[char]] = 1.
 
             preds = model.predict(x_pred, verbose=0)[0]
-            next_index = sample(preds, temperature = 1.0)
+            next_index = sample(self._chars, preds, temperature = 1.0)
             next_char = self._ix_to_char[next_index]
 
             generated += next_char
@@ -338,7 +338,7 @@ class CharacterGenerationRNN():
         examples = [x.strip() for x in self._words]
         #print(f"examples: {examples}")
         # Shuffle list of all dinosaur names
-        numpy.random.shuffle(examples)
+        rng.shuffle(examples)
         
         # Initialize the hidden state of your LSTM
         a_prev = numpy.zeros((n_a, 1))

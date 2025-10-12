@@ -29,7 +29,6 @@ def initialize_parameters(n_a, n_x, n_y):
                         b --  Bias, numpy array of shape (n_a, 1)
                         by -- Bias relating the hidden-state to the output, numpy array of shape (n_y, 1)
     """
-    numpy.random.seed(1)
     Wax = rng.standard_normal((n_a, n_x)) * numpy.sqrt(2/n_x) # input to hidden
     Waa = rng.standard_normal((n_a, n_a)) * numpy.sqrt(2/n_a) # hidden to hidden
     Wya = rng.standard_normal((n_y, n_a)) * numpy.sqrt(2/n_a) # hidden to output

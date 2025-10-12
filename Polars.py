@@ -5,7 +5,6 @@ from utils.FileUtil import Download
 # https://realpython.com/polars-python/
 size = 5000
 rng = Generator(PCG64DXSM())
-#rng = numpy.random.default_rng(seed=19)
 buildings_data = {
     "sqft": rng.exponential(scale=1000, size=size),
     "price": rng.exponential(scale=100_000, size=size),

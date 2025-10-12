@@ -9,7 +9,7 @@ plt.rcParams['figure.figsize'] = (7.0, 4.0) # set default size of plots
 plt.rcParams['image.interpolation'] = 'nearest'
 plt.rcParams['image.cmap'] = 'gray'
 
-def random_mini_batches(X, Y, mini_batch_size = 64, seed = 0):
+def random_mini_batches(X, Y, mini_batch_size = 64):
     """
     Creates a list of random minibatches from (X, Y)
     
@@ -21,12 +21,11 @@ def random_mini_batches(X, Y, mini_batch_size = 64, seed = 0):
     Returns:
     mini_batches -- list of synchronous (mini_batch_X, mini_batch_Y)
     """
-    numpy.random.seed(seed)            # To make your "random" minibatches the same as ours
     m = X.shape[1]                  # number of training examples
     mini_batches = []
         
     # Step 1: Shuffle (X, Y)
-    permutation = list(numpy.random.permutation(m))
+    permutation = list(rng.permutation(m))
     shuffled_X = X[:, permutation]
     shuffled_Y = Y[:, permutation].reshape((1, m))
     
@@ -135,7 +134,6 @@ def update_parameters_with_adam(parameters, grads, v, s, t, learning_rate = 0.01
 
 def random_mini_batches_tests():
     print(f"\n=== {random_mini_batches_tests.__name__} ===")
-    #numpy.random.seed(1)
     mini_batch_size = 64
     nx = 12288
     m = 148
