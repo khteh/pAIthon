@@ -18,7 +18,7 @@ We can conclude - P(disease | medical test result)
 If Probability of 'a' and 'b' are independent,
 P(a ^ b) = P(b)P(a)
 
-P(a∣b) = P(b∣a)P(A) / P(B)
+P(a∣b) = P(b∣a)P(a) / P(b)
 
 Bayes rule/formula:
 Prior Odds: 5:95
@@ -68,6 +68,11 @@ P(A|b) = P(A, b) / P(b) : Comma signifies ^
        = alpha * <Probability distribution of 'b' which sums up to 1>
 => Conditional probability is proportional to Joint probability
 
+P(A|b) = P(A, b) / P(b)
+=> P(A, b) = P(b)P(A|b)
+P(a,b,c,d) = P(d|a,b,c) * P(c|a,b) * P(b|a) * P(a)
+The probability of each successive token is the product of the probabilities of all the precideing tokens.
+
 Inclusion-Exclusion:
 P(a v b) = P(a) + P(b) - P(a^b)
 
@@ -109,8 +114,17 @@ Aproximate Inference:
 
 Markov Assumption: The assumption that the current state depends on only a finite fixed number of previous states.
 Markov Chain: A sequence of random variables where the distribution of each variable follows the Markov assumption.
-Hidden Markov Model: a Markov model for a system with hidden states which generate some observed events.
+- A type of stochastic model that describes a sequence of possible events.
+- The probability of each event depends on the states of previous events.
+- Can be depicted as a directed graph.
+- Transition probabilities and matrix.
+Markov Property: The probability of the next event only depends on the current event.
+Hidden Markov Model: a Markov model for a system with hidden states which generate/emit some observed events.
+- Markov model with states which are not directly observable.
+- Emission probabilities and matrix.
 Sensor Markov Assumption: the assumption that the evidence variable depends only on corresponding state.
+Use cases:
+(1) Part-of-speech (POS) tagging.
 
 Supervised Learning > Classification:
 Perceptron Learning Rule: Given data point (x,y), update each weight according to: w =  w + alpha*(y - h(X)) * x
@@ -1546,3 +1560,42 @@ Addressing data mismatch error:
 - Carry out manual error analysis to understand diff between training and dev dataset. Only on dev but exclude the test to avoid overfitting.
 - Make traiing dataset more similar to the dev/test set. Or collect more data similar to dev/test set.
 - Generally, just find ways to close the gap between training and dev/test set. For example, using artifically data synthesis. The proportion of the synthesized data must match up to the size of the real data. Otherwise, ML will overfit to it. For example, noisy background sound, graphically synthesized images.
+======================================================================================================================================================================================================
+Vector Space
+- Measures of "similarity" among words/documents in terms of angle and/or distance.
+Co-occurrence matrix
+Word by Word design:
+- #times they appear together within a certain distance k.
+Word by Document design:
+- #times they appear together within a certain category.
+
+N-gram probability:
+- Count of N-gram / Count of the condition (N-gram prefix).
+- P(Wn|W[1,N-1]) = C(W[1,N-1] Wn) / C(W[1,N-1])
+- Bi-gram example: "I am happy because I am learning"
+  - P(y|x) = C(x,y) / C(x)
+  - P(am|I) = C(I am) / C(I) = 1
+  - P(happy|I) = C(I happy) / C(I) = 0
+  - p(learning|am) = C(am learning) / C(am) = 1/2
+- Tri-gram example:
+  - P(happy|I am) = C(I am happy) / C(I am) = 1/2
+  - P(w3|w12) = C(w1 w2 w3) / C(w1 w2)
+- To avoid 0 probability for missing n-grams in the vocabulary,
+  (1) Smoothig:
+      - Laplacian (add-1) Smoothing
+      - Add-K Smoothing
+  (2) Backoff:
+      - Use lower n-grams. Ex: If N-gram is missing, use (N-1)-gram, (N-2)-gram, down to unigram.
+        - This distorts the probability, especially in small corpora.
+      - Probability discounting, e.g, Katz Backoff: makes use of discounting.
+      - "Stupid" backoff: lower N-gram probability multiplied by a constant - 0.4 is shown to work well.
+
+Evaluate a language model using perplexity metric.
+- Tells if a set of sentences are written by humans (lower score) instead of being randomly generated text from a machine.
+- PP(W) = P(s1,s2,s3,...,sm)^(-1/m) -> Inverse probability normalized by m. Lower better.
+- W: test dataset containing m sentences s1,s2,..sm
+- si: i-th sentence in the test dataset, each ending with </s>
+- m: #words in test dataset including </s> but excluding <s>
+- Typical good laungage model has the score of [20, 60]
+- Compare different language models having the same vocabulary.
+- using <UNK> to replace unknown words (out-of-vocabulary) will lower the score. Use it sparingly as the model might just choose to generate a lot of <UNK> tokens.
