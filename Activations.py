@@ -52,7 +52,7 @@ def sigmoid_backward(dA, cache):
 
 def sigmoid(Z):
     """
-    Compute the sigmoid of z. 
+    Compute the sigmoid of z (logit). 
     Sigmoid is for binary or multi-label classification, producing independent probabilities for each class.
 
     Args:
@@ -83,7 +83,7 @@ def sigmoid_derivative(x):
 
 def softmax(z):
     """
-    Compupte the softmax of z.
+    Compupte the softmax of z (logit).
     Softmax is for multi-class classification, transforming outputs into a probability distribution where probabilities sum to one and are dependent on each other. Softmax is essentially a generalized version of Sigmoid.
 
     Args:

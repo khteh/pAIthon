@@ -522,6 +522,7 @@ Vanishing / Exploding Gradients:
     - W[l] = numpy.random.randn((shape)) * numpy.sqrt(2 / n[l-1]) <- "He Initialization" (He et al. 2015)
   (2) tanh activation:
     - W[l] = numpy.random.randn((shape)) * numpy.sqrt(1 / n[l-1]). <- Xavier initialization.
+- Manifested in a model with low accuracy and worsening performance over time.
 
 playground.tensorflow.org
 Image Convolution: Applying a filter that adds each pixel value of an image to it's neighbours, weighted according to a kernel matrix.
@@ -1265,17 +1266,22 @@ Long Short Term Memory (LSTM)
 - C~(t) = tanh(Wc @ [a(t-1), x(t)] + bc) <= candidate replacement of current C(t) <- Full version
 - Update Gate [0, 1], Gu = sigmoid(Wu @ [a(t-1), x(t)] + bu) : 1: Update 0: Don't update
 - Forget Gate [0, 1], Gf = sigmoid(Wf @ [a(t-1), x(t)] + bf) : 1: Forget 0: Don't forget
-- Output Gate [0, 1], Go = sigmoid(Wo @ [a(t-1), x(t)] + bo) : 1: Forget 0: Don't forget
+- Output Gate [0, 1], Go = sigmoid(Wo @ [a(t-1), x(t)] + bo) : 1: Output 0: Don't output
 - C(t) = Gu * C~(t) + Gf * C(t-1) : element-wise multiplications.
 - a(t) = Go * tanh(C(t))
 - y^(t) = g(Wya @ a(t) + by) usually softmax
 
 Bidirectional RNN:
+- Acyclic graph. Information in both directions and independent of one another.
 - Both forward and backward passes can by RNN or GRU or LSTM.
 - Need the entire sequence of data to work. For example, need to wait for speech to pause to start computing the prediction of the past speech.
 - y^(t) = g(Wy * [a(t), a'(t)] + by): a'(t) is the backward pass activation value.
 - LSTM BRNN is commonly used in NLP.
 - Needs the complete sequence to work. For example, if used in speech recognition system, have to wait for the speaker to stop talking to start processing the sentences.
+
+Deep RNN:
+- a(t) and a'(t) are inputs to the next NN layer.
+- y^(t) ony appears in the final layer of the NN, just like any conventional NN.
 ======================================================================================================================================================================================================
 NLP & Word Embeddings
 - One-hot encoding does not provide relationship information. Any product of any 2 vectors is always zero.
@@ -1591,6 +1597,9 @@ N-gram probability:
         - This distorts the probability, especially in small corpora.
       - Probability discounting, e.g, Katz Backoff: makes use of discounting.
       - "Stupid" backoff: lower N-gram probability multiplied by a constant - 0.4 is shown to work well.
+- P(w1,w2,w3,w4,w5) = P(w1) * P(w2|w1) * P(w3|w2,w1) * P(w4|w3,w2,w1) * P(w5|w4,w3,w2,w1)
+- Bad thing about n-gram is large memory footprint.
+  - Large n-grams are needed to capture dependencies between distant words.
 
 Evaluate a language model using perplexity metric.
 - Tells if a set of sentences are written by humans (lower score) instead of being randomly generated text from a machine.
