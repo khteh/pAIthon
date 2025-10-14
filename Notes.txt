@@ -1583,7 +1583,9 @@ N-gram probability:
 - To avoid 0 probability for missing n-grams in the vocabulary,
   (1) Smoothig:
       - Laplacian (add-1) Smoothing
-      - Add-K Smoothing
+        - P(Wn|W[1,N-1]) = (C(W[1,N-1] Wn) + 1) / (C(W[1,N-1]) + |V|)
+      - K-Smoothing
+        - P(Wn|W[1,N-1]) = (C(W[1,N-1] Wn) + K) / (C(W[1,N-1]) + K * |V|)
   (2) Backoff:
       - Use lower n-grams. Ex: If N-gram is missing, use (N-1)-gram, (N-2)-gram, down to unigram.
         - This distorts the probability, especially in small corpora.
@@ -1593,9 +1595,77 @@ N-gram probability:
 Evaluate a language model using perplexity metric.
 - Tells if a set of sentences are written by humans (lower score) instead of being randomly generated text from a machine.
 - PP(W) = P(s1,s2,s3,...,sm)^(-1/m) -> Inverse probability normalized by m. Lower better.
+        = P(sm|s1,s2,s3,...)^(-1/m)
 - W: test dataset containing m sentences s1,s2,..sm
 - si: i-th sentence in the test dataset, each ending with </s>
 - m: #words in test dataset including </s> but excluding <s>
 - Typical good laungage model has the score of [20, 60]
 - Compare different language models having the same vocabulary.
 - using <UNK> to replace unknown words (out-of-vocabulary) will lower the score. Use it sparingly as the model might just choose to generate a lot of <UNK> tokens.
+
+Word Embeddings:
+- Low dimension
+  - Ex: X-axis encodes +ve for positive words and -ve for negative words.
+        Y-axis encodes +ve for concrete words and -ve for abstract words.
+- Embed meaning
+  - Semantic distance
+  - Analogies
+Creation:
+(1) Corpora of texts
+    - Words in context.
+    - General-purpose. E.g.: Wikipedia
+    - Specialized. E.g.: Contracts, experts' knowledge like books and papers, etc.
+(2) Embedding model
+    - Self-supervised ML model.
+    - The training data (text corpora) are NOT labelled.
+    - The data itself serves to supervise the learning process.
+    - word embeddings is the by-product of the learning process.
+Word2Vec (Google, 2013):
+- Uses shallow NN
+- 2 model architectures:
+  (1) Continuous Bag of Words (CBOW)
+      - Learn to predict missing word (Centre word) based on the surrounding words (Context words).
+      - Shallow dense NN:
+      (1) Input layer: (V, 1) with ReLU activation. V is vocabulary size.
+          - W1 (N, V), b1 (N, 1)
+          - W1 @ X = (N,V) @ (V,1) = (N,1) = a1
+      (2) Hidden layer: (N, 1) with softmax activation. N is the size/dimension of the final word embeddings.
+          - W2 (V, N), b2 (V, 1)
+          - W2 @ a1 = (V, N) @ (N, 1) = (V, 1)
+      (3) Output layer: (V, 1). Y is the centre word.
+      - To transform the context vectors into a single vector, take the average of the one-hot vectors.
+      - 3 ways to get word embeddings out of this training process:
+      (1) W1: Each column maps to the input word in the vocabulary.
+      (2) W2: Each row maps to the input word in the vocabulary.
+      (3) Average of both: 0.5 * (W1 + W2.T)
+  (2) Continuous skip-gram / Skip-gram with negative sampling (SGNS).
+      - Opposite of (1), predict the surrounding words based on the input word.
+Global Vectors (GloVe) (Standford, 2014)
+- Does not use NN at all.
+fastText (Facebook, 2016):
+- Based on skip-gram model
+- Takes into account structure of words by representing words using n-gram of characters
+- This enables the model to support out-of-vocabulary words by generating embedding from similar sequence of characters.
+Advanced word embeddings methods:
+- DL, contextual embeddings
+- BERT, ELMo, GPT-2
+
+Word Embeddings Evaluation Metrics:
+(1) Intrinsic:
+    - Test / measure the semantic and syntatic relationships between words:
+      - Semantic: meanings of the words.
+      - Syntatic: grammar, plural forms, etc.
+      (i) Analogies
+      (ii) Clustering
+      (iii) visualization
+(2) Extrinsic:
+    - Use real applications to test / evaluate the usefulness / effectiveness of the word embeddings.
+      For example, name entity recognition, parts-of-speech tagging, etc.
+    - More time-consuming and difficult to diagnose the root cause if the performance is poor.
+
+Embedding layer in sequence model:
+- Input to the layer is vector of indices of the words in the vocabulary.
+- Transforms that into matrix of (V, N) where V is the vocabulary size, N is the embedding size.
+- The embeddings are trainable weights.
+- Usually followed with a Mean layer to reduce the dimension of parameters to learn. This reduces the dimension of the embedding from N to 1.
+- Allows the NN to learn a good representation of vocabulary for the specific task at hand.
