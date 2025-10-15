@@ -1118,33 +1118,66 @@ Face Recognition:
 One-shot learning:
 - Learn from ONE example to recognize the person again.
 - Problems:
-(1) Smalle dataset not effective to train a convnet.
+(1) Small dataset not effective to train a convnet.
 (2) New person requires retraining the convnet.
 Solution: 
 Learn a "similarity" function:
 - d(img1, img2) = degree of diff between 2 images
 - <= threshold : "same"
 - > threshold: "different"
+OR:
+- cos(img1, im2) >= threshold : same
+- cos(img1, im2) < threshold : different
+- This is used to test the siamese NN architecture.
+
 Siamese Network:
-- The 2 networks share the parameters and have the same architecture.
+- The 2 networks share the same parameters/weights and have the same architecture combined at the end to output a similarity score (cosine similarity) using a threshold.
+  - Same parameters/weights are used to reveal the same information about each input in order to compare them.
+  - During training, only need to optimize 1 set of parameters/weights which is then used in both identical NN networks for prediction.
 - The final Dense layer is used to encode the input image. For example, (128 , 1) vector, f(x).
 - d(x1,x2) = |f(x1) - f(x2)| ** 2
 - Example system: DeepFace
 - To encode:
 (1) Use triplet loss function:
   - Anchor image, postive image, negative image. These triplets are picked from the training dataset. (𝐴(𝑖),𝑃(𝑖),𝑁(𝑖)) is used here to denote the 𝑖-th training example.
+  - Adjust the weights so that cosine similarity between A and P is close to 1; A and N is close to -1.
+  - -cos(A,P) + cos(A,N) <= 0
+    - If prediction is correct, cos(A,P) = 1 and cos(A,N) = -1. Therefore, -cos(A,P) + cos(A,N) = -1 - 1 = -2 which is < 0
+    - If prediction is incorrect, cos(A,P) = -1 and cos(A,N) = 1. Therefore, -cos(A,P) + cos(A,N) = -(-1) + 1 = 2 which is > 0 (higher cost)
+    - diff = s(A,N) - s(A,P)
+    - L = 0 if diff <= 0 else diff
   - d(A,P) <= d(A,N)
     d(A,P) - d(A,N) <= 0
   - To prevent the NN from learning a trivial solution (0 - 0 <= 0) setting all the parameters to 0, use "<= 0 - alpha"
   - d(A,P) - d(A,N) + alpha <= 0
+  - L = 0 if (diff + alpha) <= 0 else (diff + alpha)
+  - L = max(-cos(A,P) + cos(A,N) + alpha, 0)
   - L(A,P,N) = max(sum((f(A) - f(P))^2) - sum((f(A) - f(N))^2) + alpha, 0); sum over the image instances. 
-  - J = sum(L(A,P,N))for all the triplets over the image corpera and #persons. Example, 10k pictures of 1k persons.
+  - Bigger alpha means more optimization during training.
+  - J = sum(L(A,P,N)) for all the triplets over the image corpera and #persons. Example, 10k pictures of 1k persons.
   - Needs multiple pictures of each person.
   - Caveat: d(A,N) is very easily large number with random pairs of images. To train the NN effectively, choose pairs which result in d(A,P) ~= d(A,N). Ideas from FaceNet.
+  - Training batches:
+    - Choose hard triplets with s(A,N) ~= s(A,P)
+    - No duplicate within each batch.
+    - A well-trained model will produce output matrix, y^, with diagonal values showing higher similarities than off-diagonal values.
+    - Use the off-diagonal values to adjust the loss function, L for training a better model.
+      (1) Mean negative: mean of off-diagonal values in each row, excluding the value in the diagonal.
+          L1 = max(-cos(A,P) + mean_negative + alpha, 0)
+      (2) Closest negative: Off-diagnoal value which is the closest to, but less than, the diagonal value in each row.
+          - L2 = max(-cos(A,P) + closest_negative + alpha, 0)
+          - This forces the model to learn to pull apart the examples through tougher training.
+      (3) Cost = L1 + L2
+- Use one-shot learning when testing the network.
 (2) Use binary classification:
   - Linear Regression
   - y^ = sigmoid(w * sum(|f(x1) - f(x2)|) + b) for i=1...128
   - In DeepFace, the (f(x1) - f(x2))^2 / (f(x1) + f(x2)) is used in the summation.
+Use cases:
+(1) Identify duplicate questions in a Q&A system. Ex: Stackoverflow, Quora, etc.
+(2) Identity difference. Ex: Where are you from? vs Where are you going?
+    - The semantic meaning of a sentence cannot be determined only from similar words.
+(3) Handwritten signature identification.
 
 Nerual Style Transfer:
 - Content picture (C) + Styling picture (S) = Generated Image (G)
