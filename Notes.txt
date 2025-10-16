@@ -1401,6 +1401,13 @@ Error Analysis:
 (2) P(y*|x) > P(y^|x): This aligns with the result but Beam search chooses y^. So, it is at fault. Increase beam width, B.
 (3) P(y*|x) <= P(y^|x): RNN computes the wrong result. So, it is at fault, the objective function.
 Note: Need to consider length normalization as well (1 / Ty^alpha).
+
+Minimum Bayes Risk (MBR)
+(1) Generate several candidate translations
+(2) Assign similarity to every pair using a similarity score, ROUGE for instance.
+    - argmax(sum(ROUGEE, E")/N)
+(3) Select the sample with the highest average similarity.
+
 Machine Translation Evaluation:
 - BLEU Score - Bilingual Evaluation, Understudy.
 - Measures how similar is the MT to reference translations.
@@ -1414,6 +1421,17 @@ Machine Translation Evaluation:
 - BP, brevity penalty, penalizes translations which are too short as short translations are easy match to any of the references.
 - BP = 1 if MT_output_length > reference output length;
 - BP = e^(1- reference_output_length/MT_output_length) otherwise.
+- Vanilla BLEU score doesn't measure well when the NMT outputs mostly the common words as this will result in high BLEU score.
+- Modified version of BLEU exhaust the matched word from all occurences of the word in all the references for subsequent matching. So subsequent word which was matched previously will not account for a matching count.
+- One downside of BLEU score is that it does not account for semantic meaning and syntactic structure of the sentence for scoring.
+- BLEU score is based on Precision (from F1 score)
+
+ROUGE-N
+- Based on Recall (from F1 score)
+- max() of n-gram matches between the candidate and all of the references.
+- So, combine both to get F1 score.
+- F1 = 2 * (Precision * Recall) / (Precision + Recall)
+     = 2 * (BELU * ROUGE-N) / (BLEU + ROUGE-N)
 
 Naive encoder-decoder RNN is good at translating short sentences. BLEU score will drop when the source text gets longer.
 
@@ -1437,8 +1455,38 @@ Transformer Network
 - Eliminate the sequential nature of RNN which processes one token / word at a time.
 - Ingest the entire sequence at once and process the tokens/words in parallel.
 - Attention + CNN
-  - Self attention
-  - Multi-head attention
+  - It was later found after publish of "Attention is all you need" paper that only Attention is needed. CNN is redundant.
+- It's a multitask model. Trained once to perform multiple NLP tasks.
+- Types of Attention:
+  (1) Scaled dot-product attention
+      - 2 matmul and one softmax: softmax(Q @ K.T / sqrt(K vector size)) @ V
+      - softmax(Q @ K.T / sqrt(K vector size)): 
+        - Weight matrix has total element count of #queries * #keys.
+        - Each row is the query, each column in the row is the key corresponding to the query.
+      - @ V:
+        - Rows of context vector.
+        - Each row is the query, each column in the row is the value corresponding to the query.
+      - Much faster to compute but the alignment between source and target languages must be learnt elsewhere.
+      - Typically the alignment is learnt in the input embeddings or other linear layers before the Attention layer.
+  (2) Encoder-Decoder Attention:
+      - Queries from one sentence; Keys and Values from another sentence.
+  (3) Self attention
+      - Q,K,V from the same sentence.
+      - Each word in the sentence pays attention to every other words.
+      - Meaning of each word within the sentence.
+  (4) Masked Self Attention / Causal Attention:
+      - Q,K,V from the same sentence.
+      - Q does not attend to future positions.
+      - Used in the decoder from the transformer model to ensure that predictions at each time step/position depends only on the known outputs.
+      - softmax((Q @ K.T / sqrt(K vector size)) + MASK) @ V
+        - MASK: 0 for knwon positions, -inf in other positions.
+        - softmax((Q @ K.T / sqrt(K vector size)) + MASK):
+          - weights with 0 in future time steps/positions
+  (3) Multi-head attention
+      - Each head learns a different linear transformation to represent words.
+      - Linear transformation of the Q,K,V -> Scaled dot-product attention -> concat -> Linear. Every linear transformation step contains a set of learnable parameters.
+      - #heads corresponds with the number of sets of Q,K,V embeddings and applying attention mechanism, i.e., the dot-product, to each set/head.
+      - The different sets of Q,K,V can be obtained by linearly transforming the original Q,K,V embeddings.
 Self-Attention ("head"):
 - A(q,K,V) = attention-based vector representation of a word.
   - Similar to word embeddings but with context.
@@ -1447,7 +1495,11 @@ Self-Attention ("head"):
   - q(i) = Wq @ x(i)
   - k(i) = Wk @ x(i)
   - v(i) = Wv @ x(i)
-  - x(i) is the word embedding
+  - x(i) is the word 
+- Q,K,V:
+  - (#words, #embeddings)
+  - Transform the text into it's embedding and stack them horizontally.
+  - Generally, K and V are the same vectors although sometimes some transformation is done to the embeddings of K to get V.
 - W(i) is the head(i) in multi-head attention. It can be thought of as a "question" to find out the context of every word. The same head has to be dot-product with Q,K,V of every word.
   - For example, W(1) = "What's happening?" W(2) = "When?", W(3) = "Who?", etc
   - head(i) = Attention(W(i) @ Q, W(i) @ K, W(i) @ V)
@@ -1711,3 +1763,19 @@ Embedding layer in sequence model:
 - The embeddings are trainable weights.
 - Usually followed with a Mean layer to reduce the dimension of parameters to learn. This reduces the dimension of the embedding from N to 1.
 - Allows the NN to learn a good representation of vocabulary for the specific task at hand.
+
+Google's seq2seq model in 2014:
+- Uses Embedding -> LSTM layers for bothe encoder and decoder.
+- Final encoder LSTM activation is the only input to the decoder.
+- Limitation is that it relies on a fixed-length memory with fixed hidden state (LSTM's activation) size.
+  - This causes a fixed amount of information being passed from the encoder to the decoder.
+
+Attention:
+- Alignment = Similarity between source and target word.
+- The Q and K vectors are used to calculate the alignment scores, which measure how well they match. These alignment scores are then turned into weights used for weighted sum of the value vectors which is returned as the attention vector. 
+- This process is performed using scaled dot-product attention.
+
+Teacher Forcing:
+- A technique used to train the NMT decoder by using the actual sentences from training dataset at each time step as input instead of output from previous timestep in order to improve training performance especially during the early stages of training a model from scratch.
+- A fresh NMT model decoder will deviate from the target if the output of every LSTM unit is fed into subsequent units.
+- The errors from the front of the LSTM units will cascade down the line to the later units and accumulate. This causes problem with training a fresh NMT model's decoder.
