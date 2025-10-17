@@ -7,20 +7,159 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 class LSTM_NameEntityRecognition():
     _path:str = None
+    _embedding_dim: int = None
     _train_sentences = None
     _train_labels = None
+    _train_label_vector = None
+    _train_dataset = None
+
     _val_sentences = None
     _val_labels = None
+    _val_label_vector = None
+    _val_dataset = None
+
     _test_sentences = None
     _test_labels = None
+    _test_label_vector = None
+    _test_dataset = None
+
     _sentence_vectorizer = None
     _vocab = None
     _tags = None
     _tag_map = None
-    def __init__(self, path):
+    model = None
+    _batch_size:int = None
+    _learning_rate: float = None
+    def __init__(self, path, embedding_dimension: int = 50, learning_rate:float = 0.01, batch_size:int = 64):
         self._path = path
+        self._batch_size = batch_size
+        self._learning_rate = learning_rate
+        self._embedding_dim = embedding_dimension
         self._PrepareData()
+    
+    def BuildTrainModel(self, epochs: int):
+        self.model = Sequential([
+            Input(shape=(len(self._vocab),)),
+            Embedding(len(self._vocab)+1, self._embedding_dim, mask_zero = True),
+            LSTM(self._embedding_dim, return_sequences=True),
+            Dense(len(self._tag_map), activation=tf.nn.log_softmax)
+        ], name = 'NameEntityRecognition')
+        self.model.compile(optimizer=tf.keras.optimizers.Adam(self._learning_rate), 
+                    loss = self.masked_loss,
+                    metrics = [self.masked_accuracy])
+        self.model.summary()
+        self.model.fit(self._train_dataset.batch(self._batch_size),
+          validation_data = self._val_dataset.batch(self._batch_size),
+          shuffle=True,
+          epochs = epochs)
         
+    def Validate(self):
+        # Convert the sentences into ids
+        test_sentences_id = self._sentence_vectorizer(self._test_sentences)
+        # Rename to prettify next function call
+        y_true = self._test_label_vector
+        y_pred = self.model.predict(test_sentences_id)
+        print(f"The model's accuracy in test set is: {self.masked_accuracy(y_true,y_pred).numpy():.4f}")
+
+    def Predict(self, sentence:str):
+        """
+        Predict NER labels for a given sentence using a trained model.
+
+        Parameters:
+        sentence (str): Input sentence.
+        model (tf.keras.Model): Trained NER model.
+        sentence_vectorizer (tf.keras.layers.TextVectorization): Sentence vectorization layer.
+        tag_map (dict): Dictionary mapping tag IDs to labels.
+
+        Returns:
+        predictions (list): Predicted NER labels for the sentence.
+        """
+        # Convert the sentence into ids
+        sentence_vectorized = self._sentence_vectorizer(sentence)
+        #print(f"sentence_vectorized: {sentence_vectorized.shape}")
+        # Expand its dimension to make it appropriate to pass to the model
+        sentence_vectorized = tf.expand_dims(sentence_vectorized, axis=0)
+        #print(f"sentence_vectorized: {sentence_vectorized.shape}")
+        # Get the model output
+        output = self.model.predict(sentence_vectorized)
+        #print(f"output: {output.shape}")
+        # Get the predicted labels for each token, using argmax function and specifying the correct axis to perform the argmax
+        outputs = numpy.argmax(output, axis = -1)
+        #print(f"outputs: {outputs.shape} {outputs}")
+        # Next line is just to adjust outputs dimension. Since this function expects only one input to get a prediction, outputs will be something like [[1,2,3]]
+        # so to avoid heavy notation below, let's transform it into [1,2,3]
+        outputs = outputs[0] 
+        #print(f"outputs: {outputs.shape} {outputs}")
+        # Get a list of all keys, remember that the tag_map was built in a way that each label id matches its index in a list
+        labels = list(self._tag_map.keys())
+        #print(f"labels: {labels}")
+        pred = [] 
+        # Iterating over every predicted token in outputs list
+        for tag_idx in outputs:
+            #print(f"tag_idx: {tag_idx}")
+            pred_label = labels[tag_idx]
+            #print(f"pred_label: {pred_label}")
+            pred.append(pred_label)
+        #print(f"pred: {pred}")
+        return pred
+    
+    def masked_loss(self, y_true, y_pred):
+        """
+        Built-in accuracy metrics do not handle values which are to be ignored. For instance, the padded values.
+        The model's prediction has 3 axes - (batch, #words, #classes)
+        #words include padding to the longest sentence in the batch.
+        #classes are the name entity tags.
+
+        Calculate the masked sparse categorical cross-entropy loss.
+
+        Parameters:
+        y_true (tensor): True labels.
+        y_pred (tensor): Predicted logits.
+        
+        Returns:
+        loss (tensor): Calculated loss.
+        """
+        # Calculate the loss for each item in the batch. Remember to pass the right arguments, as discussed above!
+        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, ignore_class=-1)
+        # Use the previous defined function to compute the loss
+        print(f"y_true: {y_true.shape}, pred: {y_pred.shape}")
+        return loss_fn(y_true,y_pred)
+
+    def masked_accuracy(self, y_true, y_pred):
+        """
+        Calculate masked accuracy for predicted labels.
+
+        Parameters:
+        y_true (tensor): True labels.
+        y_pred (tensor): Predicted logits.
+
+        Returns:
+        accuracy (tensor): Masked accuracy.
+        """
+        # Calculate the loss for each item in the batch.
+        # You must always cast the tensors to the same type in order to use them in training. Since you will make divisions, it is safe to use tf.float32 data type.
+        y_true = tf.cast(y_true, tf.float32)
+        # Create the mask, i.e., the values that will be ignored
+        mask = tf.not_equal(y_true, -1)
+        mask = tf.cast(mask, tf.float32) 
+        #print(f"y_true: {y_true}, y_pred: {y_pred}, mask: {mask}")   
+        
+        # Perform argmax to get the predicted values
+        y_pred_class = tf.math.argmax(y_pred, axis=-1)
+        y_pred_class = tf.cast(y_pred_class, tf.float32)
+        #print(f"y_pred_class: {y_pred_class}")
+        # Compare the true values with the predicted ones
+        matches_true_pred  = tf.equal(y_true, y_pred_class)
+        matches_true_pred = tf.cast(matches_true_pred , tf.float32) 
+        #print(f"matches_true_pred: {matches_true_pred}")
+        # Multiply the acc tensor with the masks
+        matches_true_pred *= mask
+        #print(f"matches_true_pred unmasked: {matches_true_pred}")
+        # Compute masked accuracy (quotient between the total matches and the total valid values, i.e., the amount of non-masked values)
+        masked_acc = tf.math.divide(tf.reduce_sum(matches_true_pred), tf.reduce_sum(mask))
+        #print(f"accuracy: {masked_acc}\n")
+        return masked_acc
+    
     def _PrepareData(self):
         self._train_sentences = self._load_data(f'{self._path}/large/train/sentences.txt')
         self._train_labels = self._load_data(f'{self._path}/large/train/labels.txt')
@@ -33,11 +172,24 @@ class LSTM_NameEntityRecognition():
         self._sentence_vectorizer, self._vocab = self._get_sentence_vectorizer(self._train_sentences)
         self._tags = self._get_tags(self._train_labels)
         self._tag_map = self._make_tag_map(self._tags)
+        self._train_label_vector = self._label_vectorizer(self._train_labels, self._tag_map)
+        self._val_label_vector = self._label_vectorizer(self._val_labels, self._tag_map)
+        self._test_label_vector = self._label_vectorizer(self._test_labels, self._tag_map)
+        self._train_dataset = self._generate_dataset(self._train_sentences, self._train_labels, self._sentence_vectorizer)
+        self._val_dataset = self._generate_dataset(self._val_sentences, self._val_labels,  self._sentence_vectorizer)
+        self._test_dataset = self._generate_dataset(self._test_sentences, self._test_labels,  self._sentence_vectorizer)
 
+    def _generate_dataset(self, sentences, labels, sentence_vectorizer):
+        sentences_ids = sentence_vectorizer(sentences)
+        labels_ids = self._label_vectorizer(labels, tag_map = self._tag_map)
+        dataset = tf.data.Dataset.from_tensor_slices((sentences_ids, labels_ids))
+        return dataset
+    
     def _get_sentence_vectorizer(self, sentences):
-        tf.keras.utils.set_random_seed(33) ## Do not change this line. 
         """
         Create a TextVectorization layer for sentence tokenization and adapt it to the provided sentences.
+        standardize parameter tells how the parser splits the sentences. By default, standardize = 'lower_and_strip_punctuation'. This may influence the NER task, since an upper case in the middle of a sentence may indicate an entity.
+        Since the punctuations are also labelled, set standardize = None so everything will just be split into single tokens and mapped to a positive integer.
 
         Parameters:
         sentences (list of str): Sentences for vocabulary adaptation.
@@ -87,9 +239,8 @@ class LSTM_NameEntityRecognition():
         # Pad the elements
         label_ids = tf.keras.utils.pad_sequences(label_ids, padding="post", value=-1)
         print(f"label_ids: {label_ids}")
-        ### END CODE HERE ### 
-
         return label_ids
+    
     def _get_tags(self, labels):
         tag_set = set() # Define an empty set
         for el in labels:
@@ -110,5 +261,38 @@ class LSTM_NameEntityRecognition():
             data = numpy.array([line.strip() for line in file.readlines()])
         return data
 
+def VerifyPaddingDoesNOTAffectAccuracy(ner: LSTM_NameEntityRecognition):
+    """
+    You will check now how padding does not affect the model's output. Of course the output dimension will change. If ten zeros are added at the end of the tensor, then the resulting output dimension will have 10 more elements (more specifically, 10 more arrays of length 17 each). 
+    However, those are removed from any calculation further on, so it won't impact at all the model's performance and training. You will be using the function tf.expand_dims.
+    """
+    print(f"\n=== {VerifyPaddingDoesNOTAffectAccuracy.__name__} ===")
+    x = tf.expand_dims(numpy.array([545, 467, 896]), axis = 0) # Expanding dims is needed to pass it to the model, 
+                                                            # since it expects batches and not single prediction arrays
+    x_padded = tf.expand_dims(numpy.array([545, 467, 896, 0, 0, 0]), axis = 0)
+    pred_x = ner.model(x)
+    pred_x_padded = ner.model(x_padded)
+    print(f'x shape: {pred_x.shape}\nx_padded shape: {pred_x_padded.shape}')
+    assert numpy.allclose(pred_x, pred_x_padded[:,:3,:])
+    # Verify both return the same loss and accuracy
+    y_true = tf.expand_dims([16, 6, 12], axis = 0)
+    y_true_padded = tf.expand_dims([16,6,12,-1,-1,-1], axis = 0) # Remember you mapped the padded values to -1 in the labels
+    assert numpy.allclose(ner.masked_loss(y_true,pred_x), ner.masked_loss(y_true_padded,pred_x_padded))
+    assert numpy.allclose(ner.masked_accuracy(y_true,pred_x), ner.masked_accuracy(y_true_padded,pred_x_padded))
+    print(f"masked_loss is the same: {numpy.allclose(ner.masked_loss(y_true,pred_x), ner.masked_loss(y_true_padded,pred_x_padded))}")
+    print(f"masked_accuracy is the same: {numpy.allclose(ner.masked_accuracy(y_true,pred_x), ner.masked_accuracy(y_true_padded,pred_x_padded))}")    
+
+def ModelValidationAndTest(ner: LSTM_NameEntityRecognition):
+    print(f"\n=== {ModelValidationAndTest.__name__} ===")
+    ner.Validate()
+    sentence = "Peter Parker , the White House director of trade and manufacturing policy of U.S , said in an interview on Sunday morning that the White House was working to prepare for the possibility of a second wave of the coronavirus in the fall , though he said it wouldn ’t necessarily come"
+    predictions = ner.Predict(sentence)
+    for x,y in zip(sentence.split(' '), predictions):
+        if y != 'O':
+            print(f"{x}: {y}")
+
 if __name__ == "__main__":
     ner = LSTM_NameEntityRecognition("./data/NameEntityRecognition")
+    ner.BuildTrainModel(20)
+    VerifyPaddingDoesNOTAffectAccuracy(ner)
+    ModelValidationAndTest(ner)

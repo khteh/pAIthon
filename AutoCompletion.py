@@ -624,8 +624,8 @@ def get_suggestions_tests():
     suggestions = autocomplete.get_suggestions(previous_tokens, n_gram_counts_list, None, k=1.0)
     print(f"\nThe previous words are {previous_tokens}, the suggestions are:")
     print(suggestions)
+    
 if __name__ == "__main__":
-    #autocomplete = AutoCompletion("./data/en_US.twitter.txt", "<unk>", "<s>", "<e>", 1)
     count_n_grams_tests()
     estimate_probability_tests()
     estimate_probabilities_tests()

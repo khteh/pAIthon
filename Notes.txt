@@ -555,6 +555,12 @@ Data Synthesis:
 (1) Image OCR
 
 Transfer Learning:
+(1) Feature-based:
+    - Use weights from pre-trained on a completely new model.
+    - Example, word embeddings.
+    - Need to train the new model from scratch.
+(2) Fine-tuning:
+    - Fine tune final layers of pre-trained model on similar tasks.
 Example: A NN trained on 1 million images of diverse object types (animal, fruits, plants, people, etc). You want to come up with a NN for character OCR.
 Make a copy of the NN, replace the output layer with a 10-unit layer. Then, there are 2 options to train the "new" NN:
 (1) Fine Tuning. Only train output layer parameters - This works if having a small data set.
@@ -1779,3 +1785,9 @@ Teacher Forcing:
 - A technique used to train the NMT decoder by using the actual sentences from training dataset at each time step as input instead of output from previous timestep in order to improve training performance especially during the early stages of training a model from scratch.
 - A fresh NMT model decoder will deviate from the target if the output of every LSTM unit is fed into subsequent units.
 - The errors from the front of the LSTM units will cascade down the line to the later units and accumulate. This causes problem with training a fresh NMT model's decoder.
+
+GLUE benchmark:
+- General Language Understanding Evaluation
+- A collection used to train, evaluate, analyze NL understanding systems.
+- Multiple datasets with different genres and of different sizes and difficulties.
+- Model agnostic.
