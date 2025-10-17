@@ -98,8 +98,8 @@ class LSTM_NameEntityRecognition():
         self._embedding_dim = embedding_dimension
         self._PrepareData()
         #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
-        #    print(f"Using saved model {self._model_path}...") https://github.com/tensorflow/tensorflow/issues/102475
-        #    self.model = tf.keras.models.load_model(self._model_path)
+        #    print(f"Using saved model {self._model_path}...") 
+        #    self.model = tf.keras.models.load_model(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
     
     def BuildTrainModel(self, epochs: int, rebuild: bool = False):
         if self.model and not rebuild:
