@@ -1,12 +1,72 @@
-import os, numpy, pandas as pd, tensorflow as tf
-from tensorflow.keras.callbacks import LambdaCallback
-from tensorflow.keras.models import Model, load_model, Sequential
-from tensorflow.keras.layers import Dense, Activation, Dropout, Input, Masking, LSTM, Embedding
-from tensorflow.keras.utils import get_file
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+import argparse, numpy, pandas as pd, tensorflow as tf
+from pathlib import Path
+from keras import saving
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Input, LSTM, Embedding, TextVectorization
+from utils.TensorModelPlot import PlotModelHistory
+
+@saving.register_keras_serializable()
+def masked_loss(y_true, y_pred):
+    """
+    Built-in accuracy metrics do not handle values which are to be ignored. For instance, the padded values.
+    The model's prediction has 3 axes - (batch, #words, #classes)
+    #words include padding to the longest sentence in the batch.
+    #classes are the name entity tags.
+
+    Calculate the masked sparse categorical cross-entropy loss.
+
+    Parameters:
+    y_true (tensor): True labels.
+    y_pred (tensor): Predicted logits.
+    
+    Returns:
+    loss (tensor): Calculated loss.
+    """
+    # Calculate the loss for each item in the batch. Remember to pass the right arguments, as discussed above!
+    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, ignore_class=-1)
+    # Use the previous defined function to compute the loss
+    print(f"y_true: {y_true.shape}, pred: {y_pred.shape}")
+    return loss_fn(y_true,y_pred)
+
+@saving.register_keras_serializable()
+def masked_accuracy(y_true, y_pred):
+    """
+    Calculate masked accuracy for predicted labels.
+
+    Parameters:
+    y_true (tensor): True labels.
+    y_pred (tensor): Predicted logits.
+
+    Returns:
+    accuracy (tensor): Masked accuracy.
+    """
+    # Calculate the loss for each item in the batch.
+    # You must always cast the tensors to the same type in order to use them in training. Since you will make divisions, it is safe to use tf.float32 data type.
+    y_true = tf.cast(y_true, tf.float32)
+    # Create the mask, i.e., the values that will be ignored
+    mask = tf.not_equal(y_true, -1)
+    mask = tf.cast(mask, tf.float32) 
+    #print(f"y_true: {y_true}, y_pred: {y_pred}, mask: {mask}")   
+    
+    # Perform argmax to get the predicted values
+    y_pred_class = tf.math.argmax(y_pred, axis=-1)
+    y_pred_class = tf.cast(y_pred_class, tf.float32)
+    #print(f"y_pred_class: {y_pred_class}")
+    # Compare the true values with the predicted ones
+    matches_true_pred  = tf.equal(y_true, y_pred_class)
+    matches_true_pred = tf.cast(matches_true_pred , tf.float32) 
+    #print(f"matches_true_pred: {matches_true_pred}")
+    # Multiply the acc tensor with the masks
+    matches_true_pred *= mask
+    #print(f"matches_true_pred unmasked: {matches_true_pred}")
+    # Compute masked accuracy (quotient between the total matches and the total valid values, i.e., the amount of non-masked values)
+    masked_acc = tf.math.divide(tf.reduce_sum(matches_true_pred), tf.reduce_sum(mask))
+    #print(f"accuracy: {masked_acc}\n")
+    return masked_acc
 
 class LSTM_NameEntityRecognition():
     _path:str = None
+    _model_path:str = None
     _embedding_dim: int = None
     _train_sentences = None
     _train_labels = None
@@ -30,14 +90,20 @@ class LSTM_NameEntityRecognition():
     model = None
     _batch_size:int = None
     _learning_rate: float = None
-    def __init__(self, path, embedding_dimension: int = 50, learning_rate:float = 0.01, batch_size:int = 64):
+    def __init__(self, path, model_path:str, embedding_dimension: int = 50, learning_rate:float = 0.01, batch_size:int = 64):
         self._path = path
+        self._model_path = model_path
         self._batch_size = batch_size
         self._learning_rate = learning_rate
         self._embedding_dim = embedding_dimension
         self._PrepareData()
+        #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
+        #    print(f"Using saved model {self._model_path}...") https://github.com/tensorflow/tensorflow/issues/102475
+        #    self.model = tf.keras.models.load_model(self._model_path)
     
-    def BuildTrainModel(self, epochs: int):
+    def BuildTrainModel(self, epochs: int, rebuild: bool = False):
+        if self.model and not rebuild:
+            return
         self.model = Sequential([
             Input(shape=(len(self._vocab),)),
             Embedding(len(self._vocab)+1, self._embedding_dim, mask_zero = True),
@@ -45,21 +111,25 @@ class LSTM_NameEntityRecognition():
             Dense(len(self._tag_map), activation=tf.nn.log_softmax)
         ], name = 'NameEntityRecognition')
         self.model.compile(optimizer=tf.keras.optimizers.Adam(self._learning_rate), 
-                    loss = self.masked_loss,
-                    metrics = [self.masked_accuracy])
+                    loss = masked_loss,
+                    metrics = [masked_accuracy])
         self.model.summary()
-        self.model.fit(self._train_dataset.batch(self._batch_size),
+        history = self.model.fit(self._train_dataset.batch(self._batch_size),
           validation_data = self._val_dataset.batch(self._batch_size),
           shuffle=True,
           epochs = epochs)
-        
-    def Validate(self):
+        PlotModelHistory("LSTM Name Entity Recognition", history)
+        #if self._model_path:
+        #    self.model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
+        #    print(f"Model saved to {self._model_path}.")
+
+    def Evaluate(self):
         # Convert the sentences into ids
         test_sentences_id = self._sentence_vectorizer(self._test_sentences)
         # Rename to prettify next function call
         y_true = self._test_label_vector
         y_pred = self.model.predict(test_sentences_id)
-        print(f"The model's accuracy in test set is: {self.masked_accuracy(y_true,y_pred).numpy():.4f}")
+        print(f"The model's accuracy in test set is: {masked_accuracy(y_true,y_pred).numpy():.4f}")
 
     def Predict(self, sentence:str):
         """
@@ -102,64 +172,7 @@ class LSTM_NameEntityRecognition():
             pred.append(pred_label)
         #print(f"pred: {pred}")
         return pred
-    
-    def masked_loss(self, y_true, y_pred):
-        """
-        Built-in accuracy metrics do not handle values which are to be ignored. For instance, the padded values.
-        The model's prediction has 3 axes - (batch, #words, #classes)
-        #words include padding to the longest sentence in the batch.
-        #classes are the name entity tags.
-
-        Calculate the masked sparse categorical cross-entropy loss.
-
-        Parameters:
-        y_true (tensor): True labels.
-        y_pred (tensor): Predicted logits.
-        
-        Returns:
-        loss (tensor): Calculated loss.
-        """
-        # Calculate the loss for each item in the batch. Remember to pass the right arguments, as discussed above!
-        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, ignore_class=-1)
-        # Use the previous defined function to compute the loss
-        print(f"y_true: {y_true.shape}, pred: {y_pred.shape}")
-        return loss_fn(y_true,y_pred)
-
-    def masked_accuracy(self, y_true, y_pred):
-        """
-        Calculate masked accuracy for predicted labels.
-
-        Parameters:
-        y_true (tensor): True labels.
-        y_pred (tensor): Predicted logits.
-
-        Returns:
-        accuracy (tensor): Masked accuracy.
-        """
-        # Calculate the loss for each item in the batch.
-        # You must always cast the tensors to the same type in order to use them in training. Since you will make divisions, it is safe to use tf.float32 data type.
-        y_true = tf.cast(y_true, tf.float32)
-        # Create the mask, i.e., the values that will be ignored
-        mask = tf.not_equal(y_true, -1)
-        mask = tf.cast(mask, tf.float32) 
-        #print(f"y_true: {y_true}, y_pred: {y_pred}, mask: {mask}")   
-        
-        # Perform argmax to get the predicted values
-        y_pred_class = tf.math.argmax(y_pred, axis=-1)
-        y_pred_class = tf.cast(y_pred_class, tf.float32)
-        #print(f"y_pred_class: {y_pred_class}")
-        # Compare the true values with the predicted ones
-        matches_true_pred  = tf.equal(y_true, y_pred_class)
-        matches_true_pred = tf.cast(matches_true_pred , tf.float32) 
-        #print(f"matches_true_pred: {matches_true_pred}")
-        # Multiply the acc tensor with the masks
-        matches_true_pred *= mask
-        #print(f"matches_true_pred unmasked: {matches_true_pred}")
-        # Compute masked accuracy (quotient between the total matches and the total valid values, i.e., the amount of non-masked values)
-        masked_acc = tf.math.divide(tf.reduce_sum(matches_true_pred), tf.reduce_sum(mask))
-        #print(f"accuracy: {masked_acc}\n")
-        return masked_acc
-    
+       
     def _PrepareData(self):
         self._train_sentences = self._load_data(f'{self._path}/large/train/sentences.txt')
         self._train_labels = self._load_data(f'{self._path}/large/train/labels.txt')
@@ -169,7 +182,7 @@ class LSTM_NameEntityRecognition():
 
         self._test_sentences = self._load_data(f'{self._path}/large/test/sentences.txt')
         self._test_labels = self._load_data(f'{self._path}/large/test/labels.txt')
-        self._sentence_vectorizer, self._vocab = self._get_sentence_vectorizer(self._train_sentences)
+        self._get_sentence_vectorizer(self._train_sentences)
         self._tags = self._get_tags(self._train_labels)
         self._tag_map = self._make_tag_map(self._tags)
         self._train_label_vector = self._label_vectorizer(self._train_labels, self._tag_map)
@@ -199,12 +212,11 @@ class LSTM_NameEntityRecognition():
         vocab (list of str): Extracted vocabulary.
         """
         # Define TextVectorization object with the appropriate standardize parameter
-        sentence_vectorizer = tf.keras.layers.TextVectorization(standardize=None)
+        self._sentence_vectorizer = TextVectorization(standardize=None)
         # Adapt the sentence vectorization object to the given sentences
-        sentence_vectorizer.adapt(sentences)
+        self._sentence_vectorizer.adapt(sentences)
         # Get the vocabulary
-        vocab = sentence_vectorizer.get_vocabulary()      
-        return sentence_vectorizer, vocab
+        self._vocab = self._sentence_vectorizer.get_vocabulary()
 
     def _label_vectorizer(self, labels, tag_map):
         """
@@ -277,14 +289,14 @@ def VerifyPaddingDoesNOTAffectAccuracy(ner: LSTM_NameEntityRecognition):
     # Verify both return the same loss and accuracy
     y_true = tf.expand_dims([16, 6, 12], axis = 0)
     y_true_padded = tf.expand_dims([16,6,12,-1,-1,-1], axis = 0) # Remember you mapped the padded values to -1 in the labels
-    assert numpy.allclose(ner.masked_loss(y_true,pred_x), ner.masked_loss(y_true_padded,pred_x_padded))
-    assert numpy.allclose(ner.masked_accuracy(y_true,pred_x), ner.masked_accuracy(y_true_padded,pred_x_padded))
-    print(f"masked_loss is the same: {numpy.allclose(ner.masked_loss(y_true,pred_x), ner.masked_loss(y_true_padded,pred_x_padded))}")
-    print(f"masked_accuracy is the same: {numpy.allclose(ner.masked_accuracy(y_true,pred_x), ner.masked_accuracy(y_true_padded,pred_x_padded))}")    
+    assert numpy.allclose(masked_loss(y_true,pred_x), masked_loss(y_true_padded,pred_x_padded))
+    assert numpy.allclose(masked_accuracy(y_true,pred_x), masked_accuracy(y_true_padded,pred_x_padded))
+    print(f"masked_loss is the same: {numpy.allclose(masked_loss(y_true,pred_x), masked_loss(y_true_padded,pred_x_padded))}")
+    print(f"masked_accuracy is the same: {numpy.allclose(masked_accuracy(y_true,pred_x), masked_accuracy(y_true_padded,pred_x_padded))}")    
 
 def ModelValidationAndTest(ner: LSTM_NameEntityRecognition):
     print(f"\n=== {ModelValidationAndTest.__name__} ===")
-    ner.Validate()
+    ner.Evaluate()
     sentence = "Peter Parker , the White House director of trade and manufacturing policy of U.S , said in an interview on Sunday morning that the White House was working to prepare for the possibility of a second wave of the coronavirus in the fall , though he said it wouldn ’t necessarily come"
     predictions = ner.Predict(sentence)
     for x,y in zip(sentence.split(' '), predictions):
@@ -292,7 +304,15 @@ def ModelValidationAndTest(ner: LSTM_NameEntityRecognition):
             print(f"{x}: {y}")
 
 if __name__ == "__main__":
-    ner = LSTM_NameEntityRecognition("./data/NameEntityRecognition")
-    ner.BuildTrainModel(20)
+    """
+    https://docs.python.org/3/library/argparse.html
+    'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
+    """
+    parser = argparse.ArgumentParser(description='Hand written digits binary classifier')
+    parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
+    args = parser.parse_args()
+
+    ner = LSTM_NameEntityRecognition("data/NameEntityRecognition", "models/lstm_name_entity_recognition.keras")
+    ner.BuildTrainModel(20, args.retrain)
     VerifyPaddingDoesNOTAffectAccuracy(ner)
     ModelValidationAndTest(ner)
