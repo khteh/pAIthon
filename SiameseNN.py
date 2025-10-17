@@ -8,6 +8,9 @@ from tensorflow.keras.optimizers import Adam
 from utils.TensorModelPlot import PlotModelHistory
 from utils.ConfusionMatrix import ConfusionMatrix
 class SiameseNN():
+    """
+    Siamese NN text similarity classifier
+    """
     _path:str = None
     _model_path:str = None
     _embedding_dimension: int = None
@@ -302,7 +305,7 @@ if __name__ == "__main__":
     https://docs.python.org/3/library/argparse.html
     'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
     """
-    parser = argparse.ArgumentParser(description='Hand written digits binary classifier')
+    parser = argparse.ArgumentParser(description='Siamese NN text similarity classifier')
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 

@@ -65,6 +65,9 @@ def masked_accuracy(y_true, y_pred):
     return masked_acc
 
 class LSTM_NameEntityRecognition():
+    """
+    LSTM Name Entity Recognition
+    """
     _path:str = None
     _model_path:str = None
     _embedding_dim: int = None
@@ -308,7 +311,7 @@ if __name__ == "__main__":
     https://docs.python.org/3/library/argparse.html
     'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
     """
-    parser = argparse.ArgumentParser(description='Hand written digits binary classifier')
+    parser = argparse.ArgumentParser(description='LSTM Name Entity Recognition')
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 
