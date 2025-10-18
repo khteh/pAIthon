@@ -26,7 +26,7 @@ Python AI, ML, DL and NLP exploration playground.
 
 - Unidirection LSTM
 - Identify name entities in input seqeunce
-  ![LSTM Name Entity Recognition](./LSTM_NameEntityRecognition.png?raw=true "LSTM Name Entity Recognition")
+  ![LSTM Name Entity Recognition](images/LSTM_NameEntityRecognition.png?raw=true "LSTM Name Entity Recognition")
 - Example:
   - Inpuut: "Peter Parker , the White House director of trade and manufacturing policy of U.S , said in an interview on Sunday morning that the White House was working to prepare for the possibility of a second wave of the coronavirus in the fall , though he said it wouldn ’t necessarily come"
   - Output:
