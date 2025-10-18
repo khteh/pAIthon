@@ -10,6 +10,7 @@ from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.layers import Bidirectional, Concatenate, Permute, Dot, Input, LSTM, Multiply
 from tensorflow.keras.layers import RepeatVector, Dense, Activation, Lambda
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import load_model, Model
 from numpy.random import Generator, PCG64DXSM
@@ -120,8 +121,8 @@ class MachineTranslation():
         # Defined shared layers as global variables
         self._repeator = RepeatVector(self._Tx)
         self._concatenator = Concatenate(axis=-1)
-        self._densor1 = Dense(10, activation = "tanh") # Similar to sigmoid graph but the output is [-1, 1]
-        self._densor2 = Dense(1, activation = "relu")
+        self._densor1 = Dense(10, activation = "tanh", kernel_regularizer=l2(0.1)) # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected). tanh is similar to sigmoid graph but the output is [-1, 1]
+        self._densor2 = Dense(1, activation = "relu", kernel_regularizer=l2(0.1))
         self._activator = Activation(softmax, name='attention_weights') # We are using a custom softmax(axis = 1) loaded in this notebook
         self._dot = Dot(axes = 1)
         self._model_path = path
@@ -200,7 +201,8 @@ class MachineTranslation():
 
         # Please note, this is the post attention LSTM cell. These have to be REUSED in the following for loop instead of instantiating new layers.
         post_activation_LSTM_cell = LSTM(self._n_s, return_state = True) # Please do not modify this global variable.
-        output_layer = Dense(len(self._machine_vocab), activation=softmax)
+        #output_layer = Dense(len(self._machine_vocab), activation=softmax)
+        output_layer = Dense(len(self._machine_vocab), kernel_regularizer=l2(0.1))
 
         # Step 2: Iterate for Ty steps
         for t in range(self._Ty):
@@ -239,10 +241,11 @@ class MachineTranslation():
         """
         assert len(self._model.outputs) == 10, f"Wrong output shape. Expected 10 != {len(self._model.outputs)}"
         self._model.compile(
-                loss=CategoricalCrossentropy(), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
+                loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
                 optimizer=Adam(learning_rate=self._learning_rate, beta_1=self._beta_1, beta_2=self._beta_2, weight_decay=self._decay), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                 metrics=['accuracy'] * self._Ty # https://github.com/tensorflow/tensorflow/issues/100319
             )
+        self._LoadWeights(self._weights_path) # Only load a pretrained weights on fresh model.
         self._model.summary()
         plot_model(
             self._model,
@@ -261,7 +264,6 @@ class MachineTranslation():
             c0 = numpy.zeros((self._size, self._n_s))
             outputs = list(self._Yoh.swapaxes(0,1))
             self._model.fit([self._Xoh, s0, c0], outputs, epochs=epochs, batch_size=self._batch_size)
-            self._LoadWeights(self._weights_path)
             if self._model_path:
                 self._model.save(self._model_path) # https://github.com/tensorflow/tensorflow/issues/100327
                 print(f"Model saved to {self._model_path}.")
@@ -553,7 +555,7 @@ def model_test(retrain:bool):
     mt = MachineTranslation("models/MachineTranslation.keras", "models/machine_translation_weights.h5", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100) # Increasing epochs does not improve accuracy. Have to examine the training dataset!
     mt.BuildModel()
     mt.ModelStateTest()
-    mt.Train(30, retrain)
+    mt.Train(50, retrain)
     print(f"date.today(): {date.today()}")
     print(f"datetime.now().date: {datetime.now().date()}")
     EXAMPLES = ['3 May 1979', '5 April 09', '21th of August 2016', 'Tue 10 Jul 2007', 'Saturday May 9 2018', 'March 3 2001', 'March 3rd 2001', '1 March 2001', "25th December 2025", "31st October 2021", "3rd November 2022"]

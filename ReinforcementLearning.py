@@ -54,7 +54,7 @@ class ReinforcementLearning():
         # Create the Q-Network
         self._q_network = Sequential([
             Input(shape=(self._state_size)),
-            Dense(64, activation = 'relu', kernel_regularizer=l2(0.1)), # Densely connected, or fully connected
+            Dense(64, activation = 'relu', kernel_regularizer=l2(0.1)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
             Dense(64, activation = 'relu', kernel_regularizer=l2(0.1)),
             Dense(self._num_actions, activation = 'linear')
             ])

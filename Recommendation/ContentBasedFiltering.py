@@ -142,7 +142,7 @@ class ContentBasedFiltering():
         num_outputs = 32
         tf.random.set_seed(1)
         self._user_NN = tf.keras.models.Sequential([
-            Dense(256, activation = 'relu', kernel_regularizer=l2(0.1)), # Densely connected, or fully connected
+            Dense(256, activation = 'relu', kernel_regularizer=l2(0.1)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
             Dense(128, activation = 'relu', kernel_regularizer=l2(0.1)),
             Dense(num_outputs, activation = 'linear')
         ])

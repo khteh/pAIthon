@@ -122,7 +122,7 @@ class NeuralNetworkModelEvaluationAndSelection():
         tf.random.set_seed(20)
         model_1 = Sequential(
             [
-                Dense(25, activation = 'relu', kernel_regularizer=l2(0.1)), # Densely connected, or fully connected
+                Dense(25, activation = 'relu', kernel_regularizer=l2(0.1)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
                 Dense(15, activation = 'relu', kernel_regularizer=l2(0.1)),
                 Dense(1, activation = 'linear')
             ],
