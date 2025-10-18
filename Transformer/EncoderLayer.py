@@ -4,6 +4,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import Dense, Dropout, Layer, MultiHeadAttention, LayerNormalization
+from tensorflow.keras.regularizers import l2
 #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 wrapper = textwrap.TextWrapper(width=70)
 @saving.register_keras_serializable()
@@ -22,8 +23,8 @@ class EncoderLayer(Layer):
             dropout=dropout_rate
         )
         self.ffn = Sequential([
-                Dense(fully_connected_dim, activation='relu'),  # (batch_size, seq_len, d_model)
-                Dense(embedding_dim)  # (batch_size, seq_len, d_model)
+                Dense(fully_connected_dim, activation='relu', kernel_regularizer=l2(0.1)),  # (batch_size, seq_len, d_model). Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+                Dense(embedding_dim, kernel_regularizer=l2(0.1))  # (batch_size, seq_len, d_model). Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
             ])
         self.layernorm1 = LayerNormalization(epsilon=layernorm_eps)
         self.layernorm2 = LayerNormalization(epsilon=layernorm_eps)

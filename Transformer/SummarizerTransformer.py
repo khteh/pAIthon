@@ -5,6 +5,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import Dense, Dropout, Layer, MultiHeadAttention, LayerNormalization
+from tensorflow.keras.regularizers import l2
 from Transformer.EncoderLayer import EncoderLayer
 from Transformer.Encoder import Encoder
 from Transformer.Decoder import Decoder
@@ -64,7 +65,7 @@ class SummarizerTransformer(Model):
                                layernorm_eps=self._layernorm_eps)
 
         #self.final_layer = Dense(target_vocab_size, activation='softmax')
-        self._final_layer = Dense(self._target_vocab_size)
+        self._final_layer = Dense(self._target_vocab_size, kernel_regularizer=l2(0.1)) # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
     
     def call(self, input_sentence, output_sentence, training, enc_padding_mask, look_ahead_mask, dec_padding_mask):
         """

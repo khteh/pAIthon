@@ -1,9 +1,5 @@
 import re,numpy, pandas as pd, tensorflow as tf, matplotlib.pyplot as plt, time, textwrap
 from keras import saving
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.layers import Dense, Dropout, Embedding, Layer, MultiHeadAttention, LayerNormalization
 from Transformer.positional_encoding import positional_encoding
 from Transformer.masks import create_look_ahead_mask
 from Transformer.DecoderLayer import DecoderLayer
