@@ -520,20 +520,20 @@ if __name__ == "__main__":
     idx = 1234
     question, label = qa.GetTestData(idx)
     result = qa.answer_question(idx)
-    print(f"Question: {question}")
+    print(f"\nQuestion: {question}")
     print(f"Answer: {label}")
     print(f"Prediction: {result}")
 
     idx = 5678
     question, label = qa.GetTestData(idx)
     result = qa.answer_question(idx)
-    print(f"Question: {question}")
+    print(f"\nQuestion: {question}")
     print(f"Answer: {label}")
     print(f"Prediction: {result}")
 
     idx = 90123
     question, label = qa.GetTestData(idx)
     result = qa.answer_question(idx)
-    print(f"Question: {question}")
+    print(f"\nQuestion: {question}")
     print(f"Answer: {label}")
     print(f"Prediction: {result}")

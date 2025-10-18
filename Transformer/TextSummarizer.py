@@ -291,7 +291,7 @@ if __name__ == "__main__":
     _num_heads = 2
     _positional_encoding_length = 256
     """
-    summarizer = TextSummarizer("data/corpus", "models/TextSummarizer.keras", 4, 128, 128, 4, 256, 0.0002, 150, 50, 64, 10000) # 5 num_layers and 5 num_heads will hit OOM error
+    summarizer = TextSummarizer("data/corpus", "models/TextSummarizer.keras", 3, 128, 128, 3, 256, 0.0002, 150, 50, 64, 10000) # 4 num_layers and 5 num_heads will hit OOM error
     summarizer.BuildModel()
     summarizer.TrainModel(100, args.retrain)
 
