@@ -32,7 +32,7 @@ class TransformerExtractiveQA():
         self._PrepareData()
 
     def BuildTrainModel(self):
-        self._model = TFDistilBertForQuestionAnswering.from_pretrained("models/QuestionAnswer", return_dict=False)
+        self._model = TFDistilBertForQuestionAnswering.from_pretrained("models/QuestionAnswering", return_dict=False)
         loss_fn1 = tf.keras.losses.SparseCategoricalCrossentropy( from_logits=True)
         loss_fn2 = tf.keras.losses.SparseCategoricalCrossentropy( from_logits=True)
         opt = tf.keras.optimizers.Adam(learning_rate=3e-5)
@@ -119,7 +119,7 @@ class TransformerExtractiveQA():
 if __name__ == "__main__":
     InitializeGPU()
     SetMemoryLimit(4096)
-    transformer = TransformerExtractiveQA("data/QuestionAnswer", 32, 10)
+    transformer = TransformerExtractiveQA("data/QuestionAnswering", 32, 10)
     transformer.BuildTrainModel()
     transformer.Predict('The hallway is south of the garden. The garden is south of the bedroom.', 'What is south of the bedroom?')
     transformer.Predict('The arctic is north of Singapore. Singapore is north of the antarctica. Japan is east of Singapore. Hawaii is west of Singapore', 'What is in the middle?')

@@ -2,6 +2,7 @@ import argparse, os, re,numpy, pandas as pd, tensorflow as tf, matplotlib.pyplot
 from pathlib import Path
 from tqdm import tqdm
 from tensorflow.keras.utils import plot_model
+from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.optimizers import Adam
@@ -11,7 +12,7 @@ from Transformer.EncoderLayer import EncoderLayer
 from Transformer.Encoder import Encoder
 from Transformer.Decoder import Decoder
 from Transformer.DecoderLayer import DecoderLayer
-from Transformer.SummarizerTransformer import SummarizerTransformer
+from Transformer.NLPTransformer import NLPTransformer
 from Transformer.CustomSchedule import CustomSchedule
 from Transformer.masks import *
 from utils.GPU import InitializeGPU
@@ -52,7 +53,7 @@ class TextSummarizer():
     _num_heads = 2
     _positional_encoding_length = 256
 
-    _model: SummarizerTransformer = None
+    _model: NLPTransformer = None
     _saved_model: bool = False
     _loss_object: SparseCategoricalCrossentropy = None
     _train_loss: Mean = None
@@ -77,13 +78,13 @@ class TextSummarizer():
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._saved_model = True
-            self._model = tf.keras.models.load_model(self._model_path) # https://github.com/tensorflow/tensorflow/issues/102475
+            self._model = load_model(self._model_path) # https://github.com/tensorflow/tensorflow/issues/102475
 
     def BuildModel(self):
         print(f"\n=== {self.BuildModel.__name__} ===")
         if not self._model:
             # Initialize the model
-            self._model = SummarizerTransformer(
+            self._model = NLPTransformer(
                 self._num_layers, 
                 self._embedding_dim, 
                 self._num_heads, 
@@ -110,7 +111,7 @@ class TextSummarizer():
                 number_of_batches=len(list(enumerate(self._dataset)))
                 for (batch, (inp, tar)) in enumerate(self._dataset):
                     print(f'Epoch {epoch+1}/{epochs}, Batch {batch+1}/{number_of_batches}', end='\r')
-                    self._train_step(inp, tar)
+                    self._model.train_step(inp, tar, self._loss_object, self._optimizer, self._train_loss)
                 print (f'Epoch {epoch+1}/{epochs}, Loss {self._train_loss.result():.4f}')
                 self._losses.append(self._train_loss.result())
                 # Take an example from the test set, to monitor it during training
@@ -149,7 +150,7 @@ class TextSummarizer():
         output = tf.expand_dims([self._tokenizer.word_index["[SOS]"]], 0)
 
         # predict the next word with your function
-        predicted_token = self._next_word(encoder_input, output)
+        predicted_token = self._model.NextWord(encoder_input, output)
         print(f"Predicted token: {predicted_token}")
         return self._tokenizer.sequences_to_texts(predicted_token.numpy())[0]
     
@@ -173,82 +174,12 @@ class TextSummarizer():
         encoder_input = tf.expand_dims(input_document[0], 0)
         output = tf.expand_dims([self._tokenizer.word_index["[SOS]"]], 0)
         for i in range(self._decoder_maxlen):
-            predicted_id = self._next_word(encoder_input, output)
+            predicted_id = self._model.NextWord(encoder_input, output)
             output = tf.concat([output, predicted_id], axis=-1)
             if predicted_id == self._tokenizer.word_index["[EOS]"]:
                 break
         return self._tokenizer.sequences_to_texts(output.numpy())[0]  # since there is just one translated document
-    
-    @tf.function
-    def _train_step(self, inp, tar):
-        """
-        One training step for the transformer
-        Arguments:
-            inp (tf.Tensor): Input data to summarize
-            tar (tf.Tensor): Target (summary)
-        Returns:
-            None
-        """
-        tar_inp = tar[:, :-1]
-        tar_real = tar[:, 1:]
-
-        # Create masks
-        enc_padding_mask = create_padding_mask(inp)
-        look_ahead_mask = create_look_ahead_mask(tf.shape(tar_inp)[1])
-        dec_padding_mask = create_padding_mask(inp) # Notice that both encoder and decoder padding masks are equal
-
-        with tf.GradientTape() as tape:
-            # def call(self, input_sentence, output_sentence, training, enc_padding_mask, look_ahead_mask, dec_padding_mask):
-            predictions, _ = self._model(
-                input_sentence=inp,
-                output_sentence=tar_inp, 
-                training=True, 
-                enc_padding_mask=enc_padding_mask, 
-                look_ahead_mask=look_ahead_mask, 
-                dec_padding_mask=dec_padding_mask
-            )
-            loss = self._masked_loss(tar_real, predictions)
-
-        gradients = tape.gradient(loss, self._model.trainable_variables)    
-        self._optimizer.apply_gradients(zip(gradients, self._model.trainable_variables))
-        self._train_loss(loss)
-
-    def _next_word(self, encoder_input, output):
-        """
-        Helper function for summarization that uses the model to predict just the next word.
-        Arguments:
-            encoder_input (tf.Tensor): Input data to summarize
-            output (tf.Tensor): (incomplete) target (summary)
-        Returns:
-            predicted_id (tf.Tensor): The id of the predicted word
-        """
-        # Create a padding mask for the input (encoder)
-        enc_padding_mask = create_padding_mask(encoder_input)
-        # Create a look-ahead mask for the output
-        look_ahead_mask = create_look_ahead_mask(tf.shape(output)[1])
-        # Create a padding mask for the input (decoder)
-        dec_padding_mask = create_padding_mask(encoder_input)# Notice that both encoder and decoder padding masks are equal
-
-        # Run the prediction of the next word with the transformer model
-        predictions, attention_weights = self._model(
-                input_sentence=encoder_input,
-                output_sentence=output, 
-                training=False, 
-                enc_padding_mask=enc_padding_mask, 
-                look_ahead_mask=look_ahead_mask, 
-                dec_padding_mask=dec_padding_mask
-        )
-        predictions = predictions[: ,-1:, :]
-        predicted_id = tf.cast(tf.argmax(predictions, axis=-1), tf.int32)
-        return predicted_id
-    
-    def _masked_loss(self, real, pred):
-        mask = tf.math.logical_not(tf.math.equal(real, 0))
-        loss_ = self._loss_object(real, pred)
-        mask = tf.cast(mask, dtype=loss_.dtype)
-        loss_ *= mask
-        return tf.reduce_sum(loss_)/tf.reduce_sum(mask)
-
+       
     def _PrepareData(self):
         print(f"\n=== {self._PrepareData.__name__} ===")
         # Get the train data
@@ -323,8 +254,6 @@ class TextSummarizer():
         Returns:
             output -- attention_weights
         """
-        ### START CODE HERE ###
-        
         # Multiply q and k transposed.
         matmul_qk = q @ k.T
         #print(f"k: {k.shape}")
@@ -362,7 +291,7 @@ if __name__ == "__main__":
     _num_heads = 2
     _positional_encoding_length = 256
     """
-    summarizer = TextSummarizer("data/corpus", "models/TextSummarizer.keras", 3, 128,128,3,256,0.0002, 150, 50, 64, 10000)
+    summarizer = TextSummarizer("data/corpus", "models/TextSummarizer.keras", 4, 128, 128, 4, 256, 0.0002, 150, 50, 64, 10000) # 5 num_layers and 5 num_heads will hit OOM error
     summarizer.BuildModel()
     summarizer.TrainModel(100, args.retrain)
 
