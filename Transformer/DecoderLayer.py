@@ -7,6 +7,9 @@ from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import Dense, Dropout, Input, Layer, MultiHeadAttention, LayerNormalization
 from tensorflow.keras.regularizers import l2
 from Transformer.masks import create_look_ahead_mask
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
+
 #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 wrapper = textwrap.TextWrapper(width=70)
 @saving.register_keras_serializable()
@@ -94,7 +97,7 @@ def DecoderLayerTests():
     decoderLayer_test = DecoderLayer(embedding_dim=key_dim, num_heads=n_heads, fully_connected_dim=32)
 
     q = numpy.ones((1, 15, key_dim))
-    encoder_test_output = tf.convert_to_tensor(numpy.random.rand(1, 7, 8))
+    encoder_test_output = tf.convert_to_tensor(rng.uniform(size=(1, 7, 8)))
     look_ahead_mask = create_look_ahead_mask(q.shape[1])
 
     out, attn_w_b1, attn_w_b2 = decoderLayer_test(q, encoder_test_output, training=False, look_ahead_mask=look_ahead_mask, padding_mask=None)

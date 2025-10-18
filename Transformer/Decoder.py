@@ -3,6 +3,9 @@ from keras import saving
 from Transformer.positional_encoding import positional_encoding
 from Transformer.masks import create_look_ahead_mask
 from Transformer.DecoderLayer import DecoderLayer
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
+
 #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 wrapper = textwrap.TextWrapper(width=70)
 @saving.register_keras_serializable()
@@ -83,7 +86,7 @@ def DecoderTests():
 
     x = numpy.array([[3, 2, 1, 1], [2, 1, 1, 0], [2, 1, 1, 0]])
 
-    encoder_test_output = tf.convert_to_tensor(numpy.random.rand(3, 7, 9))
+    encoder_test_output = tf.convert_to_tensor(rng.uniform(size=(3, 7, 9)))
 
     look_ahead_mask = create_look_ahead_mask(x.shape[1])
 

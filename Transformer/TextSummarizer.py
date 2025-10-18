@@ -126,6 +126,7 @@ class TextSummarizer():
             plt.ylabel('Loss')
             plt.xlabel('Epoch')
             plt.show()
+            """
             plot_model(
                 self._model,
                 to_file="output/TransformerSummarizer.png",
@@ -135,6 +136,7 @@ class TextSummarizer():
                 rankdir="TB",
                 expand_nested=True,
                 show_layer_activations=True)
+            """
             if self._model_path:
                 self._model.save(self._model_path) #https://github.com/tensorflow/tensorflow/issues/102475
                 print(f"Model saved to {self._model_path}.")
