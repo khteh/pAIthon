@@ -5,6 +5,7 @@ from tqdm import tqdm
 from babel.dates import format_date
 from pathlib import Path
 from keras import saving
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.layers import Bidirectional, Concatenate, Permute, Dot, Input, LSTM, Multiply
 from tensorflow.keras.layers import RepeatVector, Dense, Activation, Lambda
@@ -38,6 +39,8 @@ def softmax(x, axis=1):
 class MachineTranslation():
     """
     Nerual Machine Translation - Date translation
+    Translate from human-readable date locale string to ISO-format date string.
+    The model built in this module could be used to translate from one language into another. However, there is a caveat - language translation requires massive datasets and usually takes days of training on GPUs.
     """
     # Define format of the data we would like to generate
     FORMATS = ['short',
@@ -86,7 +89,6 @@ class MachineTranslation():
     _beta_1: float = None
     _beta_2: float = None
     _batch_size: int = None
-    _epochs:int = None
     _decay: float = None
     _repeator: RepeatVector = None
     _concatenator: Concatenate = None
@@ -95,8 +97,10 @@ class MachineTranslation():
     _activator: Activation = None
     _dot: Dot = None
     _model: Model = None
-
-    def __init__(self, path:str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
+    _saved_model:bool = False
+    _model_path:str = None
+    _weights_path:str = None
+    def __init__(self, path:str, weights_path: str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int):
         self._locale = locale
         self._size = size
         self._Tx = tx
@@ -108,7 +112,6 @@ class MachineTranslation():
         self._beta_2 = beta2
         self._decay = decay
         self._batch_size = batchsize
-        self._epochs = epochs
         self._fake = Faker()
         self._PrepareData()
         # Defined shared layers as global variables
@@ -119,6 +122,11 @@ class MachineTranslation():
         self._activator = Activation(softmax, name='attention_weights') # We are using a custom softmax(axis = 1) loaded in this notebook
         self._dot = Dot(axes = 1)
         self._model_path = path
+        self._weights_path = weights_path
+        if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
+            print(f"Using saved model {self._model_path}...")
+            self._model = tf.keras.models.load_model(self._model_path)
+            self._saved_model = True
 
     def one_step_attention(self, a, s_prev):
         """
@@ -151,7 +159,7 @@ class MachineTranslation():
         #print(f"context: {context.shape} {context.numpy()}")
         return context
 
-    def BuildModel(self, rebuild: bool = False):
+    def BuildModel(self):
         """
         Arguments:
         Tx -- length of the input sequence
@@ -166,11 +174,7 @@ class MachineTranslation():
         model -- Keras model instance
         """
         print(f"\n=== {self.BuildModel.__name__} ===")
-        if self._model and not rebuild:
-            return
-        elif self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file() and not rebuild:
-            print(f"Using saved model {self._model_path}...")
-            self._model = tf.keras.models.load_model(self._model_path)
+        if self._model:
             return
         # Define the inputs of your model with a shape (Tx, human_vocab_size)
         # Define s0 (initial hidden state) and c0 (initial cell state)
@@ -237,25 +241,34 @@ class MachineTranslation():
                 metrics=['accuracy'] * self._Ty # https://github.com/tensorflow/tensorflow/issues/100319
             )
         self._model.summary()
+        plot_model(
+            self._model,
+            to_file="output/MachineTranslation.png",
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+            rankdir="TB",
+            expand_nested=True,
+            show_layer_activations=True)
 
-    def Train(self, rebuild: bool = False):
+    def Train(self, epochs:int, retrain: bool = False):
         print(f"\n=== {self.Train.__name__} ===")
-        if self._model and rebuild:
+        if not self._saved_model or retrain:
             s0 = numpy.zeros((self._size, self._n_s))
             c0 = numpy.zeros((self._size, self._n_s))
             outputs = list(self._Yoh.swapaxes(0,1))
-            self._model.fit([self._Xoh, s0, c0], outputs, epochs=self._epochs, batch_size=self._batch_size)
-            self.LoadWeights("models/machine_translation_weights.h5")
+            self._model.fit([self._Xoh, s0, c0], outputs, epochs=epochs, batch_size=self._batch_size)
+            self._LoadWeights(self._weights_path)
             if self._model_path:
                 self._model.save(self._model_path) # https://github.com/tensorflow/tensorflow/issues/100327
                 print(f"Model saved to {self._model_path}.")
 
-    def LoadWeights(self, path:str):
+    def _LoadWeights(self, path:str):
         """
         Load a pretrained weights which was trained for a longer period of time. This saves time.
         """
-        print(f"\n=== {self.LoadWeights.__name__} ===")
-        if self._model:
+        print(f"\n=== {self._LoadWeights.__name__} ===")
+        if self._model and len(path) and Path(path).exists() and Path(path).is_file():
             self._model.load_weights(path)
 
     def Predict(self, dates, s00, c00):
@@ -511,7 +524,7 @@ def one_step_attention_test():
     # size: 10000, Tx: 30, Ty: 10, n_a: 32, n_s: 64, X: (10000, 30), Y: (10000, 10), Xoh: (10000, 30, 37), Yoh: (10000, 10, 11)
     # def __init__(self, path: str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
     # lr=0.005, beta_1=0.9,beta_2=0.999,decay=0.01
-    mt = MachineTranslation("models/MachineTranslation.keras", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100, 10)
+    mt = MachineTranslation("models/MachineTranslation.keras", "models/machine_translation_weights.h5", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100)
 
     a = rng.uniform(low=0, high=1, size=(m, Tx, 2 * n_a)).astype(numpy.float32)
     s_prev = rng.uniform(low=0, high=1, size=(m, n_s)).astype(numpy.float32) * 1
@@ -534,17 +547,17 @@ def model_test(retrain:bool):
     # size: 10000, Tx: 30, Ty: 10, n_a: 32, n_s: 64, X: (10000, 30), Y: (10000, 10), Xoh: (10000, 30, 37), Yoh: (10000, 10, 11)
     # def __init__(self, path: str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
     # lr=0.005, beta_1=0.9,beta_2=0.999,decay=0.01
-    mt = MachineTranslation("models/MachineTranslation.keras", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100, 10) # Increasing epochs does not improve accuracy. Have to examine the training dataset!
-    model = mt.BuildModel(retrain)
+    mt = MachineTranslation("models/MachineTranslation.keras", "models/machine_translation_weights.h5", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100) # Increasing epochs does not improve accuracy. Have to examine the training dataset!
+    mt.BuildModel()
     mt.ModelStateTest()
-    mt.Train(retrain)
+    mt.Train(30, retrain)
     print(f"date.today(): {date.today()}")
     print(f"datetime.now().date: {datetime.now().date()}")
-    EXAMPLES = ['3 May 1979', '5 April 09', '21th of August 2016', 'Tue 10 Jul 2007', 'Saturday May 9 2018', 'March 3 2001', 'March 3rd 2001', '1 March 2001', "25th December 2020", "31st October 2021", "3rd November 2022"]
+    EXAMPLES = ['3 May 1979', '5 April 09', '21th of August 2016', 'Tue 10 Jul 2007', 'Saturday May 9 2018', 'March 3 2001', 'March 3rd 2001', '1 March 2001', "25th December 2025", "31st October 2021", "3rd November 2022"]
     s00 = numpy.zeros((1, n_s))
     c00 = numpy.zeros((1, n_s))
     mt.Predict(EXAMPLES, s00, c00)
-    mt.visualize_attentions("Tuesday 09 Oct 1993")
+    mt.visualize_attentions("25th December 2025")
 
 if __name__ == "__main__":
     """

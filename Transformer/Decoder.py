@@ -15,18 +15,13 @@ class Decoder(tf.keras.layers.Layer):
     The entire Encoder starts by passing the target input to an embedding layer 
     and using positional encoding to then pass the output through a stack of
     decoder Layers
-        
     """ 
-    def __init__(self, num_layers, embedding_dim, num_heads, fully_connected_dim, target_vocab_size,
-               maximum_position_encoding, dropout_rate=0.1, layernorm_eps=1e-6):
-        super(Decoder, self).__init__()
-
+    def __init__(self, num_layers, embedding_dim, num_heads, fully_connected_dim, target_vocab_size, maximum_position_encoding, dropout_rate=0.1, layernorm_eps=1e-6, **kwargs):
+        super(Decoder, self).__init__(**kwargs)
         self.embedding_dim = embedding_dim
         self.num_layers = num_layers
-
         self.embedding = tf.keras.layers.Embedding(target_vocab_size, self.embedding_dim)
         self.pos_encoding = positional_encoding(maximum_position_encoding, self.embedding_dim)
-
         self.dec_layers = [DecoderLayer(embedding_dim=self.embedding_dim,
                                         num_heads=num_heads,
                                         fully_connected_dim=fully_connected_dim,

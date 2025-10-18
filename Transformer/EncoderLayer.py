@@ -14,8 +14,8 @@ class EncoderLayer(Layer):
     This architecture includes a residual connection around each of the two 
     sub-layers, followed by layer normalization.
     """
-    def __init__(self, embedding_dim, num_heads, fully_connected_dim, dropout_rate=0.1, layernorm_eps=1e-6):
-        super(EncoderLayer, self).__init__()
+    def __init__(self, embedding_dim, num_heads, fully_connected_dim, dropout_rate=0.1, layernorm_eps=1e-6, **kwargs):
+        super(EncoderLayer, self).__init__(**kwargs)
         self.mha = MultiHeadAttention(
             num_heads=num_heads,
             key_dim=embedding_dim,

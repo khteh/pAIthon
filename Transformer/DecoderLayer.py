@@ -15,8 +15,8 @@ class DecoderLayer(Layer):
     one that combines it with the output of the encoder, followed by a
     fully connected block. 
     """
-    def __init__(self, embedding_dim, num_heads, fully_connected_dim, dropout_rate=0.1, layernorm_eps=1e-6):
-        super(DecoderLayer, self).__init__()
+    def __init__(self, embedding_dim, num_heads, fully_connected_dim, dropout_rate=0.1, layernorm_eps=1e-6, **kwargs):
+        super(DecoderLayer, self).__init__(**kwargs)
         self.mha1 = MultiHeadAttention(
             num_heads=num_heads,
             key_dim=embedding_dim,

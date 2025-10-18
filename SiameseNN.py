@@ -9,7 +9,7 @@ from utils.TensorModelPlot import PlotModelHistory
 from utils.ConfusionMatrix import ConfusionMatrix
 class SiameseNN():
     """
-    Siamese NN text similarity classifier
+    Siamese NN text similarity classifier.
     """
     _path:str = None
     _model_path:str = None
@@ -44,48 +44,50 @@ class SiameseNN():
         #    print(f"Using saved model {self._model_path}...")
         #    self._model = tf.keras.models.load_model(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
 
-    def BuildTrainModel(self, epochs:int, rebuild: bool = False):
-        if self._model and not rebuild:
-            return
-        branch = Sequential([
-            self._text_vectorizer,
-            Embedding(len(self._vocab), self._embedding_dimension, name="Embedding"),
-            LSTM(self._embedding_dimension, return_sequences=True, name="LSTM"),
-            GlobalAveragePooling1D(name="mean"),
-            # This applies L2 normalization directly to the output of the preceding layer. It ensures that the L2 norm of the output vector (or along a specified axis) becomes 1. This is a transformation of the activations.
-            Lambda(l2_normalize, name="out")
-        ], name="SiameseSequential")
-        # Define both inputs. Remember to call then 'input_1' and 'input_2' using the `name` parameter. 
-        # Be mindful of the data type and size
-        input1 = Input(shape=(1,), dtype=tf.string, name='input_1')
-        input2 = Input(shape=(1,), dtype=tf.string, name='input_2')
-        # Define the output of each branch of your Siamese network. Remember that both branches have the same coefficients, 
-        # but they each receive different inputs.
-        branch1 = branch(input1)
-        branch2 = branch(input2)
-        # Define the Concatenate layer. You should concatenate columns, you can fix this using the `axis`parameter. 
-        # This layer is applied over the outputs of each branch of the Siamese network
-        conc = Concatenate(axis=-1, name='CosineSimilarity')([branch1, branch2]) 
-        self._model = Model(inputs=[input1, input2], outputs=conc, name="SiameseModel")
-        self._model.build(input_shape=None)
-        self._model.summary()
-        self._model.get_layer(name='SiameseSequential').summary()        
-        plot_model(
-            self._model,
-            to_file="output/siamese.png",
-            show_shapes=True,
-            show_dtype=True,
-            show_layer_names=True,
-            rankdir="TB",
-            expand_nested=True)
-        # Compile the model
-        self._model.compile(loss=self._TripletLoss, optimizer = Adam(learning_rate=self._learning_rate))
-        # Train the model 
-        history = self._model.fit(self._train_dataset, epochs = epochs, validation_data = self._val_dataset)
-        PlotModelHistory("Siamese NN", history)
-        #if self._model_path:
-        #    self._model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
-        #    print(f"Model saved to {self._model_path}.")
+    def BuildTrainModel(self, epochs:int, retrain: bool = False):
+        new_model = not self._model
+        if not self._model:
+            branch = Sequential([
+                self._text_vectorizer,
+                Embedding(len(self._vocab), self._embedding_dimension, name="Embedding"),
+                LSTM(self._embedding_dimension, return_sequences=True, name="LSTM"),
+                GlobalAveragePooling1D(name="mean"),
+                # This applies L2 normalization directly to the output of the preceding layer. It ensures that the L2 norm of the output vector (or along a specified axis) becomes 1. This is a transformation of the activations.
+                Lambda(l2_normalize, name="out")
+            ], name="SiameseSequential")
+            # Define both inputs. Remember to call then 'input_1' and 'input_2' using the `name` parameter. 
+            # Be mindful of the data type and size
+            input1 = Input(shape=(1,), dtype=tf.string, name='input_1')
+            input2 = Input(shape=(1,), dtype=tf.string, name='input_2')
+            # Define the output of each branch of your Siamese network. Remember that both branches have the same coefficients, 
+            # but they each receive different inputs.
+            branch1 = branch(input1)
+            branch2 = branch(input2)
+            # Define the Concatenate layer. You should concatenate columns, you can fix this using the `axis`parameter. 
+            # This layer is applied over the outputs of each branch of the Siamese network
+            conc = Concatenate(axis=-1, name='CosineSimilarity')([branch1, branch2]) 
+            self._model = Model(inputs=[input1, input2], outputs=conc, name="SiameseModel")
+            self._model.build(input_shape=None)
+            self._model.summary()
+            self._model.get_layer(name='SiameseSequential').summary()        
+            plot_model(
+                self._model,
+                to_file="output/SiameseNN.png",
+                show_shapes=True,
+                show_dtype=True,
+                show_layer_names=True,
+                rankdir="TB",
+                expand_nested=True,
+                show_layer_activations=True)
+            # Compile the model
+            self._model.compile(loss=self._TripletLoss, optimizer = Adam(learning_rate=self._learning_rate))
+        if new_model or retrain:
+            # Train the model 
+            history = self._model.fit(self._train_dataset, epochs = epochs, validation_data = self._val_dataset)
+            PlotModelHistory("Siamese NN", history)
+            #if self._model_path:
+            #    self._model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
+            #    print(f"Model saved to {self._model_path}.")
         
     def Evaluate(self, threshold, verbose=True):
         """Function to test the accuracy of the model.

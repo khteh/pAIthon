@@ -31,15 +31,13 @@ class NameEntityRecognition():
     _train = None
     _learning_rate:float = None
     _batch_size:int = None
-    _epochs: int = None
     _model: TFDistilBertForTokenClassification = None
-    def __init__(self, model_path:str, path:str, maxlen:int, learning_rate:float, batchsize:int, epochs:int):
+    def __init__(self, model_path:str, path:str, maxlen:int, learning_rate:float, batchsize:int):
         self._path = path
         self._model_path = model_path
         self._maxlen = maxlen
         self._learning_rate = learning_rate
         self._batch_size = batchsize
-        self._epochs = epochs
         """
         Before feeding the texts to a Transformer model, you will need to tokenize your input using a 🤗 Transformer tokenizer.
         Tokenizer must match the Transformer model type!
@@ -52,22 +50,23 @@ class NameEntityRecognition():
         #    print(f"Using saved model {self._model_path}...")
         #    self._model = tf.keras.models.load_model(self._model_path)
 
-    def BuildTrainModel(self, rebuild: bool = False):
+    def BuildTrainModel(self, epochs:int, retrain: bool = False):
         """
         Use DistilBERT model, which matches the tokenizer you used to preprocess your data.
         """
         print(f"\n=== {self.BuildTrainModel.__name__} ===")
-        if self._model and not rebuild:
-            return
-        self._model = TFDistilBertForTokenClassification.from_pretrained('models/NameEntityRecognition', num_labels=len(self._unique_tags))
-        # https://github.com/tensorflow/tensorflow/issues/100330
-        # https://github.com/keras-team/keras/issues/21666
-        self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=self._model.hf_compute_loss, metrics=['accuracy']) # can also use any keras loss fn
-        history = self._model.fit(self._train.batch(self._batch_size), epochs=self._epochs, batch_size=self._batch_size)
-        PlotModelHistory("Name Entity Recognition", history)
-        #if self._model_path:
-        #    self._model.save(self._model_path)
-        #    print(f"Model saved to {self._model_path}.")
+        new_model = not self._model
+        if not self._model:
+            self._model = TFDistilBertForTokenClassification.from_pretrained('models/NameEntityRecognition', num_labels=len(self._unique_tags))
+            # https://github.com/tensorflow/tensorflow/issues/100330
+            # https://github.com/keras-team/keras/issues/21666
+            self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=self._model.hf_compute_loss, metrics=['accuracy']) # can also use any keras loss fn
+        if new_model or retrain:
+            history = self._model.fit(self._train.batch(self._batch_size), epochs=epochs, batch_size=self._batch_size)
+            PlotModelHistory("Name Entity Recognition", history)
+            #if self._model_path:
+            #    self._model.save(self._model_path)
+            #    print(f"Model saved to {self._model_path}.")
 
     def Predict(self, text:str):
         print(f"\n=== {self.Predict.__name__} ===")
@@ -311,6 +310,6 @@ if __name__ == "__main__":
     InitializeGPU()
     SetMemoryLimit(4096)
     print(tf.version.GIT_VERSION, tf.version.VERSION)
-    ner = NameEntityRecognition("models/name_entity_recognition.keras", "data/ner.json", 512, 1e-5, 4, 10)
-    ner.BuildTrainModel(True) # TFDistilBertForTokenClassification is NOT decorated @keras.saving.register_keras_serializable()
+    ner = NameEntityRecognition("models/name_entity_recognition.keras", "data/ner.json", 512, 1e-5, 4)
+    ner.BuildTrainModel(20, True) # TFDistilBertForTokenClassification is NOT decorated @keras.saving.register_keras_serializable()
     ner.Predict("Manisha Bharti. 3.5 years of professional IT experience in Banking and Finance domain")

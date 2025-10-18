@@ -1,5 +1,6 @@
 import argparse, numpy, pandas as pd, tensorflow as tf
 from pathlib import Path
+from tensorflow.keras.utils import plot_model
 from keras import saving
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input, LSTM, Embedding, TextVectorization
@@ -66,7 +67,48 @@ def masked_accuracy(y_true, y_pred):
 
 class LSTM_NameEntityRecognition():
     """
-    LSTM Name Entity Recognition
+    LSTM Name Entity Recognition using dataset from Kaggle. It has been preprocessed. The original data consists of 4 columns: the sentence number, the word, the part-of-speech of the word (not used in this module), and the tags.
+    A few tags expected to be used in this module:
+    * geo: geographical entity
+    * org: organization
+    * per: person 
+    * gpe: geopolitical entity
+    * tim: time indicator
+    * art: artifact
+    * eve: event
+    * nat: natural phenomenon
+    * O: filler word
+
+    The `tag_map` is a dictionary that maps the tags to numbers. The prepositions in the tags mean:
+    * I: Token is inside an entity.
+    * B: Token begins an entity.
+
+    Example:
+
+    **"Sharon flew to Miami on Friday"**
+
+    The tags would look like:
+
+    Sharon B-per
+    flew   O
+    to     O
+    Miami  B-geo
+    on     O
+    Friday B-tim
+
+    There are three tokens beginning with B-, since there are no multi-token entities in the sequence. But Sharon's last name is added to the sentence:
+
+    **"Sharon Floyd flew to Miami on Friday"**
+
+    Sharon B-per
+    Floyd  I-per
+    flew   O
+    to     O
+    Miami  B-geo
+    on     O
+    Friday B-tim
+
+    Output tags would change to show first "Sharon" as B-per, and "Floyd" as I-per, where I- indicates an inner token in a multi-token sequence.
     """
     _path:str = None
     _model_path:str = None
@@ -104,27 +146,37 @@ class LSTM_NameEntityRecognition():
         #    print(f"Using saved model {self._model_path}...") 
         #    self.model = tf.keras.models.load_model(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
     
-    def BuildTrainModel(self, epochs: int, rebuild: bool = False):
-        if self.model and not rebuild:
-            return
-        self.model = Sequential([
-            Input(shape=(len(self._vocab),)),
-            Embedding(len(self._vocab)+1, self._embedding_dim, mask_zero = True),
-            LSTM(self._embedding_dim, return_sequences=True),
-            Dense(len(self._tag_map), activation=tf.nn.log_softmax)
-        ], name = 'NameEntityRecognition')
-        self.model.compile(optimizer=tf.keras.optimizers.Adam(self._learning_rate), 
-                    loss = masked_loss,
-                    metrics = [masked_accuracy])
-        self.model.summary()
-        history = self.model.fit(self._train_dataset.batch(self._batch_size),
-          validation_data = self._val_dataset.batch(self._batch_size),
-          shuffle=True,
-          epochs = epochs)
-        PlotModelHistory("LSTM Name Entity Recognition", history)
-        #if self._model_path:
-        #    self.model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
-        #    print(f"Model saved to {self._model_path}.")
+    def BuildTrainModel(self, epochs: int, retrain: bool = False):
+        new_model = not self.model
+        if not self.model:
+            self.model = Sequential([
+                Input(shape=(len(self._vocab),)),
+                Embedding(len(self._vocab)+1, self._embedding_dim, mask_zero = True),
+                LSTM(self._embedding_dim, return_sequences=True),
+                Dense(len(self._tag_map), activation=tf.nn.log_softmax)
+            ], name = 'NameEntityRecognition')
+            self.model.compile(optimizer=tf.keras.optimizers.Adam(self._learning_rate), 
+                        loss = masked_loss,
+                        metrics = [masked_accuracy])
+            self.model.summary()
+            plot_model(
+                self.model,
+                to_file="output/LSTM_NameEntityRecognition.png",
+                show_shapes=True,
+                show_dtype=True,
+                show_layer_names=True,
+                rankdir="TB",
+                expand_nested=True,
+                show_layer_activations=True)
+        if new_model or retrain:
+            history = self.model.fit(self._train_dataset.batch(self._batch_size),
+            validation_data = self._val_dataset.batch(self._batch_size),
+            shuffle=True,
+            epochs = epochs)
+            PlotModelHistory("LSTM Name Entity Recognition", history)
+            #if self._model_path:
+            #    self.model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
+            #    print(f"Model saved to {self._model_path}.")
 
     def Evaluate(self):
         # Convert the sentences into ids

@@ -32,10 +32,8 @@ class SummarizerTransformer(Model):
     _encoder: Encoder = None
     _decoder: Decoder = None
     _final_layer: Dense = None
-    def __init__(self, num_layers, embedding_dim, num_heads, fully_connected_dim, input_vocab_size, 
-               target_vocab_size, max_positional_encoding_input,
-               max_positional_encoding_target, dropout_rate=0.1, layernorm_eps=1e-6):
-        super(SummarizerTransformer, self).__init__()
+    def __init__(self, num_layers, embedding_dim, num_heads, fully_connected_dim, input_vocab_size, target_vocab_size, max_positional_encoding_input, max_positional_encoding_target, dropout_rate=0.1, layernorm_eps=1e-6, **kwargs):
+        super(SummarizerTransformer, self).__init__(**kwargs)
         self._num_layers = num_layers
         self._embedding_dim = embedding_dim
         self._num_heads = num_heads
@@ -140,11 +138,13 @@ class SummarizerTransformer(Model):
         target_vocab_size = tf.keras.saving.deserialize_keras_object(target_vocab_size_config)
         max_positional_encoding_input_config = config.pop("max_positional_encoding_input")
         max_positional_encoding_input = tf.keras.saving.deserialize_keras_object(max_positional_encoding_input_config)
+        max_positional_encoding_target_config = config.pop("max_positional_encoding_target")
+        max_positional_encoding_target = tf.keras.saving.deserialize_keras_object(max_positional_encoding_target_config)
         dropout_rate_config = config.pop("dropout_rate")
         dropout_rate = tf.keras.saving.deserialize_keras_object(dropout_rate_config)
         layernorm_eps_config = config.pop("layernorm_eps")
         layernorm_eps = tf.keras.saving.deserialize_keras_object(layernorm_eps_config)
-        return cls(num_layers, embedding_dim, num_heads, fully_connected_dim, input_vocab_size, target_vocab_size, max_positional_encoding_input, dropout_rate, layernorm_eps, **config)
+        return cls(num_layers, embedding_dim, num_heads, fully_connected_dim, input_vocab_size, target_vocab_size, max_positional_encoding_input, max_positional_encoding_target, dropout_rate, layernorm_eps, **config)
     
 def SummarizerTransformerTests():
     # Test your function!
