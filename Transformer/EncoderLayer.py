@@ -1,5 +1,6 @@
 import re,numpy, pandas as pd, tensorflow as tf, matplotlib.pyplot as plt, time, textwrap
 from keras import saving
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.models import Model, Sequential
@@ -62,6 +63,4 @@ class EncoderLayer(Layer):
         # apply layer normalization on sum of the output from multi-head attention (skip connection) and ffn output
         # to get the output of the encoder layer
         encoder_layer_out = self.layernorm2(skip_x_attention + ffn_output)  # (batch_size, input_seq_len, embedding_dim)
-        
         return encoder_layer_out
-    

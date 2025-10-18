@@ -1,5 +1,6 @@
 import re,numpy, pandas as pd, tensorflow as tf, matplotlib.pyplot as plt, time, textwrap
 from tensorflow.keras import saving
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.saving import serialize_keras_object
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
@@ -45,7 +46,6 @@ class SummarizerTransformer(Model):
         self._max_positional_encoding_target = max_positional_encoding_target
         self._dropout_rate = dropout_rate
         self._layernorm_eps = layernorm_eps
-
         self._encoder = Encoder(num_layers=self._num_layers,
                                embedding_dim=self._embedding_dim,
                                num_heads=self._num_heads,
@@ -54,7 +54,6 @@ class SummarizerTransformer(Model):
                                maximum_position_encoding=self._max_positional_encoding_input,
                                dropout_rate=self._dropout_rate,
                                layernorm_eps=self._layernorm_eps)
-
         self._decoder = Decoder(num_layers=self._num_layers, 
                                embedding_dim=self._embedding_dim,
                                num_heads=self._num_heads,
@@ -63,8 +62,6 @@ class SummarizerTransformer(Model):
                                maximum_position_encoding=self._max_positional_encoding_target,
                                dropout_rate=self._dropout_rate,
                                layernorm_eps=self._layernorm_eps)
-
-        #self.final_layer = Dense(target_vocab_size, activation='softmax')
         self._final_layer = Dense(self._target_vocab_size, kernel_regularizer=l2(0.1)) # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
     
     def call(self, input_sentence, output_sentence, training, enc_padding_mask, look_ahead_mask, dec_padding_mask):
@@ -147,6 +144,26 @@ class SummarizerTransformer(Model):
         layernorm_eps = tf.keras.saving.deserialize_keras_object(layernorm_eps_config)
         return cls(num_layers, embedding_dim, num_heads, fully_connected_dim, input_vocab_size, target_vocab_size, max_positional_encoding_input, max_positional_encoding_target, dropout_rate, layernorm_eps, **config)
     
+    def Plot(self):
+        plot_model(
+            self._encoder,
+            to_file="output/TransformerSummarizerEncoder.png",
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+            rankdir="TB",
+            expand_nested=True,
+            show_layer_activations=True)
+        plot_model(
+            self._encoder,
+            to_file="output/TransformerSummarizerDecoder.png",
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+            rankdir="TB",
+            expand_nested=True,
+            show_layer_activations=True)
+
 def SummarizerTransformerTests():
     # Test your function!
     n_layers = 3

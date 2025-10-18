@@ -1,5 +1,6 @@
 import re,numpy, pandas as pd, tensorflow as tf, matplotlib.pyplot as plt, time, textwrap
 from keras import saving
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.models import Model, Sequential
