@@ -49,9 +49,9 @@ Python AI, ML, DL and NLP exploration playground.
 - Text similarity classifier
   ![Siamese NN](./SiameseNN.png?raw=true "Siamese NN")
 - Examples:
-  1. When will I see you? When can I see you again?
+  1. "When will I see you?", "When can I see you again?"
      Prediction: True
-  2. Do they enjoy eating the desert? Do they like hiking in the desert?
+  2. "Do they enjoy eating the desert?", "Do they like hiking in the desert?"
      Prediction: False
 
 ## MNIST GAN
