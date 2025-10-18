@@ -71,10 +71,10 @@ class MachineTranslation():
     LOCALES = ['en_SG']
     _path: str = None
     _fake: None
-    _size:int = None
+    _size:int = None # number of dates in the dataset
     _locale:str = None
-    _Tx: int = None
-    _Ty: int = None
+    _Tx: int = None # length of the input sequence
+    _Ty: int = None # length of the output sequence
     _dataset = None
     _human_vocab = None
     _machine_vocab = None
@@ -83,13 +83,16 @@ class MachineTranslation():
     _Y = None
     _Xoh = None
     _Yoh = None
-    _n_a:int = None# -- hidden state size of the Bi-LSTM
-    _n_s:int = None# -- hidden state size of the post-attention LSTM
+    _n_a:int = None # number of units for the pre-attention, bi-directional LSTM's hidden state 'a'
+    _n_s:int = None # number of units for the post-attention LSTM's hidden state "s"
+    
+    # The following are the optimizer's hyperparameters
     _learning_rate: float = None
     _beta_1: float = None
     _beta_2: float = None
     _batch_size: int = None
     _decay: float = None
+    
     _repeator: RepeatVector = None
     _concatenator: Concatenate = None
     _densor1: Dense = None
@@ -522,7 +525,7 @@ def one_step_attention_test():
     n_a = 32
     n_s = 64
     # size: 10000, Tx: 30, Ty: 10, n_a: 32, n_s: 64, X: (10000, 30), Y: (10000, 10), Xoh: (10000, 30, 37), Yoh: (10000, 10, 11)
-    # def __init__(self, path: str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
+    # def __init__(self, path: str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int):
     # lr=0.005, beta_1=0.9,beta_2=0.999,decay=0.01
     mt = MachineTranslation("models/MachineTranslation.keras", "models/machine_translation_weights.h5", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100)
 
@@ -545,7 +548,7 @@ def model_test(retrain:bool):
     n_a = 32
     n_s = 64
     # size: 10000, Tx: 30, Ty: 10, n_a: 32, n_s: 64, X: (10000, 30), Y: (10000, 10), Xoh: (10000, 30, 37), Yoh: (10000, 10, 11)
-    # def __init__(self, path: str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int, epochs:int):
+    # def __init__(self, path: str, locale:str, size:int, tx:int, ty:int, n_a:int, n_s:int, learning_rate:float, beta1:float, beta2:float, decay:float, batchsize: int):
     # lr=0.005, beta_1=0.9,beta_2=0.999,decay=0.01
     mt = MachineTranslation("models/MachineTranslation.keras", "models/machine_translation_weights.h5", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100) # Increasing epochs does not improve accuracy. Have to examine the training dataset!
     mt.BuildModel()

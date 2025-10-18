@@ -18,9 +18,9 @@ Python AI, ML, DL and NLP exploration playground.
 - Bidirection LSTM
 - Translate from human-readable date locale string to ISO-format date string.
 - Architecture:
-  ![Machine Translation](./MachineTranslation.png?raw=true "Machine Translation")
+  ![Machine Translation](images/MachineTranslation.png?raw=true "Machine Translation")
 - Attention Map:
-  ![Attention Map](./AttentionMap.png?raw=true "Attention Map")
+  ![Attention Map](images/AttentionMap.png?raw=true "Attention Map")
 
 ## LSTM Name Entity Recognition
 
@@ -47,21 +47,25 @@ Python AI, ML, DL and NLP exploration playground.
 ## Siamese Neural Network
 
 - Text similarity classifier
-  ![Siamese NN](./SiameseNN.png?raw=true "Siamese NN")
+  ![Siamese NN](images/SiameseNN.png?raw=true "Siamese NN")
 - Examples:
   1. "When will I see you?", "When can I see you again?"
      Prediction: True
   2. "Do they enjoy eating the desert?", "Do they like hiking in the desert?"
      Prediction: False
 
+## Transformer Text Summarization
+
+- Encoder-Decoder Transformer architecture
+
 ## MNIST GAN
 
-![MNIST GAN](./mnist_gan.gif?raw=true "MNIST GAN")
+![MNIST GAN](images/mnist_gan.gif?raw=true "MNIST GAN")
 
 ## Sine Wave GAN
 
 - https://medium.com/@khteh/sine-wave-generative-adversarial-network-gan-8858bf5c867a
-  ![Sine Wave GAN](./sinewave_gan.gif?raw=true "Sine Wave GAN")
+  ![Sine Wave GAN](images/sinewave_gan.gif?raw=true "Sine Wave GAN")
 
 ## Harvard Extended CS50 course works
 
