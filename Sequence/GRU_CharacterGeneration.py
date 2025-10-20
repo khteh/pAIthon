@@ -152,7 +152,7 @@ class GRU_CharacterGeneration():
         preds = self._model.predict(self._val_dataset)
         print(f"predictions: {preds.shape}")
         #Get the log perplexity
-        log_ppx = log_perplexity(preds, tf.expand_dims(self._Y_val, 0))
+        log_ppx = log_perplexity(tf.expand_dims(self._Y_val, 0), preds)
         print(f'The log perplexity and perplexity of your model are {log_ppx} and {numpy.exp(log_ppx)} respectively')
 
     def Generate(self, initial:str, max_len:int):
