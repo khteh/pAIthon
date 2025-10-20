@@ -49,7 +49,7 @@ class GRULanguageModel(Model):
     _vocab_size:int = None
     _embedding_dim:int = None
     _rnn_units: int = None
-    def __init__(self, vocab_size=256, embedding_dim=256, rnn_units=128, **kwargs):
+    def __init__(self, vocab_size, embedding_dim, rnn_units, **kwargs):
         super().__init__(**kwargs)
         self._vocab_size = vocab_size
         self._embedding_dim = embedding_dim
@@ -63,11 +63,13 @@ class GRULanguageModel(Model):
         self.dense = Dense(vocab_size, kernel_regularizer=l2(0.1)),  # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected)
     
     def call(self, inputs, states=None, return_state=False, training=False):
+        print(f"inputs: {inputs.shape}")
         x = inputs
         # Map input tokens to embedding vectors
         x = self.embedding(x, training=training)
         if states is None:
             # Get initial state from the GRU layer
+            print(f"x: {x.shape}")
             states = self.gru.get_initial_state(x)
         x, states = self.gru(x, initial_state=states, training=training)
         # Predict the next tokens and apply log-softmax activation

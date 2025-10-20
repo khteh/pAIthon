@@ -115,46 +115,36 @@ class GRU_CharacterGeneration():
         ___
         """
         print(f"\n=== {self.BuildTrainModel.__name__} ===")
-        # def __init__(self, vocab_size=256, embedding_dim=256, rnn_units=128):
-        #self._model = GRULanguageModel(len(self._vocab), self._embedding_dim)
-        """
-        self._model = Sequential([
-            Input(shape=(self._seq_length, )),
-            Embedding(len(self._vocab), self._embedding_dim),
-            # Define a GRU (Gated Recurrent Unit) layer for sequence modeling
-            # ValueError: Input 0 of layer "gru" is incompatible with the layer: expected ndim=3, found ndim=4. Full shape received: (None, 64, 100, 256)
-            GRU(self._rnn_units, return_sequences=True, return_state=False),
-            # Apply a dense layer with log-softmax activation to predict next tokens
-            # ValueError: Layer "dense" expects 1 input(s), but it received 2 input tensors. Inputs received: [<KerasTensor shape=(None, 100, 512), dtype=float32, sparse=False, ragged=False, name=keras_tensor_2>, <KerasTensor shape=(None, 512), dtype=float32, sparse=False, ragged=False, name=keras_tensor_3>]
-            #Dense(len(self._vocab), activation=tf.nn.log_softmax, kernel_regularizer=l2(0.1)),  # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected)
-            Dense(len(self._vocab), kernel_regularizer=l2(0.1))  # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected)
-        ])
-        """
         new_model: bool = not self._model
         if not self._model:
+            # https://discuss.ai.google.dev/t/problem-with-gru-stacking-in-text-generation-tutorial/28774/7
             input = Input(shape=(self._seq_length, ))
+            initial_gru_state = Input((self._seq_length, self._embedding_dim))
             embedding = Embedding(len(self._vocab), self._embedding_dim)(input)
+            #sequences, states = GRU(self._rnn_units, return_sequences=True, return_state=True)(embedding, initial_state = initial_gru_state)
             sequences, states = GRU(self._rnn_units, return_sequences=True, return_state=True)(embedding)
-            x = Dense(len(self._vocab), activation=tf.nn.log_softmax, kernel_regularizer=l2(0.1))(sequences) # Using linear activation will hit "loss: nan - val_loss: nan"
-            self._model = Model(inputs = input, outputs = x)
+            output = Dense(len(self._vocab), activation=tf.nn.log_softmax, kernel_regularizer=l2(0.1))(sequences) # Using linear activation will hit "loss: nan - val_loss: nan"
+            self._model = Model(input, [output, states])
+            # def __init__(self, vocab_size=256, embedding_dim=256, rnn_units=128, **kwargs):
+            # self._model = GRULanguageModel(len(self._vocab), self._embedding_dim, self._rnn_units)
             # Compile the model using the parametrized Adam optimizer and the SparseCategoricalCrossentropy funcion
             self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=SparseCategoricalCrossentropy(from_logits=True), metrics=[log_perplexity])
-            plot_model(
-                self._model,
-                to_file="output/GRU_CharacterGeneration.png",
-                show_shapes=True,
-                show_dtype=True,
-                show_layer_names=True,
-                rankdir="TB",
-                expand_nested=True,
-                show_layer_activations=True)
-        self._model.summary()
         if new_model or retrain:
             history = self._model.fit(self._train_dataset, epochs=epochs, validation_data=self._val_dataset)
             PlotModelHistory("GRU Character Generation", history)
-            #if self._model_path:
-            #    self._model.save(self._model_path) #https://github.com/tensorflow/tensorflow/issues/102475
-            #    print(f"Model saved to {self._model_path}.")
+        self._model.summary()
+        plot_model(
+            self._model,
+            to_file="output/GRU_CharacterGeneration.png",
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+            rankdir="TB",
+            expand_nested=True,
+            show_layer_activations=True)
+        #if self._model_path:
+        #    self._model.save(self._model_path) #https://github.com/tensorflow/tensorflow/issues/102475
+        #    print(f"Model saved to {self._model_path}.")
 
     def Evaluate(self):
         print(f"\n=== {self.Evaluate.__name__} ===")
@@ -178,6 +168,9 @@ class GRU_CharacterGeneration():
         """
         Generate a single character and update the model state.
 
+        This function is your go-to method for generating a single character at a time. It accepts two key inputs: an initial input sequence and a state that can be thought of as the ongoing context or memory of the model. 
+        The function delivers a single character prediction and an updated state, which can be used as the context for future predictions.
+
         Args:
             inputs (string): The input string to start with.
             states (tf.Tensor): The state tensor.
@@ -189,7 +182,7 @@ class GRU_CharacterGeneration():
         
         # Transform the inputs into tensors
         input_ids = self._line_to_tensor(inputs)
-        print(f"initial: {len(inputs)}, input_ids: {input_ids.shape}")
+        print(f"inputs: {inputs}, input_ids: {input_ids.shape} {input_ids}")
         # Predict the sequence for the given input_ids. Use the states and return_state=True
         # def call(self, inputs, states=None, return_state=False, training=False):
         #predicted_logits, states = self._model(input_ids, states, return_state=True)
@@ -197,12 +190,12 @@ class GRU_CharacterGeneration():
         #print(f"input_ids: {input_ids.shape}")
         #predicted_logits = self._model.predict(input_ids)
         #predicted_logits, status = self._model(tf.expand_dims(input_ids, 0), training=False, states=None, return_state=True)
-        predicted_logits, status = self._model(input_ids, training=False, states=None, return_state=True)
+        predicted_logits, states = self._model(input_ids, states=states, return_state=True)
         # Get only last element of the sequence
         predicted_logits = predicted_logits[0, -1, :]                      
         # Use the temperature_random_sampling to generate the next character. 
         # def temperature_random_sampling(log_probs, temperature=1.0):
-        predicted_ids = self._temperature_random_sampling(predicted_logits, self.temperature)
+        predicted_ids = self._temperature_random_sampling(predicted_logits)
         # Use the chars_from_ids to transform the code into the corresponding char
         predicted_chars = self._text_from_ids([predicted_ids], self.vocab)
         
@@ -212,6 +205,9 @@ class GRU_CharacterGeneration():
     def _generate_n_chars(self, num_chars, prefix):
         """
         Generate a text sequence of a specified length, starting with a given prefix.
+
+        This function takes text generation to the next level. It orchestrates the iterative generation of a sequence of characters. At each iteration, generate_one_step is called with the last generated character and the most recent state. 
+        This dynamic approach ensures that the generated text evolves organically, building upon the context and characters produced in previous steps. Each character generated in this process is collected and stored in the result list, forming the final output text.
 
         Args:
             num_chars (int): The length of the output sequence.
@@ -228,7 +224,7 @@ class GRU_CharacterGeneration():
             result.append(next_char)
         return tf.strings.join(result)[0].numpy().decode('utf-8')
 
-    def _temperature_random_sampling(self, log_probs, temperature=1.0):
+    def _temperature_random_sampling(self, log_probs):
         """
         The GRULM model demonstrates an impressive ability to predict the most likely characters in a sequence, based on log scores. However, it's important to acknowledge that this model, in its default form, is deterministic and can result in repetitive and monotonous outputs. For instance, it tends to provide the same answer to a question consistently.
         To make your language model more dynamic and versatile, you can introduce an element of randomness into its predictions. This ensures that even if you feed the model in the same way each time, it will generate different sequences of text.
@@ -251,7 +247,7 @@ class GRU_CharacterGeneration():
         g = -tf.math.log(-tf.math.log(u))
         
         # Adjust the logits with the temperature and choose the character with the highest score
-        return tf.math.argmax(log_probs + g * temperature, axis=-1)
+        return tf.math.argmax(log_probs + g * self._temperature, axis=-1)
        
     def _PrepareData(self):
         print(f"\n=== {self._PrepareData.__name__} ===")
@@ -383,6 +379,34 @@ class GRU_CharacterGeneration():
         target_text = sequence[1:]
         return input_text, target_text
     
+    def test_GenerativeModel(self):
+        print(f"\n=== {self.test_GenerativeModel.__name__} ===")
+        self._temperature = 0.5
+        n_chars = 40
+        pre = "SEFOE"
+        text1 = self._generate_n_chars(n_chars, pre)
+        assert len(text1) == n_chars + len(pre) , f"Wrong length. Expected {n_chars + len(pre)} but got{len(text1)}"
+        text2 = self._generate_n_chars(n_chars, pre)
+        assert len(text2) == n_chars + len(pre), f"Wrong length. Expected {n_chars + len(pre)} but got{len(text2)}"
+        assert text1 != text2, f"Expected different strings since temperature is > 0.0"
+
+        self._temperature = 0.0
+        n_chars = 40
+        pre = "What is "
+        text1 = self._generate_n_chars(n_chars, pre)
+        assert len(text1) == n_chars + len(pre) , f"Wrong length. Expected {n_chars + len(pre)} but got{len(text1)}"
+        text2 = self._generate_n_chars(n_chars, pre)
+        assert len(text2) == n_chars + len(pre), f"Wrong length. Expected {n_chars + len(pre)} but got{len(text2)}"
+        assert text1 == text2, f"Expected same strings since temperature is 0.0"
+        
+        n_chars = 100
+        pre = "W"
+        text_l = self._generate_n_chars(n_chars, pre)
+        used_voc = set(text_l)
+        assert used_voc.issubset(self._vocab), "Something went wrong. Only characters in vocab can be produced." \
+        f" Unexpected characters: {used_voc.difference(self._vocab)}"
+        print("\n\033[92mAll test passed!")
+    
 if __name__ == "__main__":
     """
     https://docs.python.org/3/library/argparse.html
@@ -398,4 +422,5 @@ if __name__ == "__main__":
     chargen = GRU_CharacterGeneration("data/shakespeare_data.txt", "models/GRU_CharacterGeneration.keras", 512, 256, 100, 64, 10000, 0.00125, 0.5)
     chargen.BuildTrainModel(10, args.retrain)
     #chargen.Evaluate() # OOM
+    chargen.test_GenerativeModel()
     chargen.Generate("What's the meaning of life?", 1000)
