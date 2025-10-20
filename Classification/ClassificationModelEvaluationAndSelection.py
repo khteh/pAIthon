@@ -1,10 +1,5 @@
 # for array computations and loading data
-import numpy, seaborn
-# for building and training neural networks
-import tensorflow as tf
-# custom functions
-import pandas as pd
-import matplotlib.pyplot as plt
+import numpy, tensorflow as tf
 # for building linear regression models and preparing data
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.model_selection import train_test_split

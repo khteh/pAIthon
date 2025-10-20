@@ -170,9 +170,9 @@ class LSTM_NameEntityRecognition():
                 show_layer_activations=True)
         if new_model or retrain:
             history = self.model.fit(self._train_dataset.batch(self._batch_size),
-            validation_data = self._val_dataset.batch(self._batch_size),
-            shuffle=True,
-            epochs = epochs)
+                                        validation_data = self._val_dataset.batch(self._batch_size),
+                                        shuffle=True,
+                                        epochs = epochs)
             PlotModelHistory("LSTM Name Entity Recognition", history)
             #if self._model_path:
             #    self.model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475

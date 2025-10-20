@@ -94,6 +94,7 @@ class TextSummarizer():
                 self._positional_encoding_length, 
                 self._positional_encoding_length,
             )
+        self._model.summary()
     def TrainModel(self, epochs:int, retrain:bool = False):
         print(f"\n=== {self.TrainModel.__name__} ===")
         if not self._saved_model or retrain:

@@ -1,7 +1,5 @@
-import logging, numpy
-import matplotlib.pyplot as plt
+import logging, numpy, tensorflow as tf
 from sklearn.datasets import make_blobs
-import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.regularizers import l2

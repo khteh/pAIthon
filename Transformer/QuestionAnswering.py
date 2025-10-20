@@ -111,6 +111,7 @@ class QuestionAnswering():
                 self._positional_encoding_length,
             )
             self._LoadWeights(self._weights_path) # Only load a pretrained weights on fresh model.
+        self._model.summary()
 
     def TrainModel(self, epochs:int, retrain:bool = False):
         print(f"\n=== {self.TrainModel.__name__} ===")

@@ -1,7 +1,9 @@
 from __future__ import print_function
-import argparse, numpy, random, pprint, copy, sys, io, tensorflow as tf
+import argparse, numpy, tensorflow as tf
+from pathlib import Path
 from utils.RNN_utils import *
 from Softmax import softmax
+from keras import saving
 from tensorflow.keras.utils import plot_model
 from tensorflow.strings import unicode_split, reduce_join
 from tensorflow.keras.callbacks import LambdaCallback
@@ -15,12 +17,44 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from utils.TensorModelPlot import PlotModelHistory
 from utils.shakespeare_utils import on_epoch_end, sample
 from .GRULanguageModel import GRULanguageModel
-from utils.GPU import InitializeGPU
+from utils.GPU import InitializeGPU, SetMemoryLimit
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
+@saving.register_keras_serializable()
+def log_perplexity(y_true, y_pred):
+    """
+    Tells if a set of sentences are written by humans (lower score) instead of being randomly generated text from a machine.
+    Function to calculate the log perplexity of a model.
+
+    Args:
+        preds (tf.Tensor): Predictions of a list of batches of tensors corresponding to lines of text.
+        y_true (tf.Tensor): Actual list of batches of tensors corresponding to lines of text.
+
+    Returns:
+        float: The log perplexity of the model.
+    """
+    PADDING_ID: int = 1
+    #print(f"preds: {y_pred.shape}, target: {y_true.shape}")
+    ### START CODE HERE ###
+    # Calculate log probabilities for predictions using one-hot encoding
+    log_p = tf.math.reduce_sum(y_pred * tf.one_hot(y_true, y_pred.shape[-1]), axis= -1) # HINT: tf.one_hot(...) should replace one of the Nones
+    #print(f"log_p: {log_p.shape}")
+    # Identify non-padding elements in the target
+    non_pad = 1.0 - tf.cast(tf.equal(tf.cast(PADDING_ID, tf.int64), tf.cast(y_true, tf.int64)), tf.float32)          # You should check if the target equals to PADDING_ID
+    #print(f"log_p: {log_p.shape}, non_pad: {non_pad.shape}")
+    # Apply non-padding mask to log probabilities to exclude padding
+    log_p = log_p * non_pad                             # Get rid of the padding
+    # Calculate the log perplexity by taking the sum of log probabilities and dividing by the sum of non-padding elements
+    #print(f"log_p: {log_p.shape}, non_pad: {non_pad.shape}")
+    log_ppx = tf.math.reduce_sum(log_p, axis=-1) / tf.math.reduce_sum(non_pad, axis=-1) # Remember to set the axis properly when summing up
+    # Compute the mean of log perplexity
+    log_ppx = tf.math.reduce_mean(log_ppx) # Compute the mean of the previous expression
+    return -log_ppx
+
 class GRU_CharacterGeneration():
     _path:str = None
+    _model_path:str = None
     _data = None
     _vocab = None
     _train_data = None
@@ -41,8 +75,9 @@ class GRU_CharacterGeneration():
     _temperature: float = None
     _learning_rate: float = None
     _model: GRULanguageModel = None
-    def __init__(self, path:str, rnn_units:int, embedding_dim: int, seq_length: int, batch_size: int, buffer_size:int, learning_rate:float, temperature: float):
+    def __init__(self, path:str, model_path:str, rnn_units:int, embedding_dim: int, seq_length: int, batch_size: int, buffer_size:int, learning_rate:float, temperature: float):
         self._path = path
+        self._model_path = model_path
         self._rnn_units = rnn_units
         self._embedding_dim = embedding_dim
         self._seq_length = seq_length
@@ -51,8 +86,12 @@ class GRU_CharacterGeneration():
         self._learning_rate = learning_rate
         self._temperature = temperature
         self._PrepareData()
+        if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
+            print(f"Using saved model {self._model_path}...")
+            self._saved_model = True
+            self._model = tf.keras.models.load_model(self._model_path) # https://github.com/tensorflow/tensorflow/issues/102475
    
-    def BuildTrainModel(self, epochs:int):
+    def BuildTrainModel(self, epochs:int, retrain:bool = False):
         """
         - `tf.keras.layers.Embedding`: Initializes the embedding. In this case it is the size of the vocabulary by the dimension of the model. [docs](https://www.tensorflow.org/api_docs/python/tf/keras/layers/Embedding) 
         - `Embedding(vocab_size, embedding_dim)`.
@@ -75,6 +114,7 @@ class GRU_CharacterGeneration():
             - You don't need to set any parameters, just set the activation parameter as `activation=tf.nn.log_softmax`.
         ___
         """
+        print(f"\n=== {self.BuildTrainModel.__name__} ===")
         # def __init__(self, vocab_size=256, embedding_dim=256, rnn_units=128):
         #self._model = GRULanguageModel(len(self._vocab), self._embedding_dim)
         """
@@ -90,33 +130,48 @@ class GRU_CharacterGeneration():
             Dense(len(self._vocab), kernel_regularizer=l2(0.1))  # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected)
         ])
         """
-        input = Input(shape=(self._seq_length, ))
-        embedding = Embedding(len(self._vocab), self._embedding_dim)(input)
-        sequences, states = GRU(self._rnn_units, return_sequences=True, return_state=True)(embedding)
-        x = Dense(len(self._vocab), activation=tf.nn.log_softmax, kernel_regularizer=l2(0.1))(sequences) # Using linear activation will hit "loss: nan - val_loss: nan"
-        self._model = Model(inputs = input, outputs = x)
-        # Compile the model using the parametrized Adam optimizer and the SparseCategoricalCrossentropy funcion
-        self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=SparseCategoricalCrossentropy(from_logits=True))
-        history = self._model.fit(self._train_dataset, epochs=epochs, validation_data=self._val_dataset)
-        PlotModelHistory("GRU Character Generation", history)
-        plot_model(
-            self._model,
-            to_file="output/GRU_CharacterGeneration.png",
-            show_shapes=True,
-            show_dtype=True,
-            show_layer_names=True,
-            rankdir="TB",
-            expand_nested=True,
-            show_layer_activations=True)
+        new_model: bool = not self._model
+        if not self._model:
+            input = Input(shape=(self._seq_length, ))
+            embedding = Embedding(len(self._vocab), self._embedding_dim)(input)
+            sequences, states = GRU(self._rnn_units, return_sequences=True, return_state=True)(embedding)
+            x = Dense(len(self._vocab), activation=tf.nn.log_softmax, kernel_regularizer=l2(0.1))(sequences) # Using linear activation will hit "loss: nan - val_loss: nan"
+            self._model = Model(inputs = input, outputs = x)
+            # Compile the model using the parametrized Adam optimizer and the SparseCategoricalCrossentropy funcion
+            self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=SparseCategoricalCrossentropy(from_logits=True), metrics=[log_perplexity])
+            plot_model(
+                self._model,
+                to_file="output/GRU_CharacterGeneration.png",
+                show_shapes=True,
+                show_dtype=True,
+                show_layer_names=True,
+                rankdir="TB",
+                expand_nested=True,
+                show_layer_activations=True)
+        self._model.summary()
+        if new_model or retrain:
+            history = self._model.fit(self._train_dataset, epochs=epochs, validation_data=self._val_dataset)
+            PlotModelHistory("GRU Character Generation", history)
+            #if self._model_path:
+            #    self._model.save(self._model_path) #https://github.com/tensorflow/tensorflow/issues/102475
+            #    print(f"Model saved to {self._model_path}.")
 
     def Evaluate(self):
-        preds = self._model(tf.expand_dims(self._val_dataset, 0), training=False, states=None, return_state=True)
+        print(f"\n=== {self.Evaluate.__name__} ===")
+        #preds = self._model(tf.expand_dims(self._X_val, 0), training=False, states=None, return_state=True)
+        preds = self._model.predict(self._val_dataset)
+        print(f"predictions: {preds.shape}")
         #Get the log perplexity
-        log_ppx = self._log_perplexity(preds, tf.expand_dims(self._Y_val, 0))
+        log_ppx = log_perplexity(preds, tf.expand_dims(self._Y_val, 0))
         print(f'The log perplexity and perplexity of your model are {log_ppx} and {numpy.exp(log_ppx)} respectively')
 
-    def Generate(self, initial:str, len:int):
-        return self._gen.generate_n_chars(len, initial), '\n\n' + '_'*80
+    def Generate(self, initial:str, max_len:int):
+        print(f"\n=== {self.Generate.__name__} ===")
+        #input_ids = self._line_to_tensor(initial)
+        #print(f"initial: {len(initial)}, input_ids: {input_ids.shape}")
+        #ids_dataset = tf.data.Dataset.from_tensor_slices(input_ids)
+        #print(f"ids_dataset: {ids_dataset.shape}")
+        return self._generate_n_chars(max_len, initial), '\n\n' + '_'*80
 
     @tf.function
     def _generate_one_step(self, inputs, states=None):
@@ -134,9 +189,15 @@ class GRU_CharacterGeneration():
         
         # Transform the inputs into tensors
         input_ids = self._line_to_tensor(inputs)
+        print(f"initial: {len(inputs)}, input_ids: {input_ids.shape}")
         # Predict the sequence for the given input_ids. Use the states and return_state=True
         # def call(self, inputs, states=None, return_state=False, training=False):
-        predicted_logits, states = self.model(input_ids, states, return_state=True)
+        #predicted_logits, states = self._model(input_ids, states, return_state=True)
+        # predicted_logits, states = self._model(input_ids)
+        #print(f"input_ids: {input_ids.shape}")
+        #predicted_logits = self._model.predict(input_ids)
+        #predicted_logits, status = self._model(tf.expand_dims(input_ids, 0), training=False, states=None, return_state=True)
+        predicted_logits, status = self._model(input_ids, training=False, states=None, return_state=True)
         # Get only last element of the sequence
         predicted_logits = predicted_logits[0, -1, :]                      
         # Use the temperature_random_sampling to generate the next character. 
@@ -165,7 +226,6 @@ class GRU_CharacterGeneration():
         for n in range(num_chars):
             next_char, states = self._generate_one_step(next_char, states=states)
             result.append(next_char)
-
         return tf.strings.join(result)[0].numpy().decode('utf-8')
 
     def _temperature_random_sampling(self, log_probs, temperature=1.0):
@@ -176,9 +236,7 @@ class GRU_CharacterGeneration():
         By comparing the random numbers to the original input scores, the model adapts its choices, offering diversity in its outputs.
         This doesn't imply that the model produces entirely random results on each iteration. Rather, with each prediction, there is a probability associated with choosing a character other than the one with the highest score.
 
-        Temperature Random sampling from a categorical distribution. The higher the temperature, the more 
-        random the output. If temperature is close to 0, it means that the model will just return the index
-        of the character with the highest input log_score
+        Temperature Random sampling from a categorical distribution. The higher the temperature, the more random the output. If temperature is close to 0, it means that the model will just return the index of the character with the highest input log_score
         
         Args:
             log_probs (tf.Tensor): The log scores for each characeter in the dictionary
@@ -194,39 +252,10 @@ class GRU_CharacterGeneration():
         
         # Adjust the logits with the temperature and choose the character with the highest score
         return tf.math.argmax(log_probs + g * temperature, axis=-1)
-    
-    def _log_perplexity(self, preds, target):
-        """
-        Function to calculate the log perplexity of a model.
-
-        Args:
-            preds (tf.Tensor): Predictions of a list of batches of tensors corresponding to lines of text.
-            target (tf.Tensor): Actual list of batches of tensors corresponding to lines of text.
-
-        Returns:
-            float: The log perplexity of the model.
-        """
-        PADDING_ID = 1
-        #print(f"preds: {preds.shape}, target: {target.shape}")
-        ### START CODE HERE ###
-        # Calculate log probabilities for predictions using one-hot encoding
-        log_p = numpy.sum(preds * tf.one_hot(target, preds.shape[-1]), axis= -1) # HINT: tf.one_hot(...) should replace one of the Nones
-        #print(f"log_p: {log_p.shape}")
-        # Identify non-padding elements in the target
-        non_pad = 1.0 - numpy.equal(PADDING_ID, target)          # You should check if the target equals to PADDING_ID
-        print(f"log_p: {log_p.shape}, non_pad: {non_pad.shape}")
-        # Apply non-padding mask to log probabilities to exclude padding
-        log_p = log_p * non_pad                             # Get rid of the padding
-        # Calculate the log perplexity by taking the sum of log probabilities and dividing by the sum of non-padding elements
-        #print(f"log_p: {log_p.shape}, non_pad: {non_pad.shape}")
-        log_ppx = numpy.sum(log_p, axis=-1) / numpy.sum(non_pad, axis=-1) # Remember to set the axis properly when summing up
-        # Compute the mean of log perplexity
-        log_ppx = numpy.mean(log_ppx) # Compute the mean of the previous expression
-        return -log_ppx
-    
+       
     def _PrepareData(self):
+        print(f"\n=== {self._PrepareData.__name__} ===")
         self._data = [] # storing all the lines in a variable. 
-        counter = 0
         with open(self._path) as files:
             for line in files:        
                 # remove leading and trailing whitespace
@@ -282,7 +311,7 @@ class GRU_CharacterGeneration():
         # it maintains a buffer in which it shuffles elements).
         
         # For simplicity, just join all lines into a single line
-        single_line_data  = "\n".join(self._data)
+        single_line_data  = "\n".join(data)
 
         # Convert your data into a tensor using the given vocab
         all_ids = self._line_to_tensor(single_line_data)
@@ -299,7 +328,7 @@ class GRU_CharacterGeneration():
             .shuffle(self._buffer_size)
             .batch(self._batch_size, drop_remainder=True)
             .prefetch(tf.data.experimental.AUTOTUNE)  
-            )            
+            )
         return dataset
     
     def _line_to_tensor(self, line):
@@ -364,8 +393,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     InitializeGPU()
-    #def __init__(self, path:str, rnn_units:int, embedding_dim: int, seq_length: int, batch_size: int, buffer_size:int, learning_rate:float, temperature: float):
-    chargen = GRU_CharacterGeneration("data/shakespeare_data.txt", 512, 256, 100, 64, 10000, 0.00125, 0.5)
-    chargen.BuildTrainModel(10)
-    chargen.Evaluate()
+    SetMemoryLimit(4096)
+    #def __init__(self, path:str, model_path:str, rnn_units:int, embedding_dim: int, seq_length: int, batch_size: int, buffer_size:int, learning_rate:float, temperature: float):
+    chargen = GRU_CharacterGeneration("data/shakespeare_data.txt", "models/GRU_CharacterGeneration.keras", 512, 256, 100, 64, 10000, 0.00125, 0.5)
+    chargen.BuildTrainModel(10, args.retrain)
+    #chargen.Evaluate() # OOM
     chargen.Generate("What's the meaning of life?", 1000)
