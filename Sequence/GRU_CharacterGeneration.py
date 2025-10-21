@@ -8,7 +8,7 @@ from tensorflow.keras.utils import plot_model
 from tensorflow.strings import unicode_split, reduce_join
 from tensorflow.keras.callbacks import LambdaCallback
 from tensorflow.keras.models import Model, load_model, Sequential
-from tensorflow.keras.layers import Dense, Embedding, Activation, Dropout, Input, GRU, StringLookup
+from tensorflow.keras.layers import Dense, Embedding, Activation, Dropout, Input, GRU, LSTM, StringLookup
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
@@ -121,8 +121,8 @@ class GRU_CharacterGeneration():
             input = Input(shape=(self._seq_length, ))
             initial_gru_state = Input((self._seq_length, self._embedding_dim))
             embedding = Embedding(len(self._vocab), self._embedding_dim)(input)
-            #sequences, states = GRU(self._rnn_units, return_sequences=True, return_state=True)(embedding, initial_state = initial_gru_state)
-            sequences, states = GRU(self._rnn_units, return_sequences=True, return_state=True)(embedding)
+            sequences, states = GRU(self._rnn_units, return_sequences=True, return_state=True)(embedding, initial_state = initial_gru_state)
+            #sequences, states = GRU(self._rnn_units, return_sequences=True, return_state=True)(embedding)
             output = Dense(len(self._vocab), activation=tf.nn.log_softmax, kernel_regularizer=l2(0.1))(sequences) # Using linear activation will hit "loss: nan - val_loss: nan"
             self._model = Model(input, [output, states])
             # def __init__(self, vocab_size=256, embedding_dim=256, rnn_units=128, **kwargs):

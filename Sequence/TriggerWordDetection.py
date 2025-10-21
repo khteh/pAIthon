@@ -252,7 +252,7 @@ class TrigerWordDetection():
             BatchNormalization(),
             Dropout(0.8),
 
-            TimeDistributed(Dense(1, activation="sigmoid"))
+            TimeDistributed(Dense(1, activation="sigmoid")) # https://www.tensorflow.org/api_docs/python/tf/keras/layers/TimeDistributed
         ])
         self._model.summary()
         #model = Model(inputs = X_input, outputs = X)
