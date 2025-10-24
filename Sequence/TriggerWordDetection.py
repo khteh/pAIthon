@@ -9,7 +9,7 @@ from tensorflow.keras.models import Model, load_model, Sequential
 from tensorflow.keras.layers import Dense, Activation, Dropout, Input, Masking, TimeDistributed, LSTM, Conv1D
 from tensorflow.keras.layers import GRU, Bidirectional, BatchNormalization, Reshape
 from tensorflow.keras.optimizers import Adam
-from utils.TensorModelPlot import PlotModelHistory
+from utils.TrainingMetricsPlot import PlotModelHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 

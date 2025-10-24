@@ -5,7 +5,7 @@ from tensorflow.math import l2_normalize
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Lambda, Concatenate, Dense, Input, LSTM, Embedding, TextVectorization, GlobalAveragePooling1D
 from tensorflow.keras.optimizers import Adam
-from utils.TensorModelPlot import PlotModelHistory
+from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.ConfusionMatrix import ConfusionMatrix
 class SiameseNN():
     """

@@ -9,7 +9,7 @@ from pandas import DataFrame
 from tqdm import tqdm
 from transformers import DistilBertTokenizerFast, TFDistilBertForTokenClassification #, TFDistilBertModel
 from seqeval.metrics import classification_report
-from utils.TensorModelPlot import PlotModelHistory
+from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.GPU import InitializeGPU, SetMemoryLimit
 tf.get_logger().setLevel('ERROR')
 

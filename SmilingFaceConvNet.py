@@ -5,7 +5,7 @@ from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.optimizers import Adam
 from utils.GPU import InitializeGPU
-from utils.TensorModelPlot import PlotModelHistory
+from utils.TrainingMetricsPlot import PlotModelHistory
 class SmilingFaceConvNet():
     """
     A convolution NN which determines if the people in the input images are smiling.

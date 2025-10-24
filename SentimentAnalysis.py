@@ -15,7 +15,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 import tensorflow as tf
 import tensorflow.keras.models as models
 import tensorflow.keras.layers as layers
-from utils.TensorModelPlot import PlotModelHistory
+from utils.TrainingMetricsPlot import PlotModelHistory
 
 """
 (1) Using word embeddings:

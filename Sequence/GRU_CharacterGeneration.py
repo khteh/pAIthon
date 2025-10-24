@@ -14,7 +14,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import get_file
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from utils.TensorModelPlot import PlotModelHistory
+from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.shakespeare_utils import on_epoch_end, sample
 from .GRULanguageModel import GRULanguageModel
 from utils.GPU import InitializeGPU, SetMemoryLimit

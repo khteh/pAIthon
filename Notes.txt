@@ -274,13 +274,20 @@ Batch Normalization:
 - parameter b is cancelled out by mean and "- miu" calculation and is replaced with beta[l] in Z~ = gamma[l] * Z_normalized + beta[l]. So it is OK to drop it from forward propagation.
 - If gamma = sqrt(sigma^2 + epsilon) and beta = miu, then Z~[i] = Z[i]. So, in a way, this is learning an identty function.
 - Gamma abd beta are learnable parameters which help to scale mean and variance out of 0 and 1 to benefit from activation functions.
+- Covariate shifts:
+  - Different batches of data, especially between traning/validation/test datasets could have different distributions.
+  - For example, colour vs. grey-scale images.
+  - Changes in the distribution of one variable affect the distribution of other related variables.
 - Helps make weights in later layers more resilient to changes in earlier layers due to covariate shifts.
   - For example, training on greyscale images and predict on color pictures.
   - This decoupling effect helps stabilize the learning process to have more firm ground on the truth functions, f(Y|X).
+  - Smooths the cost function and speeds up learning.
 - Provides a regularization side effect since it usually works on batches of data.
   - The mean and standard deviation/variance calculated on batches of data introduce noise similar to dropout.
 - For test and prediction, which do NOT have/use batches of input, use exponential weighted average of gamma and beta.
-
+- Diff between training and testing time:
+  - The batch mean and standard deviation are used for training while the running average statistics from all batches (computed over the entire training dataset) are used for testing.
+  - The running values are fixed after training.
 Rules of thumb: Aim for [-1, 1] input data range. These need to rescale:
 (1) [-100 , 100] : Too large
 (2) [-0.001, 0.001] : Too small
@@ -405,6 +412,7 @@ Neural Network (multilayer perceptron):
   (2) A[l](i) = g(Z)
 
 Non-Linear Activation functions:
+- To approximate complex functions / features.
 (1) Step function: g(x) = 1 if x >=0, else 0
 (2) Logistic Sigmoid: 
     - g(x) = e^x / (1 + e^x)
@@ -413,7 +421,8 @@ Non-Linear Activation functions:
     - Derivative = a * (1 - a)
 (3) tanh:
     - (e^z - e^(-z)) / (e^z + e^(-z))
-    - Similar to sigmoid graph but the output is [-1, 1]. 
+    - Similar to sigmoid graph but the output is [-1, 1].
+    - Keeps the sign of the input, i.e., if z > 0, g(z) > 0; if z < 0, g(z) < 0.
     - Center at (0,0) means easier for the NN to learn.
     - derivative is minuscule when z is both -ve/+ve large numbers. Not good for gradient descent.
     - Derivative = 1 - a ** 2
@@ -436,6 +445,9 @@ Choices of Activation Function:
     (ii) There are 2 horizontal asymtotes in Sigmoid. This results in derivatives being close to 0 and therefore make gradient descent slower to run to global minimum.
     Do NOT use linear/identity activation function, g(z) = z in hidden layers. This will result in a linear function and defeats the purpose of NN. The computaion of multiple linear funtions is itself a linear function.
     The "off" or disable feature of the ReLU activation enables models to stitch together linear segments to model complex non-linear functions.
+(3) Sigmoid/Softmax [0,1] and tanh [-1, 1] are seldom used in hidden layers due to the asymptotic tails of 0 and 1 and therefore, causing vanishing gradients problems.
+(4) ReLU: Derivative = 0 for z <= 0
+  - Dying ReLU problem - NN nodes get stuck in on the same weights and stop learning.
 Types of Layers:
 (1) Dense: Every neuron in a layer computes it's output / activation using ALL inputs/activations from ALL neurons in previous layer.
 (2) Convolution: Neurons only look at regions of the data. Benefits:
@@ -527,8 +539,6 @@ Vanishing / Exploding Gradients:
 playground.tensorflow.org
 Image Convolution: Applying a filter that adds each pixel value of an image to it's neighbours, weighted according to a kernel matrix.
                   - Extracts features from input. Output is a feature map
-Pooling: reducing the size of an input by sampling from regions in the input
-(1) Max-pooling: pooling by choosing the maximum value in each region
 Convolutional NN: NN that uses convolution, usually for analyzing images (i.e., Image Convolution + Pooling in a NN)
                 - Training is done to figure out what's the best filters for the input image
                 - Models how human look at images
@@ -797,6 +807,9 @@ NN to learn the filter parameters:  [[w1, w2, w3],
                                      [w4, w5, w6],
                                      [w7, w8, w9]] to detect various types of edges at various orientations.
 
+Padding:
+- Usually the middle of the input images is emphasized more than the edges.
+- To give equal emphasis/importance to the edges, add padding around the input image.
 To prevent data source shrinking, use padding.
 "Valid" convolution: 
 - No padding.
@@ -938,7 +951,10 @@ Types of layers in a Convolutional NN:
 (3) Fully Connected (Dense)
 
 Pooling:
+- Reducing the size of an input by sampling from regions in the input
+- Get the most salient from the input.
 - Preserve detected features.
+- Reduce the size of the input.
 (1) Max or Average.
 (2) Hyperparameters: f and s
 (3) No parameters to learn. Gradient descent does not learn or change anything of it in this layer.
@@ -950,6 +966,13 @@ Pooling:
 - When implemented within reason, this bottleneck layer helps reduce computational costs significantly by shrinking down the representation size significantly without affecting the performance of the NN.
 - One of the key ideas in Inception Network.
 
+Upsampling Techniques:
+(1) Transposed Convolution:
+    - Suffers from checkerboard pattern problem:
+      - The produced images has pattern resembling a checkerboard.
+      - Due to some pixels are more influenced than the ones around them.
+(2) Upsampling + convolution.
+    - Infers pixels using a predefine method
 Benefits of Convolutional layers:
 (1) Parameter sharing
     - Same parameters of the filter are applied in different parts of the input dataset.
@@ -1791,3 +1814,81 @@ GLUE benchmark:
 - A collection used to train, evaluate, analyze NL understanding systems.
 - Multiple datasets with different genres and of different sizes and difficulties.
 - Model agnostic.
+======================================================================================================================================================================================================
+Generative Adverserial Networks
+- The discriminator has a much easier job as it does not need to modelthe entire space of what a generated could look like.
+- Both discriminator and generator should always be at the same level of skill in order for them to learn together. If one is superior over the other, then there is little information that the other could learn from.
+- The training stops when the generator has achieved an acceptable level of generating realistic image. At that point, the generator can be used alone to generate the same class of data that it was trained on.
+- The noise vector z input to the Generator has the important role of making sure the images generated from the same class don't all look the same.
+- Noise vector is referred to as latent which means the information from the noise vector is not seen directly on the output but they do determine how the output looks like.
+
+Objective:
+- Make the generated and real distributions look similar.
+
+Modes:
+- Peaks in a distribution.
+
+Modes Collapse:
+- Happens when the generator gets stuck in local minima and generating one mode
+
+BinaryCrossEntropy (BCE):
+- Generator maximizes J; Discriminator minimizes J.
+- Minimax problem.
+- Vanishing gradients problem as it is easier for the discriminator to get ahead of the generator.
+  - As the discriminator pulls apart/delinneates generated and real distribution, the produces gradients at the long tails of the sigmoid function which is ~0. This give little information for the generator to learn.
+
+Earth Mover's Distance:
+- Effort to make generated distribution equal to the real distribution.
+- Depends on the distance and amount needs to be moved.
+
+Wasserstein Loss (W-Loss):
+- Discriminator is called "critics".
+- E(c(x)) - E(c(g(x)))
+  - c(x) prediction of real
+  - c(g(x)) prediction of fakes - g(x) is the generator's output.
+  - Discriminator maximizes this and Generator minimizes this distance.
+- Not bounded to [0, 1], critics output any real number.
+- Works on the condition that the critic needs to be 1-Lipschitz (1-L) continuous.
+  - The norm (L2) of the gradient should be at most 1 for every point.
+  - This ensures W-Loss is validly approximating Earth Mover's Distance.
+1-L Enforcement:
+(1) Weight Clipping
+    - Forces the weights of the critic to a fixed interval.
+    - This has the drawback of limiting the learning ability of the critic when it is retricted to a certain values that the weights could take on.
+(2) Gradient Penalty
+    - Works better compared to (1).
+    - Adds a regularization term. (|gradient(c(x^)) - 1|) ** 2
+    - Since checking the critic’s gradient at each possible point of the feature space is virtually impossible, you can approximate this by using interpolated images (x^).
+    - x^: epsilon * x + (1 - epsilon)*g(z) <- Interpolatation.
+          x: real, g(z): generated
+    Generator Loss = - torch.mean(crit_fake_pred)
+    - The generator tries to maximize the scores (or equivalently minimize the negative)
+    Critic Loss = -(torch.mean(crit_real_pred) - torch.mean(crit_fake_pred)) + gp * c_lambda
+    - The optimizer (ex: Adam) will minimize the loss. So, by minimizing -(torch.mean(crit_real_pred) - torch.mean(crit_fake_pred)), it effectively maximizes the distance between the real and fake distributions.
+Conditional Generation:
+- Generate outputs from specific class.
+- Supervised learning, i.e., training dataset must be labelled.
+- Generator input: noise appened with one-hot vector
+- Discriminator input: class channels in addtion to RGB channels.
+Controllable Generation:
+- Generate outputs with specific features
+- Unsupervised learning.
+- Manipulate the inputs from the Z-space, which is just the name for the vector space of the noise vectors.
+  - Find the directions in the Z-space related to changes of the desired features on the GAN output.
+  - Then move the noise vector in different directions in that Z-space.
+- Challenges:
+  (1) Feature correlation.
+  (2) Z-space entanglement.
+      - Movement in different directions has an effect on multiple features simultaneously in the ouput.
+      - Not possible to control single output feature.
+      - Common problem when the Z-space doesn't have enough dimensions relative to the #features - can't map them 1:1.
+- Disentangled Z-space:
+  - Specific indices in the noise vectors that change / control partiular features on the GAN output.
+    Ex: v1=[3,1,7,9,10,...] index-0 maps to hair color, index-1 mapes to eye's color, etc.
+  Encourage disentanglement:
+  (1) Supervision:
+      - Classes are embedded in the noise vector. Don't need one-hot vector.
+  (2) Loss Function:
+      - Unsupervised Learning.
+      - Add regularization term to the original loss function (BCE, W-Loss, etc) to encourage the model to associate each index in the noise vector to different features on the output.
+      - 

@@ -14,7 +14,7 @@ from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.initializers import random_uniform, glorot_uniform, constant, identity
 from utils.GPU import InitializeGPU
-from utils.TensorModelPlot import PlotModelHistory
+from utils.TrainingMetricsPlot import PlotModelHistory
 # _convolutional_block_output1 = [[[[0.,         0.,         0.6442667,  0.,         0.13945118, 0.78498244],
 #                                  [0.01695363, 0.,         0.7052939,  0.,         0.27986753, 0.67453355]],
 #                                 [[0.,         0.,         0.6702033,  0. ,        0.18277727, 0.7506114 ],

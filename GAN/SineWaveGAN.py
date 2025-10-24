@@ -8,6 +8,7 @@ from utils.Image import CreateGIF, ShowImage
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.regularizers import l2
 from utils.GPU import InitializeGPU
+from utils.TrainingMetricsPlot import PlotGANLossHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 class Discriminator():
@@ -166,7 +167,7 @@ class SineWaveGAN():
         The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
         The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
         """
-        noise = numpy.empty((self._batch_size, self._samples, 2))
+        noise = numpy.empty((data_batch.shape[0], self._samples, 2))
         noise[:,:,0] = rng.uniform(low=0, high=(2 * math.pi), size=self._samples)
         noise[:,:,1] = rng.uniform(low=0.1, high=0.9) * rng.standard_normal(noise[0,:,0].shape[0])
         # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
@@ -182,6 +183,7 @@ class SineWaveGAN():
         self._generator.UpdateParameters(gen_tape, gen_loss)
         # Use the GradientTape to calculate the gradients of the cost with respect to the parameter w: dJ/dw.
         self._discriminator.UpdateParameters(disc_tape, disc_loss)
+        return gen_loss, disc_loss
 
     def Train(self):
         # Reuse this seed overtime so that it's easier to visualize progress in the animated GIF
@@ -192,11 +194,18 @@ class SineWaveGAN():
         The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
         The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
         """
+        gen_losses = []
+        disc_losses = []
         for epoch in range(self._epochs):
             start = time.time()
-
+            ave_gen_loss = 0
+            ave_disc_loss = 0
+            count = 0
             for data_batch in self._batch_dataset:
-                self._TrainStep(data_batch)
+                gen_loss, disc_loss = self._TrainStep(data_batch)
+                count += 1
+                ave_gen_loss += gen_loss
+                ave_disc_loss += disc_loss
 
             # Produce images for the GIF as you go
             self._save_images(self._generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'sinewave_gan_epoch_{epoch+1:04d}.png')
@@ -205,9 +214,14 @@ class SineWaveGAN():
             if (epoch + 1) % 15 == 0:
                 self._checkpoint.save(file_prefix = self._checkpoint_path)
 
-            print(f"Epoch {epoch + 1} : {time.time()-start}s")
+            ave_gen_loss /= count
+            ave_disc_loss /= count
+            gen_losses.append(ave_gen_loss)
+            disc_losses.append(ave_disc_loss)
+            print(f"Epoch {epoch + 1} : {time.time()-start}s Generator Loss: {ave_gen_loss} Discriminator Loss: {ave_disc_loss}")
 
         # Generate after the final epoch
+        PlotGANLossHistory("Sine Wave GAN", gen_losses, disc_losses)
         self._save_images(self._generator.run(seed, training=False), f"Generated Image at Epoch {self._epochs}", f'sinewave_gan_epoch_{self._epochs:04d}.png')
 
     def _save_images(self, data, title:str, filename: str):
@@ -246,11 +260,11 @@ if __name__ == "__main__":
     SAMPLES = 1024
     BATCH_SIZE = 100
     EPOCHS = 150
-    Path("output/SineWaveGAN").mkdir(parents=True, exist_ok=True)
-    Path("output/SineWaveGAN").is_dir()
     InitializeGPU()
     checkpoint_dir = './checkpoints'
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
+    Path("output/SineWaveGAN").mkdir(parents=True, exist_ok=True)
+    Path("output/SineWaveGAN").is_dir()
     sinewaveGAN = SineWaveGAN(NUM_SINE_WAVES, BATCH_SIZE, SAMPLES, EPOCHS, checkpoint_prefix)
     sinewaveGAN.PrepareTrainingData()
     sinewaveGAN.Train()

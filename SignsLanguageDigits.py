@@ -5,7 +5,7 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras import layers
 from tensorflow.keras.optimizers import Adam
-from utils.TensorModelPlot import PlotModelHistory
+from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.GPU import InitializeGPU
 class SignsLanguageDigits():
     """

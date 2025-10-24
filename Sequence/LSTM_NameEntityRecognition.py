@@ -4,7 +4,7 @@ from tensorflow.keras.utils import plot_model
 from keras import saving
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input, LSTM, Embedding, TextVectorization
-from utils.TensorModelPlot import PlotModelHistory
+from utils.TrainingMetricsPlot import PlotModelHistory
 
 @saving.register_keras_serializable()
 def masked_loss(y_true, y_pred):
