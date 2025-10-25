@@ -57,7 +57,12 @@ class Discriminator():
         self._cross_entropy = losses.BinaryCrossentropy(from_logits=True) # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X))
         self.optimizer = optimizers.Adam(1e-4) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 
-    def run(self, input, training: bool):
+    def forward(self, input, training: bool):
+        """
+        Function for completing a forward pass of the discriminator: Given an image tensor, returns a 1-dimension tensor representing fake/real.
+        Parameters:
+            image: a flattened image tensor with dimension (im_chan)
+        """
         return self.model(input, training=training)
 
     def loss(self, real, fake):
@@ -140,9 +145,11 @@ class Generator():
         self._cross_entropy = losses.BinaryCrossentropy(from_logits=True) # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) 
         self.optimizer = optimizers.Adam(1e-4) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 
-    def run(self, input, training: bool):
+    def forward(self, input, training: bool):
         """
-        Upsamples the input.
+        Function for completing a forward pass of the generator: Given a noise tensor, returns generated images.
+        Parameters:
+            noise: a noise tensor with dimensions (n_samples, z_dim)
         """
         return self.model(input, training=training)
 
@@ -171,6 +178,7 @@ class MNISTGAN():
     Generation of human faces with StyleGAN, as demonstrated on the website This Person Does Not Exist
     Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative models.
     """
+    _name: str = None
     _buffer_size: int = None
     _batch_size: int = None
     _epochs: int = None
@@ -180,7 +188,8 @@ class MNISTGAN():
     _discriminator: Discriminator = None
     _checkpoint: tf.train.Checkpoint = None
     _noise_dim: int = None
-    def __init__(self, buffer_size:int, batch_size:int, epochs:int, checkpoint_path: str):
+    def __init__(self, name:str, buffer_size:int, batch_size:int, epochs:int, checkpoint_path: str):
+        self._name = name
         self._buffer_size = buffer_size
         self._batch_size = batch_size
         self._epochs = epochs
@@ -192,8 +201,8 @@ class MNISTGAN():
                                         discriminator_optimizer = self._discriminator.optimizer,
                                         generator = self._generator.model,
                                         discriminator = self._discriminator.model)
-        #InitializeGPU()
-    def PrepareMNISTData(self):
+        self._PrepareMNISTData()
+    def _PrepareMNISTData(self):
         """
         https://www.tensorflow.org/tutorials/generative/dcgan
         https://www.tensorflow.org/datasets/keras_example
@@ -249,14 +258,15 @@ class MNISTGAN():
         The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
         The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
         """
+        #print(f"\n=== MNISTGAN._TrainStep ===")
         noise = rng.random([images.shape[0], self._noise_dim])
         #print(f"noise: {noise.shape}")
         # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
         # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generated_images = self._generator.run(noise, training=True)
-            real_output = self._discriminator.run(images, training=True)
-            fake_output = self._discriminator.run(generated_images, training=True)
+            generated_images = self._generator.forward(noise, training=True)
+            real_output = self._discriminator.forward(images, training=True)
+            fake_output = self._discriminator.forward(generated_images, training=True)
             gen_loss = self._generator.loss(real_output, fake_output)
             disc_loss = self._discriminator.loss(real_output, fake_output)
 
@@ -288,7 +298,7 @@ class MNISTGAN():
                 ave_disc_loss += disc_loss
 
             # Produce images for the GIF as you go
-            self._save_images(self._generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'mnist_gan_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
+            self._save_images(self._generator.forward(seed, training=False), f"Generated Image at Epoch {epoch}", f'{self._name}_epoch_{epoch+1:04d}.png', (image_rows, image_cols))
 
             # Save the model every 15 epochs
             if (epoch + 1) % 15 == 0:
@@ -302,10 +312,10 @@ class MNISTGAN():
 
         # Generate after the final epoch
         PlotGANLossHistory("MNIST GAN", gen_losses, disc_losses)
-        self._save_images(self._generator.run(seed, training=False), f"Generated Image at Epoch {self._epochs}", f'mnist_gan_epoch_{self._epochs:04d}.png', (image_rows, image_cols))
+        self._save_images(self._generator.forward(seed, training=False), f"Generated Image at Epoch {self._epochs}", f'{self._name}_epoch_{self._epochs:04d}.png', (image_rows, image_cols))
 
     def _save_images(self, data, title:str, filename: str, dimension):
-        # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
+        # Notice `training` is set to False. This is so all layers forward in inference mode (batchnorm).
         #fig = plt.figure(figsize=(4, 4))
         fig = plt.figure(figsize=dimension)
         #print(f"_save_images data.shape: {data.shape}, ndim: {data.ndim}") # data.shape: (16, 28, 28, 1), ndim: 4
@@ -333,8 +343,7 @@ if __name__ == "__main__":
     Path("output/MNISTGAN").mkdir(parents=True, exist_ok=True)
     Path("output/MNISTGAN").is_dir()
     InitializeGPU()
-    mnistGAN = MNISTGAN(BUFFER_SIZE, BATCH_SIZE, EPOCHS, checkpoint_prefix)
-    mnistGAN.PrepareMNISTData()
+    mnistGAN = MNISTGAN("mnist_gan", BUFFER_SIZE, BATCH_SIZE, EPOCHS, checkpoint_prefix)
     mnistGAN.Train(16, 4, 4)
     ShowImage(f'output/MNISTGAN/mnist_gan_epoch_{EPOCHS:04d}.png')
     CreateGIF("output/MNISTGAN/mnist_gan.gif", 'output/MNISTGAN/mnist_gan_epoch_*.png')

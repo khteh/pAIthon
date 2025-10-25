@@ -50,7 +50,12 @@ class Discriminator():
         self._cross_entropy = losses.BinaryCrossentropy(from_logits=True) # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) 
         self.optimizer = optimizers.Adam(1e-4) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 
-    def run(self, input, training: bool):
+    def forward(self, input, training: bool):
+        """
+        Function for completing a forward pass of the discriminator: Given an image tensor, returns a 1-dimension tensor representing fake/real.
+        Parameters:
+            image: a flattened image tensor with dimension (im_chan)
+        """
         return self.model(input, training=training)
 
     def loss(self, real, fake):
@@ -108,7 +113,12 @@ class Generator():
         self._cross_entropy = losses.BinaryCrossentropy(from_logits=True) # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) 
         self.optimizer = optimizers.Adam(1e-4) # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
 
-    def run(self, input, training: bool):
+    def forward(self, input, training: bool):
+        """
+        Function for completing a forward pass of the generator: Given a noise tensor, returns generated images.
+        Parameters:
+            noise: a noise tensor with dimensions (n_samples, z_dim)
+        """
         return self.model(input, training = training)
 
     def loss(self, real, fake):
@@ -173,9 +183,9 @@ class SineWaveGAN():
         # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
         # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-            generated_images = self._generator.run(noise, training=True)
-            real_output = self._discriminator.run(data_batch, training=True)
-            fake_output = self._discriminator.run(generated_images, training=True)
+            generated_images = self._generator.forward(noise, training=True)
+            real_output = self._discriminator.forward(data_batch, training=True)
+            fake_output = self._discriminator.forward(generated_images, training=True)
 
             gen_loss = self._generator.loss(real_output, fake_output)
             disc_loss = self._discriminator.loss(real_output, fake_output)
@@ -208,7 +218,7 @@ class SineWaveGAN():
                 ave_disc_loss += disc_loss
 
             # Produce images for the GIF as you go
-            self._save_images(self._generator.run(seed, training=False), f"Generated Image at Epoch {epoch}", f'sinewave_gan_epoch_{epoch+1:04d}.png')
+            self._save_images(self._generator.forward(seed, training=False), f"Generated Image at Epoch {epoch}", f'sinewave_gan_epoch_{epoch+1:04d}.png')
 
             # Save the model every 15 epochs
             if (epoch + 1) % 15 == 0:
@@ -222,10 +232,10 @@ class SineWaveGAN():
 
         # Generate after the final epoch
         PlotGANLossHistory("Sine Wave GAN", gen_losses, disc_losses)
-        self._save_images(self._generator.run(seed, training=False), f"Generated Image at Epoch {self._epochs}", f'sinewave_gan_epoch_{self._epochs:04d}.png')
+        self._save_images(self._generator.forward(seed, training=False), f"Generated Image at Epoch {self._epochs}", f'sinewave_gan_epoch_{self._epochs:04d}.png')
 
     def _save_images(self, data, title:str, filename: str):
-        # Notice `training` is set to False. This is so all layers run in inference mode (batchnorm).
+        # Notice `training` is set to False. This is so all layers forward in inference mode (batchnorm).
         #print(f"save_images data.shape: {data.shape}, ndim: {data.ndim}") # data.shape: (1, 1024, 2), ndim: 3
         plt.plot(data[0, :, 0], data[0, :, 1], ".")
         plt.suptitle(title)

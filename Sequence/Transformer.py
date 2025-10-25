@@ -1,5 +1,5 @@
 import numpy, tensorflow as tf, matplotlib.pyplot as plt
-from tensorflow.keras.layers import Embedding, MultiHeadAttention, Dense, Input, Dropout, LayerNormalization
+from tensorflow.keras.layers import Embedding, MultiHeadAttention, Dense, Input, Dropout, Layer, LayerNormalization
 
 def get_angles(pos, k, d):
     """
@@ -84,11 +84,11 @@ def scaled_dot_product_attention(q, k, v, mask):
 
 def FullyConnected(embedding_dim, fully_connected_dim):
     return tf.keras.Sequential([
-        tf.keras.layers.Dense(fully_connected_dim, activation='relu'),  # (batch_size, seq_len, dff)
-        tf.keras.layers.Dense(embedding_dim)  # (batch_size, seq_len, embedding_dim)
+        Dense(fully_connected_dim, activation='relu'),  # (batch_size, seq_len, dff)
+        Dense(embedding_dim)  # (batch_size, seq_len, embedding_dim)
     ])
 
-class EncoderLayer(tf.keras.layers.Layer):
+class EncoderLayer(Layer):
     """
     The encoder layer is composed by a multi-head self-attention mechanism,
     followed by a simple, positionwise fully connected feed-forward network. 
@@ -141,7 +141,7 @@ class EncoderLayer(tf.keras.layers.Layer):
         encoder_layer_out = self.layernorm2(skip_x_attention+ffn_output)  # (batch_size, input_seq_len, embedding_dim)
         return encoder_layer_out
 
-class Encoder(tf.keras.layers.Layer):
+class Encoder(Layer):
     """
     The entire Encoder starts by passing the input to an embedding layer 
     and using positional encoding to then pass the output through a stack of

@@ -1,5 +1,6 @@
 import re,numpy, pandas as pd, tensorflow as tf, matplotlib.pyplot as plt, time, textwrap
 from keras import saving
+from tensorflow.keras.layers import Layer, Embedding, Dropout
 from Transformer.positional_encoding import positional_encoding
 from Transformer.masks import create_look_ahead_mask
 from Transformer.DecoderLayer import DecoderLayer
@@ -9,7 +10,7 @@ rng = Generator(PCG64DXSM())
 #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 wrapper = textwrap.TextWrapper(width=70)
 @saving.register_keras_serializable()
-class Decoder(tf.keras.layers.Layer):
+class Decoder(Layer):
     """
     The entire Encoder starts by passing the target input to an embedding layer 
     and using positional encoding to then pass the output through a stack of
@@ -19,7 +20,7 @@ class Decoder(tf.keras.layers.Layer):
         super(Decoder, self).__init__(**kwargs)
         self.embedding_dim = embedding_dim
         self.num_layers = num_layers
-        self.embedding = tf.keras.layers.Embedding(target_vocab_size, self.embedding_dim)
+        self.embedding = Embedding(target_vocab_size, self.embedding_dim)
         self.pos_encoding = positional_encoding(maximum_position_encoding, self.embedding_dim)
         self.dec_layers = [DecoderLayer(embedding_dim=self.embedding_dim,
                                         num_heads=num_heads,
@@ -27,7 +28,7 @@ class Decoder(tf.keras.layers.Layer):
                                         dropout_rate=dropout_rate,
                                         layernorm_eps=layernorm_eps) 
                            for _ in range(self.num_layers)]
-        self.dropout = tf.keras.layers.Dropout(dropout_rate)
+        self.dropout = Dropout(dropout_rate)
     
     def call(self, x, enc_output, training, look_ahead_mask, padding_mask):
         """
