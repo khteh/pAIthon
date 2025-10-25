@@ -10,6 +10,7 @@ from utils.TrainingMetricsPlot import PlotGANLossHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 # https://www.tensorflow.org/tutorials/generative/dcgan
+# https://jonathan-hui.medium.com/gan-how-to-measure-gan-performance-64b988c47732
 class Discriminator():
     """
     The discriminator is a CNN-based image classifier. It classifies the generated images as real or fake. The model will be trained to output positive values for real images, and negative values for fake images.

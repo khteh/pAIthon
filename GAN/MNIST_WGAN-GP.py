@@ -8,6 +8,7 @@ from utils.TrainingMetricsPlot import PlotGANLossHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 # https://www.tensorflow.org/tutorials/generative/dcgan
+# https://jonathan-hui.medium.com/gan-how-to-measure-gan-performance-64b988c47732
 class Critic(Discriminator):
     _lambda: float = None # Weight of the gradient penalty
     def __init__(self, _lambda: float):
@@ -84,9 +85,9 @@ class MNIST_WGAN_GP(MNISTGAN):
         epsilon: a vector of the uniformly random proportions of real/fake per mixed image
         """
         #print(f"\n=== MNIST_WGAN_GP._TrainStep ===")
-        noise = rng.random([images.shape[0], self._noise_dim])
         mean_critic_loss = 0
         for _ in range(self._critic_repeats):
+            noise = rng.random([images.shape[0], self._noise_dim])
             #print(f"noise: {noise.shape}")
             # TensorFlow has the marvelous capability of calculating the derivatives for you. This is shown below. Within the tf.GradientTape() section, operations on Tensorflow Variables are tracked. When tape.gradient() is later called, it will return the gradient of the loss relative to the tracked variables. The gradients can then be applied to the parameters using an optimizer.
             # Tensorflow GradientTape records the steps used to compute cost J to enable auto differentiation.

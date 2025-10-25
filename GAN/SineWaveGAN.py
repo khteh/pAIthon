@@ -11,6 +11,7 @@ from utils.GPU import InitializeGPU
 from utils.TrainingMetricsPlot import PlotGANLossHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
+# https://jonathan-hui.medium.com/gan-how-to-measure-gan-performance-64b988c47732
 class Discriminator():
     _samples: int = None
     model = None

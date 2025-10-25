@@ -266,7 +266,14 @@ This causes the gradient descent to take longer time to find it's global minimum
 (4) Z-score normalization: Find the standard deviation (d) and the mean. (x - ave) / d.
     Mean: sum(data) / len(data)
     standard deviation: sum((data[i] - mean) ** 2) / len(data)
-
+Note:
+- Sigma = standard deviation
+- Sigma^2 = Variance.
+  - Vairance quantifies the spread of a normal distribution.
+  - Covariance measures the variance between 2 dimensions.
+    - 0: independent
+    - -ve: lobside spread in y=-x direction
+    - +ve: lobside spread in y=x direction.
 Batch Normalization:
 - NN hidden units' outputs, Z[l], normalized in the same way as the input data X.
   - Z_normalized = (Z - miu) / sqrt(sigma^2 + epsilon)
@@ -543,7 +550,7 @@ Convolutional NN: NN that uses convolution, usually for analyzing images (i.e., 
                 - Training is done to figure out what's the best filters for the input image
                 - Models how human look at images
 Input image -> [Convolution (calculates filters) -> Pooling (Summarize and reduces the size of inputs)] -> Flattening (Feeds into the inputs of NN)
-[Convolution -> Pooling] can be applied multiple times before Flattening. Early layers of this to discover low-level features (Edges, Curves, Shapes, low-level audio waveform); later layers to discover high-level features (objects, person, face, basic units of sounds like phonemes, etc)
+[Convolution -> Pooling] can be applied multiple times before Flattening. Early layers of this to discover low-level/primitive features (Edges, Curves, Shapes, low-level/primitive audio waveform); later layers to discover high-level features (objects, person, face, basic units of sounds like phonemes, etc)
 Note: In a convnet, the higher up a layer is, the more specialized it is. The first few layers in a convnet learn very simple and generic features, which generalize to almost all types of images. But as you go higher up, the features are increasingly specific to the dataset that the model is trained on.
 
 Feed-forward NN: Good for classification. 1:1 mapping from input to output -Single-valued output.
@@ -586,12 +593,12 @@ Use-case exmaples: GPT-3, BERT, imageNet, Speech-recognition -> wake/trigger wor
 
 Multi-task Learning:
 - One NN do several things at the same time. Every task helps, hopefully, all of the other tasks.
-- Same NN when all the tasks share similar or same low-level features / early layers of the NN. The output layer will be y^ with shape (n,m). n: #tasks, m: #samples.
+- Same NN when all the tasks share similar or same low-level/primitive features / early layers of the NN. The output layer will be y^ with shape (n,m). n: #tasks, m: #samples.
   - Loss function = sum(sum(L(y^(j)(i), y(j)(i)) for j:[i:n] )) for i: [1:m]
   -  L is the usual logistic loss: -y(j)(i) * log(y^(j)(i)) - (1 - y(j)(i)) * log(y^(j)(i))
   - Benefit: Works well for partially labelled data. The loss function sum over j with valid value of [0,1] and omit inf, -inf, or NaN.
 Only use this when:
-- Tasks having similar low-level features.
+- Tasks having similar low-level/primitive features.
 - Amount of data for each task is quite similar. The aggregate of N-1 tasks' data should be a lot more than the remaining 1 other task. Symmetrically, data of N-1 tasks augment training of every other tasks.
 - Can train a big enough NN to do well on ALL of the tasks. This NN should perform better than having a separate NN for each of the tasks.
 
@@ -787,7 +794,7 @@ Dense: 256 neurons
 #parameters = 128 * 128 * 256 + 256 = 4194560 parameters
 ================================================================================================================================================================================
 Convolution:
-Early/Shallow layers often see the finer details with simpler shapes and patterns in smaller regions of the input (low-level features) such as edges and simple textures.
+Early/Shallow layers often see the finer details with simpler shapes and patterns in smaller regions of the input (low-level/primitive features) such as edges and simple textures.
 Later/Deeper layers often see more complex shapes and patterns in larger regions of the input (high-level features) such as more complex textures and object classes.
 In other words, early/shallow layers zoom in, later/deeper layers zoom out.
 
@@ -1131,7 +1138,7 @@ Semantic Segmentation & U-Net:
   - Output dimension is greater than the input dimension.
   - Apply the filter on the padded output.
   - Convolve input with the filter, fill the element-wise multiplication result in the respective output cell. Ignore the pad cells. For any overlapping cell, due to stride, add the cell values.
-- Use skip connections to pass early layers, hgih-resolution, low-level feature information to the later layers to reconstruct the contextual spatial information.
+- Use skip connections to pass early layers, hgih-resolution, low-level/primitive feature information to the later layers to reconstruct the contextual spatial information.
 - Input: (h,w,3), Output: (h,w,#classes): This serves to classify each pixel in the input image.
 ======================================================================================================================================================================================================
 Face Recognition:
@@ -1230,7 +1237,7 @@ Nerual Style Transfer:
   - G[l, S](k,k') = sum(sum(a[l](i,j,k) * a[l](i,j,k'))) for all i,j (height, width) over all k channels for style picture
   - G[l, G](k,k') = sum(sum(a[l](i,j,k) * a[l](i,j,k'))) for all i,j (height, width) over all k channels for generated picture
   - J[l](S, G) = |G[l, S](k,k') - G[l, G](k,k')| ** 2 = sum(sum(G[l,S] - G[l, G])) / (2 * Nh *Nw * Nc) for all channels in layer l.
-  - For bettter styling effect, use J[l](S, G) from multiple layers. Js(S,G) = sum(lambda * J[l](S, G)) for some number of layers. This takes both low-level and high-level correlations into account.
+  - For bettter styling effect, use J[l](S, G) from multiple layers. Js(S,G) = sum(lambda * J[l](S, G)) for some number of layers. This takes both low-level/primitive and high-level correlations into account.
   - J(G) = alpha * J(C, G) + beta * J(S, G). Use gradient descent to generate G which minimizes J(G).
 
 Get better results if you "merge" style costs from several different layers.
@@ -1824,6 +1831,49 @@ Generative Adverserial Networks
 
 Objective:
 - Make the generated and real distributions look similar.
+
+Challenges in evaluating GANs:
+- Loss tells us little about their performance.
+- Unlike with classifiers, where a low loss on a test set indicates superior performance, a low loss for the generator or discriminator suggests that learning has stopped.
+- A discriminator cannot be used for evaluation because it overfits to the generator it is trained with.
+- There is also no "perfect" discriminator that can differentiate reals from fakes - if there were, a lot of machine learning tasks would be solved.
+- Very much sample dependent. Not model parameters.
+2 important properties:
+(1) Fidelity: Quality of images
+    (i) Pixel distance - Not reliable due to shifts.
+    (ii) Feature distance - High-level semantic information less susceptible to small differences, nuances, noise in the inputs.
+        - Use pretrained models on ImageNet for feature extraction.
+        - Extracted features = embeddings      
+(2) Diversity: Variety of images
+
+Frichet Inception Distance (FID):
+- Univariate Normal FID = (mean(x) - mean(y))^2 - (sigma(x) - sigma(y))^2
+- Lower value = closer distributions.
+
+Inception Score:
+- Develoepd before FID and more relevant to conditional generation.
+- Use Inception model classifier as-is to classify the generated image.
+- Tries to capture both fidelity and diversity.
+- Higher value better.
+- Downside:
+  - Can be exploted by generating one realistic image of each class.
+  - Only looks at generated images. No comparison to real images.
+
+Precision & Recall:
+(1) Precision:
+- Relates to fidelity.
+- Overlaps/Intersection between real and fake / total generated images.
+(2) Recall:
+- Relates to diversity.
+- Overlaps/Intersection between real and fake / total real images.
+(3) Models tend to be better at recall.
+(4) Use truncation trick to improve precision, i.e., to weed out all the extra fakes, especially for downstream applications.
+
+Truncation trick sampling:
+- Sampling at test time from a normal distribution with it's tail clipped.
+- Fakes are sampled using the training or prior distribution of z.
+- It truncates the normal distribution of the noise vector at the tails. Tradoff between fidelity and diversity determinses the hyperparameter of how much to truncate.
+- Human evaluation is still necessary for sampling. For exaple, HYPE (Human eYe Perceptual Evaluation).
 
 Modes:
 - Peaks in a distribution.
