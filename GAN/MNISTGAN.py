@@ -1,9 +1,9 @@
-from pathlib import Path
 import matplotlib.pyplot as plt, os, PIL, time
 import numpy, math, tensorflow as tf
-import tensorflow.keras.models as models
-import tensorflow.keras.layers as layers
-from tensorflow.keras import layers, losses, optimizers, regularizers
+from pathlib import Path
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose
+from tensorflow.keras import losses, optimizers, regularizers
 from utils.Image import ShowImage, CreateGIF
 from utils.GPU import InitializeGPU
 from utils.TrainingMetricsPlot import PlotGANLossHistory
@@ -23,29 +23,29 @@ class Discriminator():
     _cross_entropy = None
     optimizer = None
     def __init__(self):
-        self.model = models.Sequential([
-                        layers.Input(shape=(28, 28, 1)),
-                        layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same'),
+        self.model = Sequential([
+                        Input(shape=(28, 28, 1)),
+                        Conv2D(64, (5, 5), strides=(2, 2), padding='same'),
                         # Input: 28x28x1
                         # Filter: 64 5x5 s:2 p = (f-1)/2 = 2
                         # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(28 + 4 - 5)/2 + 1 = 14
                         # Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(28 + 4 - 5)/2 + 1 = 14
                         # Output volume = Nh[l] x Nw[l] x Nc[l] = 14 * 14 * 64 = 12544
-                        layers.LeakyReLU(),
-                        layers.Dropout(0.3),
+                        LeakyReLU(),
+                        Dropout(0.3),
 
-                        layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same'),
+                        Conv2D(128, (5, 5), strides=(2, 2), padding='same'),
                         # Input: 14 * 14 * 64
                         # Filter: 128 5x5 s:2 p = (f-1)/2 = 2
                         # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 4 - 5)/2 + 1 = 7
                         # Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 4 - 5)/2 + 1 = 7
                         # Output volume = Nh[l] x Nw[l] x Nc[l] = 7 * 7 * 128 = 6272
-                        layers.LeakyReLU(),
-                        layers.Dropout(0.3),
+                        LeakyReLU(),
+                        Dropout(0.3),
 
-                        layers.Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
+                        Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
                         # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
-                        layers.Dense(1, kernel_regularizer=regularizers.l2(0.01))]) # Linear activation ("pass-through") if not specified. Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+                        Dense(1, kernel_regularizer=regularizers.l2(0.01))]) # Linear activation ("pass-through") if not specified. Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -82,8 +82,8 @@ class Discriminator():
 class Generator():
     """
     The generator will generate handwritten digits resembling the MNIST data.
-    The generator uses tf.keras.layers.Conv2DTranspose (upsampling) layers to produce an image from a seed (random noise). Start with a Dense layer that takes this seed as input, then upsample several times until you reach the desired image size of 28x28x1. 
-    Notice the tf.keras.layers.LeakyReLU activation for each layer, except the output layer which uses tanh since the output coefficients should be in the interval from -1 to 1
+    The generator uses tf.keras.Conv2DTranspose (upsampling) layers to produce an image from a seed (random noise). Start with a Dense layer that takes this seed as input, then upsample several times until you reach the desired image size of 28x28x1. 
+    Notice the tf.keras.LeakyReLU activation for each layer, except the output layer which uses tanh since the output coefficients should be in the interval from -1 to 1
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
                                Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
@@ -94,15 +94,15 @@ class Generator():
     _cross_entropy = None
     optimizer = None
     def __init__(self):
-        self.model = models.Sequential()
-        self.model.add(layers.Input(shape=(100,)))
-        self.model.add(layers.Dense(7*7*256, name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
-        self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
-        self.model.add(layers.LeakyReLU())
-        self.model.add(layers.Reshape((7, 7, 256))) # Match the Dense layer's shape
+        self.model = Sequential()
+        self.model.add(Input(shape=(100,)))
+        self.model.add(Dense(7*7*256, name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
+        self.model.add(BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+        self.model.add(LeakyReLU())
+        self.model.add(Reshape((7, 7, 256))) # Match the Dense layer's shape
         assert self.model.output_shape == (None, 7, 7, 256)  # Note: None is the batch size
 
-        self.model.add(layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same'))
+        self.model.add(Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same'))
         # Input: 7x7x256
         # Filter: 128 5x5 s:1 p = (f-1)/2 = 2
         # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(7 + 4 - 5)/1 + 1 = 7
@@ -110,10 +110,10 @@ class Generator():
         # Output volume = Nh[l] x Nw[l] x Nc[l] = 7 * 7 * 128 = 6272
         # Nout = (Nin  - 1) * s + f - 2p = (7-1) * 1 + 5 - 2*2 = 6 + 5 - 4 = 7
         assert self.model.output_shape == (None, 7, 7, 128)
-        self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
-        self.model.add(layers.LeakyReLU())
+        self.model.add(BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+        self.model.add(LeakyReLU())
 
-        self.model.add(layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same'))
+        self.model.add(Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same'))
         # Input: 7x7x128
         # Filter: 64 5x5 s:2 p = (f-1)/2 = 2
         # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(7 + 4 - 5)/2 + 1 = 4
@@ -123,10 +123,10 @@ class Generator():
         # OutputSize = (InputSize - 1) * StrideSize + M + KernelSize - 2*P
         # M = (OutputSize - KernelSize + 2 * P) % StrideSize
         assert self.model.output_shape == (None, 14, 14, 64) # XXX
-        self.model.add(layers.BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
-        self.model.add(layers.LeakyReLU())
+        self.model.add(BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+        self.model.add(LeakyReLU())
 
-        self.model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', activation='tanh')) # Similar to sigmoid graph but the output is [-1, 1]
+        self.model.add(Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', activation='tanh')) # Similar to sigmoid graph but the output is [-1, 1]
         # Input: 14x14x64
         # Filter: 1 5x5 s:2 p = (f-1)/2 = 2
         # Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 + 4 - 5)/2 + 1 = 7

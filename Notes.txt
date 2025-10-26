@@ -274,7 +274,9 @@ Note:
     - 0: independent
     - -ve: lobside spread in y=-x direction
     - +ve: lobside spread in y=x direction.
+
 Batch Normalization:
+- HxW for each batch of data, x, (x - miu_x) / sigma_x. Do it for every channel.
 - NN hidden units' outputs, Z[l], normalized in the same way as the input data X.
   - Z_normalized = (Z - miu) / sqrt(sigma^2 + epsilon)
   - Z~ = gamma * Z_normalized + beta
@@ -1870,6 +1872,9 @@ Precision & Recall:
 (4) Use truncation trick to improve precision, i.e., to weed out all the extra fakes, especially for downstream applications.
 
 Truncation trick sampling:
+- Done after the model is trained and when you are sampling beautiful outputs.
+- Resamples the noise vector z from a truncated normal distribution which allows you to tune the generator's fidelity/diversity.
+- The truncation value is at least 0, where 1 means there is little truncation (high diversity) and 0 means the distribution is all truncated except for the mean (high quality/fidelity).
 - Sampling at test time from a normal distribution with it's tail clipped.
 - Fakes are sampled using the training or prior distribution of z.
 - It truncates the normal distribution of the noise vector at the tails. Tradoff between fidelity and diversity determinses the hyperparameter of how much to truncate.
@@ -1900,6 +1905,7 @@ Wasserstein Loss (W-Loss):
 - Not bounded to [0, 1], critics output any real number.
 - Works on the condition that the critic needs to be 1-Lipschitz (1-L) continuous.
   - The norm (L2) of the gradient should be at most 1 for every point.
+  - This so that the gradient does not grow more than linearly.
   - This ensures W-Loss is validly approximating Earth Mover's Distance.
 1-L Enforcement:
 (1) Weight Clipping
@@ -1915,6 +1921,11 @@ Wasserstein Loss (W-Loss):
     - The generator tries to maximize the scores (or equivalently minimize the negative)
     Critic Loss = -(torch.mean(crit_real_pred) - torch.mean(crit_fake_pred)) + gp * c_lambda
     - The optimizer (ex: Adam) will minimize the loss. So, by minimizing -(torch.mean(crit_real_pred) - torch.mean(crit_fake_pred)), it effectively maximizes the distance between the real and fake distributions.
+
+Spectral Normalization:
+- Another method to stabilize training.
+- Normalizes the weights, similar to BatchNormalization and instantiated as a layer.
+
 Conditional Generation:
 - Generate outputs from specific class.
 - Supervised learning, i.e., training dataset must be labelled.
@@ -1941,4 +1952,30 @@ Controllable Generation:
   (2) Loss Function:
       - Unsupervised Learning.
       - Add regularization term to the original loss function (BCE, W-Loss, etc) to encourage the model to associate each index in the noise vector to different features on the output.
-      - 
+
+Density Estimation:
+- Probability density over modeled features, i.e., likelihood of particular features to show up in samples.
+- How often do certain features make up a target object.
+- Useful for anomaly detection
+
+Disadvantages of GAN:
+- No density estimation.
+- Inverting is not straightforward - Getting the noise vector (latent space representation) of the generated image.
+
+StyleGAN:
+(1) Progrssive Growing.
+    - Make it easier for the generator to generate higher resolution images by gradually training it from lower to higher resolution images by doubling it.
+    - Grow the percentage (alpha) of up-/down-sampling output to Conv layer to progressively learn more weights/parameters.
+(2) Noise Mapping Network.
+    - z (512,) -> 8 Dense layers -> w (512,)
+    - Create a more disentangled representation of noise. Easier to learn 1:1 mapping to each individual feature to have finer-grained control over generated features.
+    - w fed to various layers in the generator.
+    - With multiple (Z, W) pairs injected in different layers of the DC GAN, the output will be a mix of images generated with the individual pair.
+(3) Adaptive Instance Normalization (AdaIN)
+    - HxW for each instance of data, x_i, (x_i - miu_x_i) / sigma_x_i. Do it for every channel.
+    - w -> Dense => y_s, y_b
+    - y_s_i * ((x_i - miu_x_i) / sigma_x_i) + y_b_i
+    - Transfers learnt styles info from W onto generated images. It also normalizes the statistics so each block overrides the one that comes before it.
+    - Stochastic noise causes small variations to output.
+      - Sample noise from Normal distribution
+      - Concatenate it to x before AdaIN.

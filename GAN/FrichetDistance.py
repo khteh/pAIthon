@@ -34,4 +34,4 @@ if __name__ == "__main__":
     distance = frechet_distance(mean1, mean2, covariance1, covariance2)
     print(f"xy frechet_distance: {distance}")
     assert numpy.isclose(distance, 8 - 2 * numpy.sqrt(3.))
-    print("Success!")
+    print("\n\033[92mAll test passed!")

@@ -1,10 +1,10 @@
-from pathlib import Path
 import glob, imageio, matplotlib.pyplot as plt, os, time
 import numpy, math, tensorflow as tf
-import tensorflow.keras.models as models
-import tensorflow.keras.layers as layers
 import matplotlib.pyplot as plt
+from pathlib import Path
 from utils.Image import CreateGIF, ShowImage
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.regularizers import l2
 from utils.GPU import InitializeGPU
@@ -19,7 +19,7 @@ class Discriminator():
     optimizer = None
     def __init__(self, samples: int):
         """
-        Multilayer Perceptron NN defined in a sequential way using models.Sequential()
+        Multilayer Perceptron NN defined in a sequential way using Sequential()
         The input is two-dimensional, and the first hidden layer is composed of 256 neurons with ReLU activation.
         The second and third hidden layers are composed of 128 and 64 neurons, respectively, with ReLU activation.
         The output is composed of a single neuron with sigmoidal activation to represent a probability.
@@ -30,15 +30,15 @@ class Discriminator():
                                    Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
         """
         self._samples = samples
-        self.model = models.Sequential([
-            layers.Input(shape=(self._samples, 2)),
-            layers.Dense(256, activation='relu', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
-            layers.Dropout(0.3),
-            layers.Dense(128, activation='relu', name="L2", kernel_regularizer=l2(0.01)),
-            layers.Dropout(0.3),
-            layers.Dense(64, activation='relu', name="L3", kernel_regularizer=l2(0.01)),
-            layers.Dropout(0.3),
-            layers.Dense(1, activation='linear', name="L4")]) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+        self.model = Sequential([
+            Input(shape=(self._samples, 2)),
+            Dense(256, activation='relu', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+            Dropout(0.3),
+            Dense(128, activation='relu', name="L2", kernel_regularizer=l2(0.01)),
+            Dropout(0.3),
+            Dense(64, activation='relu', name="L3", kernel_regularizer=l2(0.01)),
+            Dropout(0.3),
+            Dense(1, activation='linear', name="L4")]) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -93,13 +93,13 @@ class Generator():
                                    Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
         """
         self._samples = samples
-        self.model = models.Sequential([
-                layers.Input(shape=(self._samples,2)),
-                layers.Dense(16, activation='relu', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
-                layers.Dense(32, activation='relu', name="L2", kernel_regularizer=l2(0.01)),
+        self.model = Sequential([
+                Input(shape=(self._samples,2)),
+                Dense(16, activation='relu', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+                Dense(32, activation='relu', name="L2", kernel_regularizer=l2(0.01)),
                 # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
                 # The output will consist of a vector with two elements that can be any value ranging from negative infinity to infinity, which will represent (x̃₁, x̃₂).
-                layers.Dense(2, name="L3")]) # Linear activation ("pass-through") if not specified
+                Dense(2, name="L3")]) # Linear activation ("pass-through") if not specified
         print(f"Generator L3 output shape: {self.model.output_shape}")
         assert self.model.output_shape == (None, self._samples, 2)
         """
@@ -144,7 +144,7 @@ class SineWaveGAN():
 
     Style transfer using CycleGAN, which can perform a number of convincing style transformations on images
     Generation of human faces with StyleGAN, as demonstrated on the website This Person Does Not Exist
-    Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative models.
+    Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative 
     """
     _num_sine_waves: int = None
     _batch_size: int = None
