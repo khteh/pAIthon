@@ -3,7 +3,8 @@ from pathlib import Path
 from matplotlib.pyplot import imshow
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.losses import CategoricalCrossentropy
-from tensorflow.keras import layers
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Input, Conv2D, ReLU, MaxPool2D, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose, UpSampling2D
 from tensorflow.keras.optimizers import Adam
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.GPU import InitializeGPU
@@ -90,24 +91,24 @@ class SignsLanguageDigits():
         """
         if self._model and not rebuild:
             return
-        self._model = tf.keras.Sequential([
-                layers.Input(shape=(64,64,3)),
+        self._model = Sequential([
+                Input(shape=(64,64,3)),
                 ## CONV2D: 8 filters 4x4, stride of 1, padding 'SAME'
-                layers.Conv2D(8, (4,4), strides=(1,1), padding="same", name="L1"),
+                Conv2D(8, (4,4), strides=(1,1), padding="same", name="L1"),
                 ## ReLU
-                layers.ReLU(name="L2"),
+                ReLU(name="L2"),
                 ## MAXPOOL: window 8x8, stride 8, padding 'SAME'
-                layers.MaxPool2D((8,8), strides=(8,8), padding="same", name="L3"),
+                MaxPool2D((8,8), strides=(8,8), padding="same", name="L3"),
                 ## CONV2D: 16 filters 2x2, stride 1, padding 'SAME'
-                layers.Conv2D(16, (2,2), strides=(1,1), padding="same", name="L4"),
+                Conv2D(16, (2,2), strides=(1,1), padding="same", name="L4"),
                 ## ReLU
-                layers.ReLU(name="L5"),
+                ReLU(name="L5"),
                 ## MAXPOOL: window 4x4, stride 4, padding 'SAME'
-                layers.MaxPool2D((4,4), strides=(4,4), padding="same", name="L6"),
+                MaxPool2D((4,4), strides=(4,4), padding="same", name="L6"),
                 ## Flatten layer
-                layers.Flatten(),
+                Flatten(),
                 ## Dense layer with 1 unit for output & 'sigmoid' activation
-                layers.Dense(6)   # Linear activation ("pass-through") if not specified. Since the labels are 6 categories, use CategoricalCrossentropy
+                Dense(6)   # Linear activation ("pass-through") if not specified. Since the labels are 6 categories, use CategoricalCrossentropy
             ])
         self._model.compile(
                 loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification

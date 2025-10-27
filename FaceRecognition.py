@@ -1,8 +1,5 @@
 import os, numpy, pandas as pd, tensorflow as tf, PIL
-from numpy import genfromtxt
 from tensorflow.keras.models import Model, Sequential, model_from_json
-from tensorflow.keras.layers import Conv2D, ZeroPadding2D, Activation, Input, concatenate, BatchNormalization, MaxPooling2D, AveragePooling2D, Concatenate, Lambda, Flatten, Dense, Layer
-from tensorflow.keras.initializers import glorot_uniform
 from tensorflow.keras import backend as K
 K.set_image_data_format('channels_last')
 
@@ -22,7 +19,7 @@ class FaceRecognition():
         The output is a matrix of shape  (𝑚,128) that encodes each input face image into a 128-dimensional vector.
         By using a 128-neuron fully connected layer as its last layer, the model ensures that the output is an encoding vector of size 128. You then use the encodings to compare two face images as follows:
         """
-        with open('./models/keras-facenet-h5/model.json', 'r', newline='') as f:
+        with open('./models/keras-facenet-h5/model.json', 'r', newline='') as f: # XXX: TypeError: Could not locate class 'Functional'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`.
             loaded_model_json = f.read()
             self._model = model_from_json(loaded_model_json)
         self._model.load_weights('./models/keras-facenet-h5/model.h5')
