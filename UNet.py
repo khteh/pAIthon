@@ -1,6 +1,7 @@
 import os, numpy, pandas as pd, imageio
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras import Model
 from tensorflow.keras.layers import concatenate, Input, Conv2D, MaxPooling2D, Dropout, Conv2DTranspose
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
@@ -120,7 +121,7 @@ class UNet():
         cblock3 = self.Encoder(cblock2[0], self._n_filters * 4)
         cblock4 = self.Encoder(cblock3[0], self._n_filters * 8, dropout_prob=0.3) # Include a dropout_prob of 0.3 for this layer
         # Include a dropout_prob of 0.3 for this layer, and avoid the max_pooling layer
-        cblock5 = self.Encoder(cblock4[0], self._n_filters * 16, dropout_prob=0.3, max_pooling=None) 
+        cblock5 = self.Encoder(cblock4[0], self._n_filters * 16, dropout_prob=0.3, max_pooling=None)
         
         # Expanding Path (decoding)
         # Add the first Decoder.
@@ -150,6 +151,15 @@ class UNet():
                     loss=SparseCategoricalCrossentropy(from_logits=True),
                     metrics=['accuracy'])
         self._model.summary()
+        plot_model(
+            self._model,
+            to_file="output/UNet.png",
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+            rankdir="TB",
+            expand_nested=True,
+            show_layer_activations=True)
 
 if __name__ == "__main__":
     img_height = 96

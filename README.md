@@ -58,6 +58,10 @@ Python AI, ML, DL and NLP exploration playground.
 
 - Encoder-Decoder Transformer architecture
 
+## UNet
+
+![UNet](images/UNet.png?raw=true "UNet")
+
 ## MNIST GAN
 
 ![MNIST GAN](images/mnist_gan.gif?raw=true "MNIST GAN")

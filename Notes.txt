@@ -1991,11 +1991,14 @@ Generator:
 - U-Net
   - 8 blocks of:
     - Conv2D -> BatchNorm -> LeakyReLU
+- Use pixel distance loss term (L1) added to the usual adversial loss (BCE, W-loss, etc)
 Discriminator:
 - Use real picture as input that maps to the target output image.
+- Generated image concatenated with real/target image along the channel dimension.
 - No Z-space noise vector input. Use dropout instead.
 - PatchGAN
 - Matrix output instead of binary.
 - U-Net
   - 8 blocks of:
     - TransposeConv2D -> BatchNorm -> ReLU
+- Pix2PixHD and GauGAN are successors of Pix2Pix
