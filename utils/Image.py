@@ -16,3 +16,14 @@ def CreateGIF(anim_file: str, input_images: str):
             image = imageio.imread(f)
             writer.append_data(image)
     print(f"{anim_file} created successfully!")
+
+# Assuming 'images' is a TensorFlow tensor of shape (batch_size, H, W, C)
+def make_image_grid(images, num_rows, num_cols):
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=(num_cols * 2, num_rows * 2))
+    axes = axes.flatten()
+    for i, img in enumerate(images):
+        if i < len(axes):
+            axes[i].imshow(img.numpy()) # .numpy() to convert tensor to numpy array for matplotlib
+            axes[i].axis('off')
+    plt.tight_layout()
+    plt.show()

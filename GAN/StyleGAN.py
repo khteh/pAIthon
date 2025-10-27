@@ -1,15 +1,30 @@
 import matplotlib.pyplot as plt, os, PIL, time
 import numpy, math, tensorflow as tf
 from pathlib import Path
+from tensorflow.image import ResizeMethod
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose
+from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose, UpSampling2D
 from scipy.stats import truncnorm
 from tensorflow.keras import layers, losses, optimizers, regularizers
-from utils.Image import ShowImage, CreateGIF
-from utils.GPU import InitializeGPU
+from utils.Image import ShowImage, CreateGIF, make_image_grid
+from utils.GPU import InitializeGPU, SetMemoryLimit
 from utils.TrainingMetricsPlot import PlotGANLossHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
+
+def get_truncated_noise(n_samples, z_dim, truncation):
+    '''
+    Function for creating truncated noise vectors: Given the dimensions (n_samples, z_dim)
+    and truncation value, creates a tensor of that shape filled with random
+    numbers from the truncated normal distribution.
+    Parameters:
+        n_samples: the number of samples to generate, a scalar
+        z_dim: the dimension of the noise vector, a scalar
+        truncation: the truncation value, a non-negative scalar
+    '''
+    truncated_noise = truncnorm.rvs(-truncation, truncation, size=(n_samples, z_dim))
+    #print(f"truncated_noise: {truncated_noise.shape}")
+    return truncated_noise
 
 class MappingLayers(tf.Module):
     '''
@@ -68,7 +83,6 @@ class InjectNoise(tf.Module):
         # Set the appropriate shape for the noise!
         # You would first create a random (4 x 4) noise matrix with one channel.
         noise = tf.random.normal(shape=(image.shape[0], 1, image.shape[2], image.shape[3]))
-        weight_noise = self._weights * noise
         #print(f"image: {image.shape}, weight: {self._weights.shape}, noise: {noise.shape}, weight_noise: {weight_noise.shape}")
         return image + self._weights * noise
     
@@ -96,13 +110,12 @@ class AdaIN(tf.Module):
         self._channels = channels
         self._w_dim = w_dim
         # Normalize the input per-dimension
-        self._instance_norm = BatchNormalization()
-
+        self._instance_norm = BatchNormalization(axis=1) # axis 'channels'
         # You want to map w to a set of style weights per channel.
         # Replace the Nones with the correct dimensions - keep in mind that 
         # both linear maps transform a w vector into style weights 
         # corresponding to the number of image channels.
-        self.style_scale_transform = Dense(channels)
+        self.style_scale_transform = Dense(channels) # dimensionality of the output space.
         self.style_shift_transform = Dense(channels)
     def __call__(self, image, w):
         '''
@@ -112,42 +125,320 @@ class AdaIN(tf.Module):
             image: the feature map of shape (n_samples, channels, width, height)
             w: the intermediate noise vector
         '''
+        print(f"=== AdaIN.__call__ ===")
         normalized_image = self._instance_norm(image)
         style_scale = self.style_scale_transform(w)[:, :, None, None]
         style_shift = self.style_shift_transform(w)[:, :, None, None]
-        
+        print(f"image: {tf.math.reduce_mean(image)}, normalized_image: {tf.math.reduce_mean(normalized_image)}, style_scale: {tf.math.reduce_mean(style_scale)}, style_shift: {tf.math.reduce_mean(style_shift)}")
         # Calculate the transformed image
-        transformed_image = style_scale * normalized_image + style_shift
-        return transformed_image        
+        return style_scale * normalized_image + style_shift
     
-class StyleGAN():
-    _noise_mapping = None
-    _z_dim: int = None
+class MicroStyleGANGeneratorBlock(tf.Module):
+    '''
+    Micro StyleGAN Generator Block Class
+    Values:
+        in_chan: the number of channels in the input, a scalar
+        out_chan: the number of channels wanted in the output, a scalar
+        w_dim: the dimension of the intermediate noise vector, a scalar
+        kernel_size: the size of the convolving kernel
+        starting_size: the size of the starting image
+    '''
+    _in_chan: int = None
+    _out_chan: int = None
     _w_dim: int = None
-    _hidden_dim: int = None
-    _channels: int = None
-    def __init__(self, z_dim:int, hidden_dim:int, w_dim:int, channels: int):
-        self._z_dim = z_dim
+    _kernel_size: int = None
+    _factor: int = None
+    _use_upsample: bool = None
+    upsample: UpSampling2D = None
+    conv: Conv2D = None
+    inject_noise: InjectNoise = None
+    adain : AdaIN = None
+    activation: LeakyReLU = None
+    def __init__(self, in_chan:int, out_chan:int, w_dim:int, kernel_size:int, factor:int, use_upsample:bool=True):
+        super().__init__()
+        self._in_chan = in_chan
+        self._out_chan = out_chan
         self._w_dim = w_dim
-        self._hidden_dim = hidden_dim
-        self._channels = channels
-       
-    def get_truncated_noise(self, n_samples, z_dim, truncation):
+        self._kernel_size = kernel_size
+        self._factor = factor
+        self._use_upsample = use_upsample
+        # Replace the Nones in order to:
+        # 1. Upsample to the starting_size, bilinearly (https://pytorch.org/docs/master/generated/torch.nn.Upsample.html)
+        # 2. Create a kernel_size convolution which takes in 
+        #    an image with in_chan and outputs one with out_chan (https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html)
+        # 3. Create an object to inject noise
+        # 4. Create an AdaIN object
+        # 5. Create a LeakyReLU activation with slope 0.2
+        if self._use_upsample:
+            self.upsample = UpSampling2D(factor, interpolation='bilinear', data_format="channels_first") # size: The upsampling factors for rows and columns.
+        self.conv = Conv2D(out_chan, kernel_size, padding="same", data_format="channels_first")
+        self.inject_noise = InjectNoise(out_chan)
+        self.adain = AdaIN(out_chan, w_dim)
+        self.activation = LeakyReLU(0.2)
+
+    def __call__(self, x, w):
         '''
-        Function for creating truncated noise vectors: Given the dimensions (n_samples, z_dim)
-        and truncation value, creates a tensor of that shape filled with random
-        numbers from the truncated normal distribution.
+        Function for completing a forward pass of MicroStyleGANGeneratorBlock: Given an x and w, 
+        computes a StyleGAN generator block.
         Parameters:
-            n_samples: the number of samples to generate, a scalar
-            z_dim: the dimension of the noise vector, a scalar
-            truncation: the truncation value, a non-negative scalar
+            x: the input into the generator, feature map of shape (n_samples, channels, width, height)
+            w: the intermediate noise vector
         '''
-        truncated_noise = truncnorm.rvs(-truncation, truncation, size=(n_samples, z_dim))
-        #print(f"truncated_noise: {truncated_noise.shape}")
-        return truncated_noise
+        if self._use_upsample:
+            x = self.upsample(x)
+        x = self.conv(x)
+        x = self.inject_noise(x)
+        x = self.adain(x, w)
+        x = self.activation(x)
+        return x
+
+class MicroStyleGANGenerator(tf.Module):
+    '''
+    Micro StyleGAN Generator Class.
+    StyleGAN starts with a constant 4 x 4 (x 512 channel) tensor which is put through an iteration of the generator without upsampling. The output is some noise that can then be transformed into a blurry 4 x 4 image. This is where the progressive growing process begins. The 4 x 4 noise can be further passed through a generator block with upsampling to produce an 8 x 8 output. However, this will be done gradually.
+    You will simulate progressive growing from an 8 x 8 image to a 16 x 16 image. Instead of simply passing it to the generator block with upsampling, StyleGAN gradually trains the generator to the new size by mixing in an image that was only upsampled. By mixing an upsampled 8 x 8 image (which is 16 x 16) with increasingly more of the 16 x 16 generator output, the generator is more stable as it progressively trains. As such, you will do two separate operations with the 8 x 8 noise:
+    1.   Pass it into the next generator block to create an output noise, that you will then transform to an image.
+    2.   Transform it into an image and then upsample it to be 16 x 16.
+    You will now have two images that are both double the resolution of the 8 x 8 noise. Then, using an alpha ($\alpha$) term, you combine the higher resolution images obtained from (1) and (2). You would then pass this into the discriminator and use the feedback to update the weights of your generator. The key here is that the $\alpha$ term is gradually increased until eventually, only the image from (1), the generator, is used. That is your final image or you could continue this process to make a 32 x 32 image or 64 x 64, 128 x 128, etc. 
+    This micro model you will implement will visualize what the model outputs at a particular stage of training, for a specific value of $\alpha$. However to reiterate, in practice, StyleGAN will slowly phase out the upsampled image by increasing the $\alpha$ parameter over many training steps, doing this process repeatedly with larger and larger alpha values until it is 1—at this point, the combined image is solely comprised of the image from the generator block. This method of gradually training the generator increases the stability and fidelity of the model.
+
+    Values:
+        z_dim: the dimension of the noise vector, a scalar
+        map_hidden_dim: the mapping inner dimension, a scalar
+        w_dim: the dimension of the intermediate noise vector, a scalar
+        in_chan: the dimension of the constant input, usually w_dim, a scalar
+        out_chan: the number of channels wanted in the output, a scalar
+        kernel_size: the size of the convolving kernel
+        hidden_chan: the inner dimension, a scalar
+    '''
+    _z_dim:int = None
+    _map_hidden_dim = None
+    _w_dim: int = None
+    _in_chan: int = None
+    _out_chan: int = None
+    _kernel_size: int = None
+    _hidden_chan: int = None
+    alpha:float = None
+    def __init__(self, 
+                 z_dim, 
+                 map_hidden_dim,
+                 w_dim,
+                 in_chan,
+                 out_chan, 
+                 kernel_size, 
+                 hidden_chan,
+                 alpha:float):
+        super().__init__()
+        self._z_dim = z_dim
+        self._map_hidden_dim = map_hidden_dim
+        self._w_dim = w_dim
+        self._in_chan = in_chan
+        self._out_chan = out_chan
+        self._kernel_size = kernel_size
+        self._hidden_chan = hidden_chan
+        self.map = MappingLayers(z_dim, map_hidden_dim, w_dim)
+        # Typically this constant is initiated to all ones, but you will initiate to a
+        # Gaussian to better visualize the network's effect
+        self.starting_constant = tf.Variable(tf.random.normal((1, in_chan, 4, 4)))
+        self.block0 = MicroStyleGANGeneratorBlock(in_chan, hidden_chan, w_dim, kernel_size, 4, use_upsample=False)
+        self.block1 = MicroStyleGANGeneratorBlock(hidden_chan, hidden_chan, w_dim, kernel_size, 8)
+        self.block2 = MicroStyleGANGeneratorBlock(hidden_chan, hidden_chan, w_dim, kernel_size, 16)
+        # You need to have a way of mapping from the output noise to an image, 
+        # so you learn a 1x1 convolution to transform the e.g. 512 channels into 3 channels
+        # (Note that this is simplified, with clipping used in the real StyleGAN)
+        self.block1_to_image = Conv2D(out_chan, kernel_size=1)
+        self.block2_to_image = Conv2D(out_chan, kernel_size=1)
+        self.alpha = alpha
+
+    def upsample_to_match_size(self, smaller_image, bigger_image):
+        '''
+        Function for upsampling an image to the size of another: Given a two images (smaller and bigger), 
+        upsamples the first to have the same dimensions as the second.
+        Parameters:
+            smaller_image: the smaller image to upsample
+            bigger_image: the bigger image whose dimensions will be upsampled to
+        '''
+        return tf.image.resize(smaller_image, size=bigger_image.shape[-2:], method=ResizeMethod.BILINEAR)
+        
+    def __call__(self, noise, return_intermediate=False):
+        '''
+        Function for completing a forward pass of MicroStyleGANGenerator: Given noise, 
+        computes a StyleGAN iteration.
+        Parameters:
+            noise: a noise tensor with dimensions (n_samples, z_dim)
+            return_intermediate: a boolean, true to return the images as well (for testing) and false otherwise
+        '''
+        x = self.starting_constant
+        w = self.map(noise)
+        x = self.block0(x, w)
+        x_small = self.block1(x, w) # First generator run output
+        x_small_image = self.block1_to_image(x_small)
+        x_big = self.block2(x_small, w) # Second generator run output 
+        x_big_image = self.block2_to_image(x_big)
+        x_small_upsample = self.upsample_to_match_size(x_small_image, x_big_image) # Upsample first generator run output to be same size as second generator run output 
+        # Interpolate between the upsampled image and the image from the generator using alpha
+        interpolation = self._lerp(x_small_upsample, x_big_image, self.alpha)
+        if return_intermediate:
+            return interpolation, x_small_upsample, x_big_image
+        return interpolation
+
+    def _lerp(self, start, end, weight):
+        """
+        Performs linear interpolation between two tensors, start and end,
+        based on a scalar or tensor weight.
+
+        Args:
+            start: The tensor with the starting points.
+            end: The tensor with the ending points.
+            weight: A float or tensor representing the weight for the interpolation.
+
+        Returns:
+            A tensor representing the interpolated values.
+        """
+        return start + weight * (end - start)    
+class StyleGAN():
+    _samples = None
+    _truncation = None
+    _z_dim:int = None
+    _map_hidden_dim = None
+    _w_dim: int = None
+    _in_chan: int = None
+    _out_chan: int = None
+    _kernel_size: int = None
+    _hidden_chan: int = None
+    _alpha:float = None
+    _stylegan_generator: MicroStyleGANGenerator = None
+    _noise = None
+    def __init__(self, samples:int, truncation, z_dim, 
+                 map_hidden_dim,
+                 w_dim,
+                 in_chan,
+                 out_chan, 
+                 kernel_size, 
+                 hidden_chan,
+                 alpha:float):
+        self._samples = samples
+        self._truncation = truncation
+        self._z_dim = z_dim
+        self._map_hidden_dim = map_hidden_dim
+        self._w_dim = w_dim
+        self._in_chan = in_chan
+        self._out_chan = out_chan
+        self._kernel_size = kernel_size
+        self._hidden_chan = hidden_chan
+        self._alpha = alpha
+        self._stylegan_generator = MicroStyleGANGenerator(
+            z_dim=z_dim, 
+            map_hidden_dim=map_hidden_dim,
+            w_dim=w_dim,
+            in_chan=in_chan,
+            out_chan=out_chan, 
+            kernel_size=kernel_size, 
+            hidden_chan=hidden_chan,
+            alpha=alpha
+        )
+        self._noise = get_truncated_noise(self._samples, self._z_dim, self._truncation) * 10
+
+    def Run(self):
+        print(f"\n=== {self.Run.__name__} ===")
+        #self._stylegan_generator.evaluate() https://discuss.ai.google.dev/t/tensorflow-keras-equivalent-of-pytorch-nn-module-eval/108262
+        images = []
+        for alpha in numpy.linspace(0, 1, num=5):
+            self._stylegan_generator.alpha = alpha
+            viz_result, _, _ =  self._stylegan_generator(
+                self._noise, 
+                return_intermediate=True)
+            images += [tensor for tensor in viz_result]
+        self._show_tensor_images(tf.stack(images), nrow=self._samples, num_images=len(images))
+        self._stylegan_generator = self._stylegan_generator.train()        
+
+    def _show_tensor_images(self, image_tensor, num_images=16, size=(3, 64, 64), nrow=3):
+        '''
+        Function for visualizing images: Given a tensor of images, number of images,
+        size per image, and images per row, plots and prints the images in an uniform grid.
+        '''
+        image_tensor = (image_tensor + 1) / 2
+        image_unflat = image_tensor.detach().cpu().clamp_(0, 1)
+        image_grid = make_image_grid(image_unflat[:num_images], nrow=nrow, padding=0)
+        plt.imshow(image_grid.permute(1, 2, 0).squeeze())
+        plt.axis('off')
+        plt.show()
+
+def StyleGANTests():
+    print(f"\n=== {StyleGANTests.__name__} ===")
+    z_dim = 128
+    out_chan = 3
+    truncation = 0.7
+    alpha=0.2
+    styleGAN = StyleGAN(10, truncation = truncation, z_dim=z_dim, 
+        map_hidden_dim=1024,
+        w_dim=496,
+        in_chan=512,
+        out_chan=out_chan, 
+        kernel_size=3, 
+        hidden_chan=256,
+        alpha=alpha
+    )
+    styleGAN.Run()
+
+def MicroStyleGANGeneratorTests():
+    print(f"\n=== {MicroStyleGANGeneratorTests.__name__} ===")
+    z_dim = 128
+    out_chan = 3
+    truncation = 0.7
+    alpha=0.2
+    stylegan_generator = MicroStyleGANGenerator(
+        z_dim=z_dim, 
+        map_hidden_dim=1024,
+        w_dim=496,
+        in_chan=512,
+        out_chan=out_chan, 
+        kernel_size=3, 
+        hidden_chan=256,
+        alpha=alpha
+    )
+    test_samples = 10
+    test_result = stylegan_generator(get_truncated_noise(test_samples, z_dim, truncation))
+
+    # Check if the block works
+    assert tuple(test_result.shape) == (test_samples, out_chan, 16, 16)
+
+    # Check that the interpolation is correct
+    stylegan_generator.alpha = 1.
+    test_result, _, test_big =  stylegan_generator(
+        get_truncated_noise(test_samples, z_dim, truncation), 
+        return_intermediate=True)
+    assert tf.abs(test_result - test_big).mean() < 0.001
+    stylegan_generator.alpha = 0.
+    test_result, test_small, _ =  stylegan_generator(
+        get_truncated_noise(test_samples, z_dim, truncation), 
+        return_intermediate=True)
+    assert tf.abs(test_result - test_small).mean() < 0.001
+    print("\n\033[92mAll test passed!")
+
+def MicroStyleGANGeneratorBlockTests():
+    print(f"\n=== {MicroStyleGANGeneratorBlockTests.__name__} ===")
+    stylegan_generator_block = MicroStyleGANGeneratorBlock(in_chan=128, out_chan=64, w_dim=256, kernel_size=3, factor=2)
+    test_x = numpy.ones((1, 128, 4, 4))
+    test_x[:, :, 1:3, 1:3] = 0
+    test_w = numpy.ones((1, 256))
+    test_x = stylegan_generator_block.upsample(test_x)
+    print(f"test_x.shape: {test_x.shape}")
+    assert tuple(test_x.shape) == (1, 128, 8, 8)
+    assert numpy.abs(tf.math.reduce_mean(test_x) - 0.75) < 1e-4
+    test_x = stylegan_generator_block.conv(test_x)
+    assert tuple(test_x.shape) == (1, 64, 8, 8)
+    test_x = stylegan_generator_block.inject_noise(test_x)
+    test_x = stylegan_generator_block.activation(test_x)
+    assert tf.math.reduce_min(test_x) < 0
+    assert -tf.math.reduce_min(test_x) / tf.math.reduce_max(test_x) < 0.4
+    test_x = stylegan_generator_block.adain(test_x, test_w) 
+    foo = stylegan_generator_block(tf.ones((10, 128, 4, 4)), tf.ones((10, 256)))
+    print("\n\033[92mAll test passed!")
 
 def AdaINTests():
-    print(f"\n=== AdaINTests ===")
+    # https://github.com/tensorflow/tensorflow/issues/102870
+    print(f"\n=== {AdaINTests.__name__} ===")
     w_channels = 50
     image_channels = 20
     image_size = 30
@@ -165,19 +456,38 @@ def AdaINTests():
     adain = AdaIN(image_channels, w_channels)
 
     adain.style_scale_transform.set_weights(tf.ones_like(adain.style_scale_transform.weights) / 4)
-    adain.style_scale_transform.use_bias(tf.zeros_like(adain.style_scale_transform.bias))
+    # The bias (and kernel) attributes of a Dense layer are only created when the layer is built, which happens during the first call to the layer with input data or when the model containing the layer is compiled and trained. 
+    # If you try to access layer.bias before this, it won't exist.
+    #adain.style_scale_transform.use_bias(tf.zeros_like(adain.style_scale_transform.bias))
     adain.style_shift_transform.set_weights(tf.ones_like(adain.style_shift_transform.weights) / 5)
-    adain.style_shift_transform.use_bias(tf.zeros_like(adain.style_shift_transform.bias))
-    test_input = tf.ones(n_test, image_channels, image_size, image_size)
+    #adain.style_shift_transform.use_bias(tf.zeros_like(adain.style_shift_transform.bias))
+    test_input = numpy.ones((n_test, image_channels, image_size, image_size))
     test_input[:, :, 0] = 0
-    test_w = tf.ones(n_test, w_channels)
+    test_w = tf.ones((n_test, w_channels))
     test_output = adain(test_input, test_w)
-    assert(tf.math.abs(test_output[0, 0, 0, 0] - 3 / 5 + tf.math.sqrt(tf.tensor(9 / 8))) < 1e-4)
-    assert(tf.math.abs(test_output[0, 0, 1, 0] - 3 / 5 - tf.math.sqrt(tf.tensor(9 / 32))) < 1e-4)
+    print(f"test_input: {test_input.shape} {test_input}")
+    print(f"test_output: {test_output.shape} {test_output}")
+    print(tf.math.abs(test_output[0, 0, 0, 0] - 3 / 5 + tf.math.sqrt(9 / 8)))
+    print(tf.math.abs(test_output[0, 0, 1, 0] - 3 / 5 - tf.math.sqrt(9 / 32)))
+    assert(tf.math.abs(test_output[0, 0, 0, 0] - 3 / 5 + tf.math.sqrt(9 / 8)) < 1e-4)
+    assert(tf.math.abs(test_output[0, 0, 1, 0] - 3 / 5 - tf.math.sqrt(9 / 32)) < 1e-4)
     print("\n\033[92mAll test passed!")
 
 def InjectNoiseTests():
-    print(f"\n=== InjectNoiseTests ===")
+    print(f"\n=== {InjectNoiseTests.__name__} ===")
+    # First, check the weights * stochastic noise broadcasting.
+    weights = numpy.ones((1,3,1,1)) # 3 channels
+    image = numpy.ones((5,3,10,10)) # 5 samples, 3 channels, w = h = 10
+    noise = numpy.zeros(shape=(image.shape[0], 1, image.shape[2], image.shape[3]))
+    weighted_noise = weights * noise
+    noisy_image = image + weighted_noise
+    print(f"noise: {noise.shape}")
+    print(f"weihted_noise: {weighted_noise.shape}")
+    print(f"noisy_image: {noisy_image.shape}")
+    assert image.shape == weighted_noise.shape
+    assert 0.0 == numpy.mean(weighted_noise)
+    assert 1.0 == numpy.mean(noisy_image)
+
     inject_noise = InjectNoise(3000)
 
     test_noise_channels = 3000
@@ -210,7 +520,7 @@ def InjectNoiseTests():
     print("\n\033[92mAll test passed!")
 
 def NoiseMappingLayersTests():
-    print(f"\n=== NoiseMappingLayersTests ===")
+    print(f"\n=== {NoiseMappingLayersTests.__name__} ===")
     mapping = MappingLayers(10,20,30)
     assert tuple(mapping(tf.random.normal(shape=(2, 10))).shape) == (2, 30)
     #assert len(mapping.mapping) > 4 # Check number of sequential layers
@@ -221,18 +531,22 @@ def NoiseMappingLayersTests():
     #assert tf.math.reduce_max(outputs) < 2 and tf.math.reduce_max(outputs) > 0
 
 def truncated_noise_tests():
-    print(f"\n=== truncated_noise_tests ===")
-    style_gan = StyleGAN(10,20,30, 3000)
+    print(f"\n=== {truncated_noise_tests.__name__} ===")
     # Test the truncation sample
-    assert tuple(style_gan.get_truncated_noise(n_samples=10, z_dim=5, truncation=0.7).shape) == (10, 5)
-    simple_noise = style_gan.get_truncated_noise(n_samples=1000, z_dim=10, truncation=0.2)
+    assert tuple(get_truncated_noise(n_samples=10, z_dim=5, truncation=0.7).shape) == (10, 5)
+    simple_noise = get_truncated_noise(n_samples=1000, z_dim=10, truncation=0.2)
     assert simple_noise.max() > 0.199 and simple_noise.max() < 2
     assert simple_noise.min() < -0.199 and simple_noise.min() > -0.2
     assert simple_noise.std() > 0.113 and simple_noise.std() < 0.117
     print("\n\033[92mAll test passed!")
 
 if __name__ == "__main__":
+    InitializeGPU()
+    SetMemoryLimit(4096)
     truncated_noise_tests()
     NoiseMappingLayersTests()
     InjectNoiseTests()
-    AdaINTests()
+    #AdaINTests()
+    MicroStyleGANGeneratorBlockTests()
+    #MicroStyleGANGeneratorTests()
+    StyleGANTests()
