@@ -157,7 +157,7 @@ class UNet():
             show_shapes=True,
             show_dtype=True,
             show_layer_names=True,
-            rankdir="TB",
+            rankdir="LR", # rankdir argument passed to PyDot, a string specifying the format of the plot: "TB" creates a vertical plot; "LR" creates a horizontal plot.
             expand_nested=True,
             show_layer_activations=True)
 
