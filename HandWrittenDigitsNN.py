@@ -5,9 +5,10 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import plot_model
 import matplotlib.pyplot as plt
 from utils.GPU import InitializeGPU
-from utils import *
+from utils.TrainingMetricsPlot import PlotModelHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
@@ -20,7 +21,9 @@ class HandWrittenDigitsNN():
     _Y = None
     _model: Sequential = None
     _model_path: str = None
-    def __init__(self, path):
+    _learning_rate: float = None
+    def __init__(self, path, learning_rate:float):
+        self._learning_rate = learning_rate
         self._model_path = path
         InitializeGPU()
         self._prepare_data()
@@ -69,7 +72,7 @@ class HandWrittenDigitsNN():
         fig.suptitle("Label", fontsize=16)
         plt.show()
 
-    def BuildModel(self, rebuild: bool = False):
+    def BuildTrainModel(self, epochs:int, rebuild: bool = False):
         if self._model and not rebuild:
             return
         self._model = Sequential(
@@ -82,12 +85,23 @@ class HandWrittenDigitsNN():
         )
         self._model.compile(
             loss=BinaryCrossentropy(from_logits=True),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to sigmoid activation which is typically used for binary classification
-            optimizer=Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+            optimizer=Adam(self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
         )
-        self._model.fit(
-            self._X, self._Y, epochs=20
-        )        
         self._model.summary()
+        plot_model(
+            self._model,
+            to_file="output/HandWrittenDigitsNN.png",
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+            rankdir="TB", # rankdir argument passed to PyDot, a string specifying the format of the plot: "TB" creates a vertical plot; "LR" creates a horizontal plot.
+            expand_nested=True,
+            show_layer_activations=True)
+        history = self._model.fit(
+            self._X, self._Y, epochs=epochs
+        )
+        PlotModelHistory("Hand Written Digits NN", history)
+
         if self._model_path:
             self._model.save(self._model_path)
             print(f"Model saved to {self._model_path}.")
@@ -140,6 +154,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Hand written digits binary classifier')
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
-    handwritten = HandWrittenDigitsNN("models/HandwrittenDigits.keras")
-    handwritten.BuildModel(args.retrain)
+    handwritten = HandWrittenDigitsNN("models/HandwrittenDigits.keras", 0.001)
+    handwritten.BuildTrainModel(30, args.retrain)
     handwritten.Predict()
