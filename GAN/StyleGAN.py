@@ -11,7 +11,8 @@ from utils.GPU import InitializeGPU, SetMemoryLimit
 from utils.TrainingMetricsPlot import PlotGANLossHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
-
+# https://jonathan-hui.medium.com/gan-how-to-measure-gan-performance-64b988c47732
+# https://jonathan-hui.medium.com/gan-stylegan-stylegan2-479bdf256299
 def get_truncated_noise(n_samples, z_dim, truncation):
     '''
     Function for creating truncated noise vectors: Given the dimensions (n_samples, z_dim)
@@ -286,7 +287,8 @@ class MicroStyleGANGenerator(tf.Module):
         """
         Performs linear interpolation between two tensors, start and end,
         based on a scalar or tensor weight.
-
+        https://docs.pytorch.org/docs/stable/generated/torch.lerp.html
+        
         Args:
             start: The tensor with the starting points.
             end: The tensor with the ending points.

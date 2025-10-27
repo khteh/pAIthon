@@ -3,6 +3,9 @@ from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
 # https://jonathan-hui.medium.com/gan-how-to-measure-gan-performance-64b988c47732
+# https://towardsdatascience.com/demystified-wasserstein-gan-with-gradient-penalty-ba5e9b905ead/#:~:text=The%20idea%20of%20Gradient%20Penalty,unit%20norm%20(Statement%201).&text=In%20Eq.,sum%20is%20the%20gradient%20penalty.
+# https://ankittaxak5713.medium.com/wasserstein-gans-wgan-3b8031aebf53
+# https://medium.com/@krushnakr9/gans-wasserstein-gan-with-gradient-penalty-wgan-gp-b8da816cb2d2
 def frechet_distance(mu_x, mu_y, sigma_x, sigma_y):
     '''
     Function for returning the Fréchet distance between multivariate Gaussians,
