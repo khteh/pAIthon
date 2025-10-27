@@ -13,6 +13,8 @@ A convolution layer is where the filter slides over the image and computes the d
 This transforms the input volume into an output volume of different size
 Zero padding helps keep more information at the image borders, and is helpful for building deeper networks, because you can build a CONV layer without shrinking the height and width of the volumes
 Pooling layers gradually reduce the height and width of the input by sliding a 2D window over each specified region, then summarizing the features in that region
+
+https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md
 """
 def Padding(data, pad: int):
     """

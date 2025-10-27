@@ -529,6 +529,9 @@ Dropout:
   - A[l] /= keep_prob <- This restores the (1 - keep_prob) values. This is the "inverted dropout".
 - J is not well defined with dropouts. This affects debugging of J over epochs.
 (3) Data augmentation.
+  - Apply library functions on real photos
+  - Use GAN.
+  - Combination of both - RandAugment
 
 Random Weights Initialization:
 - If initialize to zeros, all the hidden units will be computing the same function. dW will have the same rows after every epoch and therefore same as W.
@@ -1141,6 +1144,7 @@ Semantic Segmentation & U-Net:
   - Apply the filter on the padded output.
   - Convolve input with the filter, fill the element-wise multiplication result in the respective output cell. Ignore the pad cells. For any overlapping cell, due to stride, add the cell values.
 - Use skip connections to pass early layers, hgih-resolution, low-level/primitive feature information to the later layers to reconstruct the contextual spatial information.
+  - Also improve gradient flow to the encoder.
 - Input: (h,w,3), Output: (h,w,#classes): This serves to classify each pixel in the input image.
 ======================================================================================================================================================================================================
 Face Recognition:
@@ -1979,3 +1983,19 @@ StyleGAN:
     - Stochastic noise causes small variations to output.
       - Sample noise from Normal distribution
       - Concatenate it to x before AdaIN.
+
+Pix2Pix:
+Generator:
+- Use real picture as input that maps to the target output image.
+- No Z-space noise vector input. Use dropout instead.
+- U-Net
+  - 8 blocks of:
+    - Conv2D -> BatchNorm -> LeakyReLU
+Discriminator:
+- Use real picture as input that maps to the target output image.
+- No Z-space noise vector input. Use dropout instead.
+- PatchGAN
+- Matrix output instead of binary.
+- U-Net
+  - 8 blocks of:
+    - TransposeConv2D -> BatchNorm -> ReLU
