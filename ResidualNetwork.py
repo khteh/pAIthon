@@ -3,13 +3,9 @@ import tensorflow as tf
 from pathlib import Path
 from matplotlib.pyplot import imshow
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.applications.resnet_v2 import ResNet50V2
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.resnet_v2 import preprocess_input, decode_predictions
-from tensorflow.keras import layers
-from tensorflow.keras.layers import Input, Add, Dense, Activation, ZeroPadding2D, Flatten, Conv2D, AveragePooling2D, MaxPooling2D, GlobalMaxPooling2D
+from tensorflow.keras.layers import Input, Add, Dense, Activation, ZeroPadding2D, Flatten, Conv2D, AveragePooling2D, MaxPooling2D, BatchNormalization
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.initializers import random_uniform, glorot_uniform, constant, identity
@@ -329,19 +325,19 @@ class ResidualNetwork50():
         
         # First component of main path
         X = Conv2D(filters = F1, kernel_size = 1, strides = (1,1), padding = 'valid', kernel_initializer = initializer(seed=0))(X)
-        X = layers.BatchNormalization(axis = 3)(X) # Default axis # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+        X = BatchNormalization(axis = 3)(X) # Default axis # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         X = Activation('relu')(X)
         
         ## Second component of main path (≈3 lines)
         ## Set the padding = 'same'
         X = Conv2D(filters = F2, kernel_size = f, strides = (1,1), padding = 'same', kernel_initializer = initializer(seed=0))(X)
-        X = layers.BatchNormalization(axis = 3)(X) # Default axis # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+        X = BatchNormalization(axis = 3)(X) # Default axis # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         X = Activation('relu')(X)
 
         ## Third component of main path (≈2 lines)
         ## Set the padding = 'valid'
         X = Conv2D(filters = F3, kernel_size = 1, strides = (1,1), padding = 'valid', kernel_initializer = initializer(seed=0))(X)
-        X = layers.BatchNormalization(axis = 3)(X) # Default axis # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+        X = BatchNormalization(axis = 3)(X) # Default axis # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         
         ## Final step: Add shortcut value to main path, and pass it through a RELU activation (≈2 lines)
         X = Add()([X, X_shortcut])
@@ -375,24 +371,24 @@ class ResidualNetwork50():
         
         # First component of main path glorot_uniform(seed=0)
         X = Conv2D(filters = F1, kernel_size = 1, strides = (s, s), padding='valid', kernel_initializer = initializer(seed=0))(X)
-        X = layers.BatchNormalization(axis = 3)(X) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+        X = BatchNormalization(axis = 3)(X) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         X = Activation('relu')(X)
         #print(f"X1: {X.shape}")
         
         ## Second component of main path (≈3 lines)
         X = Conv2D(filters = F2, kernel_size = f, strides = (1, 1), padding='same', kernel_initializer = initializer(seed=0))(X)
-        X = layers.BatchNormalization(axis = 3)(X) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+        X = BatchNormalization(axis = 3)(X) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         X = Activation('relu')(X)
         #print(f"X2: {X.shape}")
         
         ## Third component of main path (≈2 lines)
         X = Conv2D(filters = F3, kernel_size = 1, strides = (1, 1), padding='valid', kernel_initializer = initializer(seed=0))(X)
-        X = layers.BatchNormalization(axis = 3)(X) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+        X = BatchNormalization(axis = 3)(X) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         #print(f"X3: {X.shape}")
         
         ##### SHORTCUT PATH ##### (≈2 lines)
         X_shortcut = Conv2D(filters = F3, kernel_size = 1, strides = (s, s), padding='valid', kernel_initializer = initializer(seed=0))(X_shortcut)
-        X_shortcut = layers.BatchNormalization(axis = 3)(X_shortcut) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+        X_shortcut = BatchNormalization(axis = 3)(X_shortcut) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         #print(f"shortcut: {X_shortcut.shape}")
 
         # Final step: Add shortcut value to main path (Use this order [X, X_shortcut]), and pass it through a RELU activation
@@ -425,7 +421,7 @@ class ResidualNetwork50():
         
         # Stage 1
         X = Conv2D(64, (7, 7), strides = (2, 2), kernel_initializer = glorot_uniform(seed=0))(X)
-        X = layers.BatchNormalization(axis = 3)(X)
+        X = BatchNormalization(axis = 3)(X)
         X = Activation('relu')(X)
         X = MaxPooling2D((3, 3), strides=(2, 2))(X)
 
