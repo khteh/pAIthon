@@ -178,23 +178,25 @@ class ImageSegmentationUNet():
                 rankdir="LR", # rankdir argument passed to PyDot, a string specifying the format of the plot: "TB" creates a vertical plot; "LR" creates a horizontal plot.
                 expand_nested=True,
                 show_layer_activations=True)
-        if new_model or retrain:            
+        if new_model or retrain:
             history = self._model.fit(self._train_dataset, epochs=epochs) # Use kwargs. Otherwise, the epochs will be treated as the labels and will hit error since this is using tf.data.Dataset which includes BOTH X and Y.
             PlotModelHistory("ImageSegmentation UNet", history)
             if self._path:
                 self._model.save(self._path)
                 print(f"Model saved to {self._path}.")
 
-    def _display(self, display_list):
-        plt.figure(constrained_layout=True, figsize=(15, 15))
-        title = ['Input Image', 'True Mask', 'Predicted Mask']
-        for i in range(len(display_list)):
-            plt.subplot(1, len(display_list), i+1)
-            #plt.tight_layout(pad=1,rect=[1, 1, 1, 1]) #[left, bottom, right, top]
-            plt.title(title[i])
-            plt.imshow(tf.keras.preprocessing.image.array_to_img(display_list[i]))
-            plt.axis('off')
-        plt.show()
+    def _display(self, images):
+        titles = ['Input Image', 'True Mask', 'Predicted Mask']
+        fig, axes = plt.subplots(len(images), len(titles), constrained_layout=True, figsize=(10, 20)) # figsize = (width, height)
+        fig.tight_layout()
+        for i in range(len(images)):
+            for j in range(len(titles)):
+                axes[i][j].title.set_text(titles[j])
+                axes[i][j].imshow(tf.keras.preprocessing.image.array_to_img(images[i][j]))
+                axes[i][j].axis('off')
+        plt.savefig(f"output/ImageSegmentationUNet.png")
+        #plt.show()
+        plt.close()
 
     def _create_mask(self, pred_mask):
         pred_mask = tf.argmax(pred_mask, axis=-1)
@@ -203,15 +205,18 @@ class ImageSegmentationUNet():
 
     def show_predictions(self, image, mask, num=1):
         """
-        Displays the first image of each of the num batches
+        Displays the first image of each of the num batches.
+        XXX: The predictions are all empty.
         """
+        images = []
         if image and mask:
-            self._display([image, mask, self._create_mask(self._model.predict(image[tf.newaxis, ...]))])
+            images.append([image, mask, self._create_mask(self._model.predict(image[tf.newaxis, ...]))])
         else:
             for image, mask in self._train_dataset.take(num):
                 pred_mask = self._model.predict(image)
-                self._display([image[0], mask[0], self._create_mask(pred_mask)])
-               
+                images.append([image[0], mask[0], self._create_mask(pred_mask)])
+        self._display(images)
+
     def _PrepareData(self):
         print(f"\n=== {self._PrepareData.__name__} ===")
         image_path = './data/CameraRGB/'
