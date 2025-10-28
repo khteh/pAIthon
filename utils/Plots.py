@@ -1,7 +1,12 @@
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 #plt.style.use('./deeplearning.mplstyle')
-
+"""
+tight_layout:
+The rect parameter defines a rectangle in normalized figure coordinates (left, bottom, right, top) into which the entire subplots area (including labels) will be fit. 
+This allows you to specify a custom region within the figure for tight_layout to operate within, leaving space for elements outside this rectangle, such as a main title or a figure-level legend. 
+The default value for rect is (0, 0, 1, 1), meaning the entire figure area.
+"""
 def plot_dataset(x, y, title):
     plt.rcParams["figure.figsize"] = (12,8)
     plt.rcParams["lines.markersize"] = 12

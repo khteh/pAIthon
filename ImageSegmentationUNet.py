@@ -188,7 +188,8 @@ class ImageSegmentationUNet():
     def _display(self, images):
         titles = ['Input Image', 'True Mask', 'Predicted Mask']
         fig, axes = plt.subplots(len(images), len(titles), constrained_layout=True, figsize=(10, 20)) # figsize = (width, height)
-        fig.tight_layout()
+        # rect=[0, 0, 1, 0.98] tells tight_layout to arrange the subplots within the bottom 98% of the figure's height, leaving the top 2% some space for the suptitle, for instance.
+        fig.tight_layout(pad=0.1,rect=[0, 0, 1, 0.98]) #[left, bottom, right, top]
         for i in range(len(images)):
             for j in range(len(titles)):
                 axes[i][j].title.set_text(titles[j])
@@ -208,6 +209,7 @@ class ImageSegmentationUNet():
         Displays the first image of each of the num batches.
         XXX: The predictions are all empty.
         """
+        print(f"\n=== {self.show_predictions.__name__} ===")
         images = []
         if image and mask:
             images.append([image, mask, self._create_mask(self._model.predict(image[tf.newaxis, ...]))])
