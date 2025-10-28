@@ -1901,7 +1901,10 @@ Earth Mover's Distance:
 - Depends on the distance and amount needs to be moved.
 
 Wasserstein Loss (W-Loss):
+- Generator:
+  - Goal is to minimize the Wasserstein distance/Earth Mover's distance between generated and real data distributions.
 - Discriminator is called "critics".
+  - Goal is to approximate the Wasserstein distance/Earth Mover's distance, instead of categorizing samples as real/fake.
 - E(c(x)) - E(c(g(x)))
   - c(x) prediction of real
   - c(g(x)) prediction of fakes - g(x) is the generator's output.
@@ -1921,11 +1924,12 @@ Wasserstein Loss (W-Loss):
     - Since checking the critic’s gradient at each possible point of the feature space is virtually impossible, you can approximate this by using interpolated images (x^).
     - x^: epsilon * x + (1 - epsilon)*g(z) <- Interpolatation.
           x: real, g(z): generated
-    Generator Loss = - torch.mean(crit_fake_pred)
+    Generator Loss = - mean(Critic(G(z)))
     - The generator tries to maximize the scores (or equivalently minimize the negative)
-    Critic Loss = -(torch.mean(crit_real_pred) - torch.mean(crit_fake_pred)) + gp * c_lambda
+    Critic Loss = -(mean(Critic(x)) - mean(Critic(G(z)))) + gp * c_lambda
     - The optimizer (ex: Adam) will minimize the loss. So, by minimizing -(torch.mean(crit_real_pred) - torch.mean(crit_fake_pred)), it effectively maximizes the distance between the real and fake distributions.
-
+    - Batch Normalisation is not used in the critic anymore because batch norm maps a batch of inputs to a batch of outputs. In our case we want to be able to find gradients of each output w.r.t their respective inputs.
+    
 Spectral Normalization:
 - Another method to stabilize training.
 - Normalizes the weights, similar to BatchNormalization and instantiated as a layer.
@@ -1985,20 +1989,61 @@ StyleGAN:
       - Concatenate it to x before AdaIN.
 
 Pix2Pix:
+- Paired image-to-image translation (Supervised)
+- Example:
+  (1) Segmented image + real image -> generated image
+  (2) Edges/Sketches of object + real object image -> generated image
 Generator:
 - Use real picture as input that maps to the target output image.
 - No Z-space noise vector input. Use dropout instead.
 - U-Net
+  Encoder:
   - 8 blocks of:
     - Conv2D -> BatchNorm -> LeakyReLU
-- Use pixel distance loss term (L1) added to the usual adversial loss (BCE, W-loss, etc)
+  Decoder:
+  - 8 blocks of:
+    - TransposeConv2D -> BatchNorm -> ReLU
+- Loss = Adverserial Loss (BCE, W-loss, etc) + lambda * Pixel Distance Loss (L1)
+  The Pixel Distance Loss (L1) makes it supervised learning.
+
 Discriminator:
 - Use real picture as input that maps to the target output image.
-- Generated image concatenated with real/target image along the channel dimension.
+- Generated image concatenated with input (condition) image along the channel dimension - tf.concat([x, y], axis=1).
 - No Z-space noise vector input. Use dropout instead.
 - PatchGAN
 - Matrix output instead of binary.
-- U-Net
-  - 8 blocks of:
-    - TransposeConv2D -> BatchNorm -> ReLU
-- Pix2PixHD and GauGAN are successors of Pix2Pix
+- Loss = Adverserial Loss (BCE, W-loss, etc)
+
+Pix2PixHD and GauGAN are successors of Pix2Pix
+
+CycleGAN:
+- Unpaired image-to-image translation (Unsupervised).
+- Mapping between 2 piles of image styles and find commonalities and differences between them.
+- Common = content; Unique = style
+- Uses Least Sqaure Loss (Mean Squared Error) as the adverserial loss component.
+  - sum((prediction - truth)**2)
+  - Reduces vanishing gradients problem which is observed when using BCE loss.
+- Identity Loss:
+  - Optional
+  - Helps with color preservation.
+  - Put image X through Y->X generator should produce exact same image.
+Cycle consistency: 
+- Translation to second pile (X->Y) and back to the first pile (Y->X) should produce the same image in the first pile and vice versa.
+- Important in transferring uncommon style elements while maintaining common content.
+- Cycle consistency loss = Pixel distance loss (L1) in a cycle. Take the sum of both directions.
+- Single Optimizer.
+- Ablation studies show that:
+  (1) Without adverserial GAN loss component, outputs are not realisitc.
+  (2) Without Cycle Consistency Loss component, mode collapse happens.
+  (3) With only half the cycle consistency loss component, mode collapse happens too.
+- Cycle consistency is a broader concept that's used outside of CycleGAN a lot too! It's helped with data augmentation and has been used on text translation too, e.g. French -> English -> French should get the same phrase back.
+Generator (2x):
+- Residual block: DCGAN in the bottleneck layers with skipped connections (ResNet).
+- UNet + Residual block
+- Least Squared Adverserial Loss (LSAL) = sum((generated - 1)**2)
+- Loss = LSAL + lambda1 * Cycle Consistency Loss + lambda2 * Identity Loss
+       + LSAL + lambda1 * Cycle Consistency Loss + lambda2 * Identity Loss
+  - LSAL + Cycle Consistency Loss + Identity Loss in each direction.
+Discriminator (2x):
+- PatchGAN
+- Loss = sum(generated**2) + sum((real - 1)**2)

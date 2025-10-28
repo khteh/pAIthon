@@ -187,7 +187,7 @@ class ImageSegmentationUNet():
 
     def _display(self, images):
         titles = ['Input Image', 'True Mask', 'Predicted Mask']
-        fig, axes = plt.subplots(len(images), len(titles), constrained_layout=True, figsize=(10, 20)) # figsize = (width, height)
+        fig, axes = plt.subplots(len(images), len(titles), constrained_layout=True, figsize=(15, 20)) # figsize = (width, height)
         # rect=[0, 0, 1, 0.98] tells tight_layout to arrange the subplots within the bottom 98% of the figure's height, leaving the top 2% some space for the suptitle, for instance.
         fig.tight_layout(pad=0.1,rect=[0, 0, 1, 0.98]) #[left, bottom, right, top]
         for i in range(len(images)):
@@ -216,6 +216,7 @@ class ImageSegmentationUNet():
         else:
             for image, mask in self._train_dataset.take(num):
                 pred_mask = self._model.predict(image)
+                print(f"image: {image}, mask: {mask}, pred_mask: {pred_mask}")
                 images.append([image[0], mask[0], self._create_mask(pred_mask)])
         self._display(images)
 
@@ -226,6 +227,7 @@ class ImageSegmentationUNet():
         image_list_orig = os.listdir(image_path)
         image_list = [image_path+i for i in image_list_orig]
         mask_list = [mask_path+i for i in image_list_orig]
+        print(f"image_list: {len(image_list)}, maks_list: {len(mask_list)}")
         image_filenames = tf.constant(image_list)
         masks_filenames = tf.constant(mask_list)
         dataset = tf.data.Dataset.from_tensor_slices((image_filenames, masks_filenames))
@@ -235,6 +237,20 @@ class ImageSegmentationUNet():
         processed_image_ds = image_ds.map(self._preprocess)
         print(processed_image_ds.element_spec)
         self._train_dataset = processed_image_ds.cache().shuffle(self._buffer_size).batch(self._batch_size)
+        N = 2
+        img = imageio.imread(image_list[N])
+        mask = imageio.imread(mask_list[N])
+        #mask = np.array([max(mask[i, j]) for i in range(mask.shape[0]) for j in range(mask.shape[1])]).reshape(img.shape[0], img.shape[1])
+        fig, axes = plt.subplots(1, 2, figsize=(14, 10)) # figsize = (width, height)
+        axes[0].imshow(img)
+        axes[0].set_title('Image')
+        axes[1].imshow(mask[:, :, 0])
+        axes[1].set_title('Segmentation')
+        axes[0].grid(False)
+        axes[1].grid(False)
+        axes[0].set_axis_off()
+        axes[1].set_axis_off()
+        plt.show()
 
     def _process_path(self, image_path, mask_path):
         img = tf.io.read_file(image_path)
