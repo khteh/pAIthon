@@ -78,10 +78,7 @@ class ImageSegmentationUNet():
             conv = Dropout(dropout_prob)(conv)
             
         # if max_pooling is True add a MaxPooling2D with 2x2 pool_size
-        if max_pooling:
-            next_layer = MaxPooling2D(2)(conv)
-        else:
-            next_layer = conv
+        next_layer = MaxPooling2D(2)(conv) if max_pooling else conv
         skip_connection = conv
         return next_layer, skip_connection
 
@@ -143,7 +140,7 @@ class ImageSegmentationUNet():
             cblock3 = self.Encoder(cblock2[0], self._n_filters * 4)
             cblock4 = self.Encoder(cblock3[0], self._n_filters * 8, dropout_prob=0.3) # Include a dropout_prob of 0.3 for this layer
             # Include a dropout_prob of 0.3 for this layer, and avoid the max_pooling layer
-            cblock5 = self.Encoder(cblock4[0], self._n_filters * 16, dropout_prob=0.3, max_pooling=None)
+            cblock5 = self.Encoder(cblock4[0], self._n_filters * 16, dropout_prob=0.3, max_pooling=False)
             
             # Expanding Path (decoding)
             # Add the first Decoder.
