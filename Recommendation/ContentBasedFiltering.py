@@ -245,7 +245,7 @@ class ContentBasedFiltering():
         A matrix of distances between movies can be computed once when the model is trained and then reused for new recommendations without retraining. The first step, once a model is trained, is to obtain the movie feature vector, Vm, for each of the movies. 
         To do this, we will use the trained item_NN and build a small model to allow us to run the movie vectors through it to generate Vm
         """
-        input_item_m = tf.keras.layers.Input(shape=(self._num_item_features))    # input layer
+        input_item_m = Input(shape=(self._num_item_features))    # input layer
         vm_m = self._item_NN(input_item_m)                                       # use the trained item_NN
         vm_m = tf.linalg.l2_normalize(vm_m, axis=1)                        # incorporate normalization as was done in the original model
         model_m = tf.keras.Model(input_item_m, vm_m)                                

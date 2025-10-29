@@ -4,7 +4,7 @@ import tensorflow as tf
 from pathlib import Path
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras import Model
-from tensorflow.keras.layers import concatenate, Input, Conv2D, MaxPooling2D, Dropout, Conv2DTranspose, BatchNormalization
+from tensorflow.keras.layers import concatenate, Input, Conv2D, MaxPooling2D, Dropout, Conv2DTranspose, BatchNormalization, Normalization
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from utils.GPU import InitializeGPU, SetMemoryLimit
@@ -130,7 +130,9 @@ class ImageSegmentationUNet():
         print(f"\n=== {self.BuildTrainModel.__name__} ===")
         new_model = not self._model
         if not self._model:
+            normalization = Normalization(axis=-1)
             inputs = Input(self._input_size)
+            inputs = normalization(inputs)
             # Contracting Path (encoding)
             # Add a Encoder with the inputs of the unet_ model and n_filters
             cblock1 = self.Encoder(inputs, self._n_filters)
