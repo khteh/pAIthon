@@ -223,10 +223,10 @@ class SiameseNN():
         self._vocab = self._text_vectorizer.get_vocabulary()
         self._train_dataset = tf.data.Dataset.from_tensor_slices(((self._train_Q1, self._train_Q2),tf.constant([1]*len(self._train_Q1))))
         self._val_dataset = tf.data.Dataset.from_tensor_slices(((self._val_Q1, self._val_Q2),tf.constant([1]*len(self._val_Q1))))
-        self._train_dataset = self._train_dataset.shuffle(len(self._train_Q1),
+        self._train_dataset = self._train_dataset.cache().shuffle(len(self._train_Q1),
                                                 seed=7, 
                                                 reshuffle_each_iteration=True).batch(batch_size=self._batch_size)
-        self._val_dataset = self._val_dataset.shuffle(len(self._val_Q1), 
+        self._val_dataset = self._val_dataset.cache().shuffle(len(self._val_Q1), 
                                         seed=7,
                                         reshuffle_each_iteration=True).batch(batch_size=self._batch_size)        
         self._test_dataset = tf.data.Dataset.from_tensor_slices(((self._Q1_test, self._Q2_test),None)).batch(batch_size=self._batch_size)

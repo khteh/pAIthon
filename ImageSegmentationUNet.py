@@ -1,10 +1,10 @@
-import argparse, os, numpy, pandas as pd, imageio
+import argparse, os, numpy, pandas as pd, imageio.v3 as iio
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from pathlib import Path
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras import Model
-from tensorflow.keras.layers import concatenate, Input, Conv2D, MaxPooling2D, Dropout, Conv2DTranspose
+from tensorflow.keras.layers import concatenate, Input, Conv2D, MaxPooling2D, Dropout, Conv2DTranspose, BatchNormalization
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from utils.GPU import InitializeGPU, SetMemoryLimit
@@ -22,6 +22,7 @@ class ImageSegmentationUNet():
     _buffer_size: int = None
     _batch_size: int = None
     _train_dataset = None
+    _val_dataset = None
     _learning_rate: float = None
     _model: Model = None
     def __init__(self, path:str, input_size, n_filters:int, n_classes: int, buffer_size:int, batch_size:int, learning_rate:float):
@@ -63,12 +64,14 @@ class ImageSegmentationUNet():
                     activation="relu",
                     padding="same",
                     kernel_initializer='he_normal')(inputs)
+        conv = BatchNormalization()(conv)
         conv = Conv2D(n_filters, # Number of filters
                     3,   # Kernel size
                     activation="relu",
                     padding="same",
                     # set 'kernel_initializer' same as above
                     kernel_initializer='he_normal')(conv)
+        conv = BatchNormalization()(conv)
         
         # if dropout_prob > 0 add a dropout layer, with the variable dropout_prob as parameter
         if dropout_prob > 0:
@@ -79,7 +82,6 @@ class ImageSegmentationUNet():
             next_layer = MaxPooling2D(2)(conv)
         else:
             next_layer = conv
-            
         skip_connection = conv
         return next_layer, skip_connection
 
@@ -107,12 +109,14 @@ class ImageSegmentationUNet():
                     activation="relu",
                     padding="same",
                     kernel_initializer='he_normal')(merge)
+        conv = BatchNormalization()(conv)
         conv = Conv2D(n_filters,  # Number of filters
                     3,   # Kernel size
                     activation="relu",
                     padding="same",
                     # set 'kernel_initializer' same as above
                     kernel_initializer='he_normal')(conv)
+        conv = BatchNormalization()(conv)
         return conv
 
     def BuildTrainModel(self, epochs: int, retrain:bool = False):
@@ -181,6 +185,8 @@ class ImageSegmentationUNet():
         if new_model or retrain:
             history = self._model.fit(self._train_dataset, epochs=epochs) # Use kwargs. Otherwise, the epochs will be treated as the labels and will hit error since this is using tf.data.Dataset which includes BOTH X and Y.
             PlotModelHistory("ImageSegmentation UNet", history)
+            plt.plot(history.history["accuracy"])
+            plt.savefig(f"output/ImageSegmentation_UNet_Accuracy_{epochs}_epochs.png")
             if self._path:
                 self._model.save(self._path)
                 print(f"Model saved to {self._path}.")
@@ -216,7 +222,7 @@ class ImageSegmentationUNet():
         else:
             for image, mask in self._train_dataset.take(num):
                 pred_mask = self._model.predict(image)
-                print(f"image: {image}, mask: {mask}, pred_mask: {pred_mask}")
+                print(f"image: {image.shape}, mask: {mask.shape}, pred_mask: {type(pred_mask)} {pred_mask.shape} {numpy.mean(pred_mask)}")
                 images.append([image[0], mask[0], self._create_mask(pred_mask)])
         self._display(images)
 
@@ -227,7 +233,7 @@ class ImageSegmentationUNet():
         image_list_orig = os.listdir(image_path)
         image_list = [image_path+i for i in image_list_orig]
         mask_list = [mask_path+i for i in image_list_orig]
-        print(f"image_list: {len(image_list)}, maks_list: {len(mask_list)}")
+        print(f"image_list: {len(image_list)}, maks_list: {len(mask_list)}") # 1060
         image_filenames = tf.constant(image_list)
         masks_filenames = tf.constant(mask_list)
         dataset = tf.data.Dataset.from_tensor_slices((image_filenames, masks_filenames))
@@ -235,13 +241,16 @@ class ImageSegmentationUNet():
             print(f"image: {image}, mask: {mask}")
         image_ds = dataset.map(self._process_path)
         processed_image_ds = image_ds.map(self._preprocess)
-        print(processed_image_ds.element_spec)
+        print(f"processed_image_ds: {processed_image_ds.element_spec}")
         self._train_dataset = processed_image_ds.cache().shuffle(self._buffer_size).batch(self._batch_size)
+        #self._val_dataset = tf.data.Dataset.from_tensor_slices(((self._val_Q1, self._val_Q2),tf.constant([1]*len(self._val_Q1))))
         N = 2
-        img = imageio.imread(image_list[N])
-        mask = imageio.imread(mask_list[N])
+        img = iio.imread(image_list[N])
+        mask = iio.imread(mask_list[N])
         #mask = np.array([max(mask[i, j]) for i in range(mask.shape[0]) for j in range(mask.shape[1])]).reshape(img.shape[0], img.shape[1])
-        fig, axes = plt.subplots(1, 2, figsize=(14, 10)) # figsize = (width, height)
+        """
+        fig, axes = plt.subplots(1, 2, constrained_layout=True, figsize=(14, 10)) # figsize = (width, height)
+        fig.tight_layout(pad=0.1,rect=[0, 0, 1, 0.98]) #[left, bottom, right, top]
         axes[0].imshow(img)
         axes[0].set_title('Image')
         axes[1].imshow(mask[:, :, 0])
@@ -251,6 +260,7 @@ class ImageSegmentationUNet():
         axes[0].set_axis_off()
         axes[1].set_axis_off()
         plt.show()
+        """
 
     def _process_path(self, image_path, mask_path):
         img = tf.io.read_file(image_path)
@@ -271,7 +281,7 @@ if __name__ == "__main__":
     img_height = 96
     img_width = 128
     num_channels = 3
-    EPOCHS = 50
+    EPOCHS = 30
     BUFFER_SIZE = 500
     BATCH_SIZE = 32
     CLASSES = 23
@@ -285,6 +295,6 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 
-    unet = ImageSegmentationUNet("models/ImageSegmentationUNet.keras", (img_height, img_width, num_channels), FILTERS, CLASSES, BUFFER_SIZE, BATCH_SIZE, 0.01)
+    unet = ImageSegmentationUNet("models/ImageSegmentationUNet.keras", (img_height, img_width, num_channels), FILTERS, CLASSES, BUFFER_SIZE, BATCH_SIZE, 0.001) # This is the default learning_rate value. The model accuracy drops drastically when I used 0.01
     unet.BuildTrainModel(EPOCHS, args.retrain)
     unet. show_predictions(None, None, 10)
