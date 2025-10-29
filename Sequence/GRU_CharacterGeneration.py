@@ -18,9 +18,10 @@ from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.shakespeare_utils import on_epoch_end, sample
 from .GRULanguageModel import GRULanguageModel
 from utils.GPU import InitializeGPU, SetMemoryLimit
+from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
-
+# https://github.com/tensorflow/tensorflow/issues/102598
 @saving.register_keras_serializable()
 def log_perplexity(y_true, y_pred):
     """
@@ -75,6 +76,7 @@ class GRU_CharacterGeneration():
     _temperature: float = None
     _learning_rate: float = None
     _model: GRULanguageModel = None
+    _circuit_breaker = None
     def __init__(self, path:str, model_path:str, rnn_units:int, embedding_dim: int, seq_length: int, batch_size: int, buffer_size:int, learning_rate:float, temperature: float):
         self._path = path
         self._model_path = model_path
@@ -86,6 +88,7 @@ class GRU_CharacterGeneration():
         self._learning_rate = learning_rate
         self._temperature = temperature
         self._PrepareData()
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 5)
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._saved_model = True
@@ -129,8 +132,19 @@ class GRU_CharacterGeneration():
             # self._model = GRULanguageModel(len(self._vocab), self._embedding_dim, self._rnn_units)
             # Compile the model using the parametrized Adam optimizer and the SparseCategoricalCrossentropy funcion
             self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=SparseCategoricalCrossentropy(from_logits=True), metrics=[log_perplexity])
+            self._model.summary()
+            plot_model(
+                self._model,
+                to_file="output/GRU_CharacterGeneration.png",
+                show_shapes=True,
+                show_dtype=True,
+                show_layer_names=True,
+                rankdir="TB",
+                expand_nested=True,
+                show_layer_activations=True)
         if new_model or retrain:
-            history = self._model.fit(self._train_dataset, epochs=epochs, validation_data=self._val_dataset)
+            tensorboard = CreateTensorBoardCallback("GRU_CharacterGeneration") # Create a new folder with current timestamp
+            history = self._model.fit(self._train_dataset, epochs=epochs, validation_data=self._val_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker]) # https://github.com/tensorflow/tensorflow/issues/102598
             PlotModelHistory("GRU Character Generation", history)
         self._model.summary()
         plot_model(

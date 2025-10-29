@@ -1,12 +1,14 @@
 import argparse, numpy, h5py, tensorflow as tf, matplotlib.pyplot as plt
 from pathlib import Path
 from matplotlib.pyplot import imshow
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, Conv2D, ReLU, MaxPool2D, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose, UpSampling2D
 from tensorflow.keras.optimizers import Adam
 from utils.TrainingMetricsPlot import PlotModelHistory
+from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 from utils.GPU import InitializeGPU
 class SignsLanguageDigits():
     """
@@ -18,11 +20,13 @@ class SignsLanguageDigits():
     _Y_test: numpy.array = None
     _model: tf.keras.Sequential = None
     _model_path:str = None
+    _circuit_breaker = None
     _trained: bool = False
     def __init__(self, path):
         InitializeGPU()
         self._model_path = path
         self._prepare_data()
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 5)
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._model = tf.keras.models.load_model(self._model_path)
@@ -116,13 +120,23 @@ class SignsLanguageDigits():
                 metrics=['accuracy']
             )
         self._model.summary()
+        plot_model(
+            self._model,
+            to_file="output/SignsLanguageDigits.png",
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+            rankdir="TB",
+            expand_nested=True,
+            show_layer_activations=True)
 
     def TrainEvaluate(self, rebuild: bool, epochs:int, batch_size:int):
         if self._model:
             if not self._trained or rebuild:
+                tensorboard = CreateTensorBoardCallback("SignsLanguageDigits") # Create a new folder with current timestamp
                 train_dataset = tf.data.Dataset.from_tensor_slices((self._X_train, self._Y_train)).batch(batch_size)
                 validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_test, self._Y_test)).batch(batch_size)
-                history = self._model.fit(train_dataset, epochs=epochs, validation_data=validation_dataset)
+                history = self._model.fit(train_dataset, epochs=epochs, validation_data=validation_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker])
                 PlotModelHistory("Signs Language multi-class classifier", history)
                 self._trained = True
                 if self._model_path:

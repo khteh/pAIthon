@@ -7,6 +7,7 @@ from tensorflow.keras.layers import Lambda, Concatenate, Dense, Input, LSTM, Emb
 from tensorflow.keras.optimizers import Adam
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.ConfusionMatrix import ConfusionMatrix
+from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 class SiameseNN():
     """
     Siamese NN text similarity classifier.
@@ -31,6 +32,7 @@ class SiameseNN():
     _text_vectorizer = None
     _vocab = None
     _model = None
+    _circuit_breaker = None
     _batch_size:int = None
     _learning_rate: float = None
     def __init__(self, path: str, model_path:str, embedding_dim:int, batch_size:int, learning_rate:float):
@@ -40,6 +42,7 @@ class SiameseNN():
         self._learning_rate = learning_rate
         self._embedding_dimension = embedding_dim
         self._PrepareData()
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 5)
         #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
         #    print(f"Using saved model {self._model_path}...")
         #    self._model = tf.keras.models.load_model(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
@@ -83,7 +86,8 @@ class SiameseNN():
             self._model.compile(loss=self._TripletLoss, optimizer = Adam(learning_rate=self._learning_rate))
         if new_model or retrain:
             # Train the model 
-            history = self._model.fit(self._train_dataset, epochs = epochs, validation_data = self._val_dataset)
+            tensorboard = CreateTensorBoardCallback("SiameseNN") # Create a new folder with current timestamp
+            history = self._model.fit(self._train_dataset, epochs = epochs, validation_data = self._val_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker])
             PlotModelHistory("Siamese NN", history)
             #if self._model_path:
             #    self._model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475

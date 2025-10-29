@@ -5,6 +5,7 @@ from keras import saving
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Input, LSTM, Embedding, TextVectorization
 from utils.TrainingMetricsPlot import PlotModelHistory
+from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 
 @saving.register_keras_serializable()
 def masked_loss(y_true, y_pred):
@@ -133,6 +134,7 @@ class LSTM_NameEntityRecognition():
     _tags = None
     _tag_map = None
     model = None
+    _circuit_breaker = None
     _batch_size:int = None
     _learning_rate: float = None
     def __init__(self, path, model_path:str, embedding_dimension: int = 50, learning_rate:float = 0.01, batch_size:int = 64):
@@ -142,6 +144,7 @@ class LSTM_NameEntityRecognition():
         self._learning_rate = learning_rate
         self._embedding_dim = embedding_dimension
         self._PrepareData()
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_masked_accuracy", "max", 5)
         #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
         #    print(f"Using saved model {self._model_path}...") 
         #    self.model = tf.keras.models.load_model(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
@@ -169,10 +172,9 @@ class LSTM_NameEntityRecognition():
                 expand_nested=True,
                 show_layer_activations=True)
         if new_model or retrain:
+            tensorboard = CreateTensorBoardCallback("LSTM_NameEntityRecognition") # Create a new folder with current timestamp
             history = self.model.fit(self._train_dataset.batch(self._batch_size),
-                                        validation_data = self._val_dataset.batch(self._batch_size),
-                                        shuffle=True,
-                                        epochs = epochs)
+                                        validation_data = self._val_dataset.batch(self._batch_size), shuffle=True, epochs = epochs, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker])
             PlotModelHistory("LSTM Name Entity Recognition", history)
             #if self._model_path:
             #    self.model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
@@ -368,6 +370,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     ner = LSTM_NameEntityRecognition("data/NameEntityRecognition", "models/lstm_name_entity_recognition.keras")
-    ner.BuildTrainModel(20, args.retrain)
+    ner.BuildTrainModel(100, args.retrain)
     VerifyPaddingDoesNOTAffectAccuracy(ner)
     ModelValidationAndTest(ner)
