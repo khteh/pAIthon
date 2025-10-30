@@ -179,7 +179,7 @@ class ImageSegmentationUNet():
             self._model.summary()
             plot_model(
                 self._model,
-                to_file="output/ImageSegmentationUNet.png",
+                to_file="output/ImageSegmentationUNetModel.png",
                 show_shapes=True,
                 show_dtype=True,
                 show_layer_names=True,
