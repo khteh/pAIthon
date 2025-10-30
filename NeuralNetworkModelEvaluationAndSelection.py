@@ -98,8 +98,8 @@ class NeuralNetworkModelEvaluationAndSelection():
         plot_train_cv_test(self._X_train, self._Y_train, self._X_cv, self._Y_cv, self._X_test, self._Y_test, title="input vs. target")
         """
         StandardScaler from scikitlearn computes the z-score of your inputs. As a refresher, the z-score is given by the equation:
-            z = (x - 𝜇) / lambda
-        where  𝜇 is the mean of the feature values and lambda is the standard deviation. 
+            z = (x - 𝜇) / sigma
+        where  𝜇 is the mean of the feature values and sigma is the standard deviation. 
         """
 
     def ScaleData(self, data):

@@ -9,6 +9,7 @@ from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from utils.GPU import InitializeGPU, SetMemoryLimit
 from utils.TrainingMetricsPlot import PlotModelHistory
+from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 """
 data too large to keep in git:
 19M	CameraMask
@@ -25,6 +26,8 @@ class ImageSegmentationUNet():
     _val_dataset = None
     _learning_rate: float = None
     _model: Model = None
+    _normalization: Normalization = None
+    _circuit_breaker = None
     def __init__(self, path:str, input_size, n_filters:int, n_classes: int, buffer_size:int, batch_size:int, learning_rate:float):
         self._path = path
         self._input_size = input_size
@@ -33,6 +36,8 @@ class ImageSegmentationUNet():
         self._buffer_size = buffer_size
         self._batch_size = batch_size
         self._learning_rate = learning_rate
+        self._normalization = Normalization(axis=-1)
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 3)
         self._PrepareData()
         if self._path and len(self._path) and Path(self._path).exists() and Path(self._path).is_file():
             print(f"Using saved model {self._path}...")
@@ -130,9 +135,9 @@ class ImageSegmentationUNet():
         print(f"\n=== {self.BuildTrainModel.__name__} ===")
         new_model = not self._model
         if not self._model:
-            normalization = Normalization(axis=-1)
             inputs = Input(self._input_size)
-            inputs = normalization(inputs)
+            #print(f"inputs: {tf.math.reduce_mean(inputs, axis=-1)}")
+            inputs = self._normalization(inputs)
             # Contracting Path (encoding)
             # Add a Encoder with the inputs of the unet_ model and n_filters
             cblock1 = self.Encoder(inputs, self._n_filters)
@@ -182,10 +187,9 @@ class ImageSegmentationUNet():
                 expand_nested=True,
                 show_layer_activations=True)
         if new_model or retrain:
-            history = self._model.fit(self._train_dataset, epochs=epochs) # Use kwargs. Otherwise, the epochs will be treated as the labels and will hit error since this is using tf.data.Dataset which includes BOTH X and Y.
+            tensorboard = CreateTensorBoardCallback("ImageSegmentationUNet") # Create a new folder with current timestamp
+            history = self._model.fit(self._train_dataset, epochs=epochs, validation_data = self._val_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker]) # Use kwargs. Otherwise, the epochs will be treated as the labels and will hit error since this is using tf.data.Dataset which includes BOTH X and Y.
             PlotModelHistory("ImageSegmentation UNet", history)
-            plt.plot(history.history["accuracy"])
-            plt.savefig(f"output/ImageSegmentation_UNet_Accuracy_{epochs}_epochs.png")
             if self._path:
                 self._model.save(self._path)
                 print(f"Model saved to {self._path}.")
@@ -235,19 +239,21 @@ class ImageSegmentationUNet():
         print(f"image_list: {len(image_list)}, maks_list: {len(mask_list)}") # 1060
         image_filenames = tf.constant(image_list)
         masks_filenames = tf.constant(mask_list)
-        dataset = tf.data.Dataset.from_tensor_slices((image_filenames, masks_filenames))
-        for image, mask in dataset.take(1):
-            print(f"image: {image}, mask: {mask}")
-        image_ds = dataset.map(self._process_path)
-        processed_image_ds = image_ds.map(self._preprocess)
-        print(f"processed_image_ds: {processed_image_ds.element_spec}")
-        self._train_dataset = processed_image_ds.cache().shuffle(self._buffer_size).batch(self._batch_size)
-        #self._val_dataset = tf.data.Dataset.from_tensor_slices(((self._val_Q1, self._val_Q2),tf.constant([1]*len(self._val_Q1))))
+        training_dataset = tf.data.Dataset.from_tensor_slices((image_filenames[:-100], masks_filenames[:-100]))
+        validation_dataset = tf.data.Dataset.from_tensor_slices((image_filenames[-100:], masks_filenames[-100:]))
+        training_image_ds = training_dataset.map(self._process_path)
+        processed_training_image_ds = training_image_ds.map(self._preprocess)
+        validation_image_ds = training_dataset.map(self._process_path)
+        processed_validation_image_ds = training_image_ds.map(self._preprocess)
+        print(f"processed_training_image_ds: {processed_training_image_ds.element_spec}, processed_validation_image_ds: {processed_validation_image_ds.element_spec}")
+        self._train_dataset = processed_training_image_ds.cache().shuffle(self._buffer_size).batch(self._batch_size)
+        self._normalization.adapt(self._train_dataset.map(lambda x, y: x))
+        self._val_dataset = processed_training_image_ds.cache().shuffle(self._buffer_size).batch(self._batch_size)
+        #mask = np.array([max(mask[i, j]) for i in range(mask.shape[0]) for j in range(mask.shape[1])]).reshape(img.shape[0], img.shape[1])
+        """
         N = 2
         img = iio.imread(image_list[N])
         mask = iio.imread(mask_list[N])
-        #mask = np.array([max(mask[i, j]) for i in range(mask.shape[0]) for j in range(mask.shape[1])]).reshape(img.shape[0], img.shape[1])
-        """
         fig, axes = plt.subplots(1, 2, constrained_layout=True, figsize=(14, 10)) # figsize = (width, height)
         fig.tight_layout(pad=0.1,rect=[0, 0, 1, 0.98]) #[left, bottom, right, top]
         axes[0].imshow(img)
