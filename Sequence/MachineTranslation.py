@@ -13,7 +13,9 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import load_model, Model
+from utils.TrainingMetricsPlot import PlotModelHistory
 from numpy.random import Generator, PCG64DXSM
+from utils.TermColour import bcolors
 rng = Generator(PCG64DXSM())
 
 @saving.register_keras_serializable(name="_softmax")
@@ -262,7 +264,8 @@ class MachineTranslation():
             s0 = numpy.zeros((self._size, self._n_s))
             c0 = numpy.zeros((self._size, self._n_s))
             outputs = list(self._Yoh.swapaxes(0,1))
-            self._model.fit([self._Xoh, s0, c0], outputs, epochs=epochs, batch_size=self._batch_size)
+            history = self._model.fit([self._Xoh, s0, c0], outputs, epochs=epochs, batch_size=self._batch_size)
+            PlotModelHistory("Machine Translation", history)
             if self._model_path:
                 self._model.save(self._model_path) # https://github.com/tensorflow/tensorflow/issues/100327
                 print(f"Model saved to {self._model_path}.")
@@ -534,12 +537,12 @@ def one_step_attention_test():
     s_prev = rng.uniform(low=0, high=1, size=(m, n_s)).astype(numpy.float32) * 1
     context = mt.one_step_attention(a, s_prev)
     
-    expected_output = numpy.load('data/expected_output_ex1.npy')
+    #expected_output = numpy.load('data/expected_output_ex1.npy')
 
     assert tf.is_tensor(context), "Unexpected type. It should be a Tensor"
     assert tuple(context.shape) == (m, 1, n_s), "Unexpected output shape"
     #assert numpy.all(context.numpy() == expected_output), "Unexpected values in the result"
-    print("\033[92mAll tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 def model_test(retrain:bool):
     print(f"\n=== {model_test.__name__} ===")
@@ -554,7 +557,7 @@ def model_test(retrain:bool):
     mt = MachineTranslation("models/MachineTranslation.keras", "models/machine_translation_weights.h5", "en_SG", m, Tx, Ty, n_a, n_s, 0.005, 0.9, 0.999,0.01, 100) # Increasing epochs does not improve accuracy. Have to examine the training dataset!
     mt.BuildModel()
     mt.ModelStateTest()
-    mt.Train(50, retrain)
+    mt.Train(100, retrain)
     print(f"date.today(): {date.today()}")
     print(f"datetime.now().date: {datetime.now().date()}")
     EXAMPLES = ['3 May 1979', '5 April 09', '21th of August 2016', 'Tue 10 Jul 2007', 'Saturday May 9 2018', 'March 3 2001', 'March 3rd 2001', '1 March 2001', "25th December 2025", "31st October 2021", "3rd November 2022"]

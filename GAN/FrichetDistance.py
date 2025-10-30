@@ -1,4 +1,5 @@
 import numpy, tensorflow as tf, scipy
+from utils.TermColour import bcolors
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
@@ -37,4 +38,4 @@ if __name__ == "__main__":
     distance = frechet_distance(mean1, mean2, covariance1, covariance2)
     print(f"xy frechet_distance: {distance}")
     assert numpy.isclose(distance, 8 - 2 * numpy.sqrt(3.))
-    print("\n\033[92mAll test passed!")
+    print(f"{bcolors.OKGREEN}All test passed!{bcolors.DEFAULT}")

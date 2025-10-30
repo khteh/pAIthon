@@ -3,12 +3,13 @@ import numpy, math, tensorflow as tf
 from pathlib import Path
 from tensorflow.image import ResizeMethod
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose, UpSampling2D
+from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Dropout, Flatten, Dense, GroupNormalization, Reshape, Conv2DTranspose, UpSampling2D
 from scipy.stats import truncnorm
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.Image import ShowImage, CreateGIF, make_image_grid
 from utils.GPU import InitializeGPU, SetMemoryLimit
 from utils.TrainingMetricsPlot import PlotGANLossHistory
+from utils.TermColour import bcolors
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 # https://jonathan-hui.medium.com/gan-how-to-measure-gan-performance-64b988c47732
@@ -111,7 +112,16 @@ class AdaIN(tf.Module):
         self._channels = channels
         self._w_dim = w_dim
         # Normalize the input per-dimension
-        self._instance_norm = BatchNormalization(axis=1) # axis 'channels'
+        # self._instance_norm = BatchNormalization(axis=1) # axis 'channels'
+        # Option 1: Using GroupNormalization to mimic InstanceNormalization
+        # For InstanceNormalization, groups are typically set to the number of channels.
+        self._instance_norm = GroupNormalization(
+            groups=self._channels, # Set groups to the number of channels for Instance Normalization effect
+            axis=1, # channels-first format
+            epsilon=1e-5,
+            center=True,
+            scale=True,
+        )
         # You want to map w to a set of style weights per channel.
         # Replace the Nones with the correct dimensions - keep in mind that 
         # both linear maps transform a w vector into style weights 
@@ -130,7 +140,7 @@ class AdaIN(tf.Module):
         normalized_image = self._instance_norm(image)
         style_scale = self.style_scale_transform(w)[:, :, None, None]
         style_shift = self.style_shift_transform(w)[:, :, None, None]
-        print(f"image: {tf.math.reduce_mean(image)}, normalized_image: {tf.math.reduce_mean(normalized_image)}, style_scale: {tf.math.reduce_mean(style_scale)}, style_shift: {tf.math.reduce_mean(style_shift)}")
+        #print(f"image: {tf.math.reduce_mean(image)}, normalized_image: {tf.math.reduce_mean(normalized_image)}, style_scale: {tf.math.reduce_mean(style_scale)}, style_shift: {tf.math.reduce_mean(style_shift)}")
         # Calculate the transformed image
         return style_scale * normalized_image + style_shift
     
@@ -416,7 +426,7 @@ def MicroStyleGANGeneratorTests():
         get_truncated_noise(test_samples, z_dim, truncation), 
         return_intermediate=True)
     assert tf.abs(test_result - test_small).mean() < 0.001
-    print("\n\033[92mAll test passed!")
+    print(f"\n{bcolors.OKGREEN}All test passed!{bcolors.DEFAULT}")
 
 def MicroStyleGANGeneratorBlockTests():
     print(f"\n=== {MicroStyleGANGeneratorBlockTests.__name__} ===")
@@ -436,7 +446,7 @@ def MicroStyleGANGeneratorBlockTests():
     assert -tf.math.reduce_min(test_x) / tf.math.reduce_max(test_x) < 0.4
     test_x = stylegan_generator_block.adain(test_x, test_w) 
     foo = stylegan_generator_block(tf.ones((10, 128, 4, 4)), tf.ones((10, 256)))
-    print("\n\033[92mAll test passed!")
+    print(f"\n{bcolors.OKGREEN}All test passed!{bcolors.DEFAULT}")
 
 def AdaINTests():
     # https://github.com/tensorflow/tensorflow/issues/102870
@@ -455,25 +465,38 @@ def AdaINTests():
     image_channels = 2
     image_size = 3
     n_test = 1
-    adain = AdaIN(image_channels, w_channels)
-
-    adain.style_scale_transform.set_weights(tf.ones_like(adain.style_scale_transform.weights) / 4)
-    # The bias (and kernel) attributes of a Dense layer are only created when the layer is built, which happens during the first call to the layer with input data or when the model containing the layer is compiled and trained. 
-    # If you try to access layer.bias before this, it won't exist.
-    #adain.style_scale_transform.use_bias(tf.zeros_like(adain.style_scale_transform.bias))
-    adain.style_shift_transform.set_weights(tf.ones_like(adain.style_shift_transform.weights) / 5)
-    #adain.style_shift_transform.use_bias(tf.zeros_like(adain.style_shift_transform.bias))
     test_input = numpy.ones((n_test, image_channels, image_size, image_size))
     test_input[:, :, 0] = 0
     test_w = tf.ones((n_test, w_channels))
+
+    adain = AdaIN(image_channels, w_channels)
+    adain.style_scale_transform(test_w)
+    adain.style_shift_transform(test_w)
+    style_scale_weights = adain.style_scale_transform.get_weights()
+    style_shift_weights = adain.style_shift_transform.get_weights()
+    style_scale_weights_kernel = numpy.ones_like(style_scale_weights[0]) / 4
+    style_shift_weights_kernel = numpy.ones_like(style_shift_weights[0]) / 5
+    style_scale_bias = numpy.zeros_like(style_scale_weights[1])
+    style_shift_bias = numpy.zeros_like(style_shift_weights[1])
+    adain.style_scale_transform.set_weights([style_scale_weights_kernel, style_scale_bias])
+    adain.style_shift_transform.set_weights([style_shift_weights_kernel, style_shift_bias])
+    # The bias (and kernel) attributes of a Dense layer are only created when the layer is built, which happens during the first call to the layer with input data or when the model containing the layer is compiled and trained.
+    # If you try to access layer.bias before this, it won't exist.
+    style_scale_weights = adain.style_scale_transform.get_weights()
+    style_shift_weights = adain.style_shift_transform.get_weights()
+    assert (style_scale_weights[0] == 1 / 4).all()
+    assert (style_shift_weights[0] == 1 / 5).all()
+    assert (style_scale_weights[1] == 0).all()
+    assert (style_shift_weights[1] == 0).all()
+
     test_output = adain(test_input, test_w)
     print(f"test_input: {test_input.shape} {test_input}")
     print(f"test_output: {test_output.shape} {test_output}")
-    print(tf.math.abs(test_output[0, 0, 0, 0] - 3 / 5 + tf.math.sqrt(9 / 8)))
-    print(tf.math.abs(test_output[0, 0, 1, 0] - 3 / 5 - tf.math.sqrt(9 / 32)))
+    # image: -0.0047212447971105576, normalized_image: -1.4834933281804297e-10, style_scale: -0.07495932281017303, style_shift: 0.034594107419252396
+    # image: 0.6666666666666666, normalized_image: 0.0, style_scale: 0.75, style_shift: 0.6000000238418579
     assert(tf.math.abs(test_output[0, 0, 0, 0] - 3 / 5 + tf.math.sqrt(9 / 8)) < 1e-4)
     assert(tf.math.abs(test_output[0, 0, 1, 0] - 3 / 5 - tf.math.sqrt(9 / 32)) < 1e-4)
-    print("\n\033[92mAll test passed!")
+    print(f"\n{bcolors.OKGREEN}All test passed!{bcolors.DEFAULT}")
 
 def InjectNoiseTests():
     print(f"\n=== {InjectNoiseTests.__name__} ===")
@@ -519,7 +542,7 @@ def InjectNoiseTests():
     weights = inject_noise.SetNoiseWeights(tf.zeros_like(weights))
     assert tf.math.abs((tf.math.reduce_mean(inject_noise(fake_images) - fake_images))) < 1e-4
     assert len(weights.shape) == 4
-    print("\n\033[92mAll test passed!")
+    print(f"\n{bcolors.OKGREEN}All test passed!{bcolors.DEFAULT}")
 
 def NoiseMappingLayersTests():
     print(f"\n=== {NoiseMappingLayersTests.__name__} ===")
@@ -540,7 +563,7 @@ def truncated_noise_tests():
     assert simple_noise.max() > 0.199 and simple_noise.max() < 2
     assert simple_noise.min() < -0.199 and simple_noise.min() > -0.2
     assert simple_noise.std() > 0.113 and simple_noise.std() < 0.117
-    print("\n\033[92mAll test passed!")
+    print(f"\n{bcolors.OKGREEN}All test passed!{bcolors.DEFAULT}")
 
 if __name__ == "__main__":
     InitializeGPU()
@@ -548,7 +571,7 @@ if __name__ == "__main__":
     truncated_noise_tests()
     NoiseMappingLayersTests()
     InjectNoiseTests()
-    #AdaINTests()
+    AdaINTests()
     MicroStyleGANGeneratorBlockTests()
-    #MicroStyleGANGeneratorTests()
-    StyleGANTests()
+    #MicroStyleGANGeneratorTests() OOM
+    #StyleGANTests() OOM

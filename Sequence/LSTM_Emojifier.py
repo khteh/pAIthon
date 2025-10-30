@@ -1,11 +1,13 @@
-import numpy, spacy, tensorflow as tf, csv, emoji
+import argparse, numpy, spacy, tensorflow as tf, csv, emoji
+from pathlib import Path
+from utils.TrainingMetricsPlot import PlotModelHistory
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Input, Dropout, LSTM, Activation, Embedding
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.preprocessing import sequence
-from tensorflow.keras.initializers import glorot_uniform
-
+from utils.TermColour import bcolors
+from utils.GPU import InitializeGPU, SetMemoryLimit
 class LSTMEmojifier():
     """
     LSTM model that takes word sequences as input! This model will be able to account for word ordering.
@@ -28,6 +30,7 @@ class LSTMEmojifier():
     """
     _nlp = None
     _path:str = None
+    _model_path:str = None
     _words = None
     _word_to_vec_map = None
     _words_to_index = None
@@ -44,19 +47,25 @@ class LSTMEmojifier():
     _X_test_indices = None
     _Y_test_oh = None
     _learning_rate: float = None
+    _trained: bool = False
     _emoji_dictionary = {"0": "\u2764\uFE0F",    # :heart: prints a black instead of red heart depending on the font
                         "1": ":baseball:",
                         "2": ":smile:",
                         "3": ":disappointed:",
                         "4": ":fork_and_knife:"}
-
-    def __init__(self, path: str = None, train:str = None, test:str = None, word_to_vec_map = None, word_to_index = None, max_len:int = None, learning_rate:float = 0.01):
+    def __init__(self, path: str = None, model_path:str = None, train:str = None, test:str = None, word_to_vec_map = None, word_to_index = None, max_len:int = None, learning_rate:float = 0.01):
         self._path = path
+        self._model_path = model_path
         self._max_len = max_len
         self._words_to_index = word_to_index
         self._learning_rate = learning_rate
         # $ pp spacy download en_core_web_md
         self._nlp = spacy.load("en_core_web_md")
+        if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
+            print(f"Using saved model {self._model_path}...")
+            self._saved_model = True
+            self._model = tf.keras.models.load_model(self._model_path) # https://github.com/tensorflow/tensorflow/issues/102475
+            self._trained = True
         if word_to_vec_map:
             self._word_to_vec_map = word_to_vec_map
         elif path:
@@ -66,18 +75,7 @@ class LSTMEmojifier():
             self._read_glove_vecs()
         else:
             raise RuntimeError("Please provide a word_to vec map or path to load from!")
-        if train:
-            self._X_train, self._Y_train = self._read_csv(train)
-            self._max_len = len(max(self._X_train, key=lambda x: len(x.split())).split())
-            print(f"X_train: {self._X_train.shape}, Y_train: {self._Y_train.shape}")
-            self._classes = len(numpy.unique(self._Y_train)) # Unique number of emojis
-            self._X_train_indices = self.sentences_to_indices(self._X_train)
-            print(f"{self._classes} classes")
-            self._Y_train_oh = self._convert_to_one_hot(self._Y_train)
-        if test:
-            self._X_test, self._Y_test = self._read_csv(test)
-            self._X_test_indices = self.sentences_to_indices(self._X_test)
-            self._Y_test_oh = self._convert_to_one_hot(self._Y_test)
+        self._PrepareData(train, test)
 
     def sentences_to_indices(self, X):
         """
@@ -148,7 +146,7 @@ class LSTMEmojifier():
         embedding_layer.set_weights([emb_matrix])
         return embedding_layer
     
-    def BuildModel(self):
+    def BuildModel(self, retrain:bool = False):
         """
         Function creating the Emojify-v2 model's graph.
         
@@ -160,57 +158,92 @@ class LSTMEmojifier():
         Returns:
         model -- a model instance in Keras
         """
-        # Define sentence_indices as the input of the graph.
-        # It should be of shape input_shape and dtype 'int32' (as it contains indices, which are integers).
-        sentence_indices = Input(shape=(self._max_len,), dtype='int32')
-        
-        # Create the embedding layer pretrained with GloVe Vectors (≈1 line)
-        embedding_layer = self.pretrained_embedding_layer()
-        
-        # Propagate sentence_indices through your embedding layer
-        # (See additional hints in the instructions).
-        embeddings = embedding_layer(sentence_indices)
-        
-        # Propagate the embeddings through an LSTM layer with 128-dimensional hidden state
-        # The returned output should be a batch of sequences.
-        X = LSTM(128, return_sequences=True)(embeddings)
-        # Add dropout with a probability of 0.5
-        X = Dropout(0.5)(X)
-        # Propagate X trough another LSTM layer with 128-dimensional hidden state
-        # The returned output should be a single hidden state, not a batch of sequences.
-        X = LSTM(128, return_sequences=False)(X)
-        # Add dropout with a probability of 0.5
-        X = Dropout(0.5)(X)
-        # Propagate X through a Dense layer with 5 units
-        X = Dense(5)(X)
-        # Add a softmax activation
-        #X = Activation('softmax')(X)
-        
-        # Create Model instance which converts sentence_indices into X.
-        self._model = Model(inputs=sentence_indices, outputs=X)
-        self._model.compile(
-                loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
-                optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-                metrics=['accuracy']
-            )
-        self._model.summary()
+        if not self._model or retrain:
+            self._trained = False
+            # Define sentence_indices as the input of the graph.
+            # It should be of shape input_shape and dtype 'int32' (as it contains indices, which are integers).
+            sentence_indices = Input(shape=(self._max_len,), dtype='int32')
+            
+            # Create the embedding layer pretrained with GloVe Vectors (≈1 line)
+            embedding_layer = self.pretrained_embedding_layer()
+            
+            # Propagate sentence_indices through your embedding layer
+            # (See additional hints in the instructions).
+            embeddings = embedding_layer(sentence_indices)
+            
+            # Propagate the embeddings through an LSTM layer with 128-dimensional hidden state
+            # The returned output should be a batch of sequences.
+            X = LSTM(128, return_sequences=True)(embeddings)
+            # Add dropout with a probability of 0.5
+            X = Dropout(0.5)(X)
+            # Propagate X trough another LSTM layer with 128-dimensional hidden state
+            # The returned output should be a single hidden state, not a batch of sequences.
+            X = LSTM(128, return_sequences=False)(X)
+            # Add dropout with a probability of 0.5
+            X = Dropout(0.5)(X)
+            # Propagate X through a Dense layer with 5 units
+            X = Dense(5)(X)
+            # Add a softmax activation
+            #X = Activation('softmax')(X)
+            
+            # Create Model instance which converts sentence_indices into X.
+            self._model = Model(inputs=sentence_indices, outputs=X)
+            self._model.compile(
+                    loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
+                    optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                    metrics=['accuracy']
+                )
+            self._model.summary()
+            plot_model(
+                self._model,
+                to_file="output/LSTM_Emojifier.png",
+                show_shapes=True,
+                show_dtype=True,
+                show_layer_names=True,
+                rankdir="TB",
+                expand_nested=True,
+                show_layer_activations=True)
+    def Train(self, epochs: int = 50, batch_size:int = 32, retrain:bool = False):
+        if not self._trained or retrain:
+            if self._model:
+                history = self._model.fit(self._X_train_indices, self._Y_train_oh, epochs = epochs, batch_size = batch_size, shuffle=True)
+                PlotModelHistory("LSTM Emojifier", history)
+                if self._model_path:
+                    self._model.save(self._model_path) #https://github.com/tensorflow/tensorflow/issues/102475
+                    print(f"Model saved to {self._model_path}.")
+            else:
+                print(f"{bcolors.FAIL}Please build the model first by calling BuildModel()!{bcolors.DEFAULT}")
 
-    def Train(self, epochs: int = 50, batch_size:int = 32):
-        self._model.fit(self._X_train_indices, self._Y_train_oh, epochs = epochs, batch_size = batch_size, shuffle=True)
     def Evaluate(self):
         loss, acc = self._model.evaluate(self._X_test_indices, self._Y_test_oh)
         print(f"Test accuracy = {acc}, loss: {loss}")
         # This code allows you to see the mislabelled examples
-        print(f"Mislabelled emojis:")
+        print(f"{bcolors.WARNING}Mislabelled emojis:{bcolors.DEFAULT}")
         pred = self._model.predict(self._X_test_indices)
         for i in range(len(self._X_test)):
             num = numpy.argmax(pred[i])
             if(num != self._Y_test[i]):
-                print('Expected emoji:'+ self._label_to_emoji(self._Y_test[i]) + ' prediction: '+ self._X_test[i] + self._label_to_emoji(num).strip())
+                print(f"Expected emoji: {self._label_to_emoji(self._Y_test[i])} Prediction: {self._X_test[i] + self._label_to_emoji(num).strip()}")
+
     def Predict(self, input:str):
         x_test = numpy.array([input])
         X_test_indices = self.sentences_to_indices(x_test)
-        print(x_test[0] +' '+  self._label_to_emoji(numpy.argmax(self._model.predict(X_test_indices))))
+        print(f"{x_test[0]}:  {self._label_to_emoji(numpy.argmax(self._model.predict(X_test_indices)))}")
+
+    def _PrepareData(self, train:str = None, test:str = None):
+        print(f"\n=== {self._PrepareData.__name__} ===")
+        if train:
+            self._X_train, self._Y_train = self._read_csv(train)
+            self._max_len = len(max(self._X_train, key=lambda x: len(x.split())).split())
+            print(f"X_train: {self._X_train.shape}, Y_train: {self._Y_train.shape}")
+            self._classes = len(numpy.unique(self._Y_train)) # Unique number of emojis
+            self._X_train_indices = self.sentences_to_indices(self._X_train)
+            print(f"{self._classes} classes")
+            self._Y_train_oh = self._convert_to_one_hot(self._Y_train)
+        if test:
+            self._X_test, self._Y_test = self._read_csv(test)
+            self._X_test_indices = self.sentences_to_indices(self._X_test)
+            self._Y_test_oh = self._convert_to_one_hot(self._Y_test)
 
     def _convert_to_one_hot(self, data):
         return numpy.eye(self._classes)[data.reshape(-1)]
@@ -249,7 +282,8 @@ class LSTMEmojifier():
         Y = numpy.asarray(emoji, dtype=int)
         return X, Y
 
-def sentences_to_indices_test():
+def sentences_to_indices_test(retrain:bool):
+    print(f"\n=== {sentences_to_indices_test.__name__} ===")
     # Create a word_to_index dictionary
     word_to_index = {}
     for idx, val in enumerate(["i", "like", "learning", "deep", "machine", "love", "smile", '´0.=']):
@@ -258,7 +292,7 @@ def sentences_to_indices_test():
     max_len = 4
     # def __init__(self, path: str = None, train:str = None, test:str = None, word_to_vec_map = None, word_to_index = None, max_len:int = None, learning_rate:float = 0.01):
     # https://nlp.stanford.edu/projects/glove/
-    nlp = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', None, None, None, word_to_index, max_len)
+    nlp = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', "models/LSTM_Emojifier.keras", None, None, None, word_to_index, max_len)
        
     sentences = numpy.array(["I like deep learning", "deep ´0.= love machine", "machine learning smile", "$"]);
     indexes = nlp.sentences_to_indices(sentences)
@@ -271,9 +305,10 @@ def sentences_to_indices_test():
     #                             [5, 3, 7, 0],
     #                             [0, 0, 0, 0]]), "Wrong values. Debug with the given examples"
     
-    print("\033[92mAll tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
-def pretrained_embedding_layer_test():
+def pretrained_embedding_layer_test(retrain:bool):
+    print(f"\n=== {pretrained_embedding_layer_test.__name__} ===")
     # Create a controlled word to vec map
     word_to_vec_map = {'a': [3, 3], 'synonym_of_a': [3, 3], 'a_nw': [2, 4], 'a_s': [3, 2], 'a_n': [3, 4], 
                        'c': [-2, 1], 'c_n': [-2, 2],'c_ne': [-1, 2], 'c_e': [-1, 1], 'c_se': [-1, 0], 
@@ -289,7 +324,7 @@ def pretrained_embedding_layer_test():
         word_to_index[val] = idx;
     # def __init__(self, path: str = None, train:str = None, test:str = None, word_to_vec_map = None, word_to_index = None, max_len:int = None, learning_rate:float = 0.01):
     # https://nlp.stanford.edu/projects/glove/
-    nlp = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', None, None, word_to_vec_map, word_to_index)
+    nlp = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', "models/LSTM_Emojifier.keras", None, None, word_to_vec_map, word_to_index)
     embedding_layer = nlp.pretrained_embedding_layer()
     
     assert type(embedding_layer) == Embedding, "Wrong type"
@@ -299,18 +334,29 @@ def pretrained_embedding_layer_test():
                        [[[ 3, 3], [ 3, 3], [ 2, 4], [ 3, 2], [ 3, 4],
                        [-2, 1], [-2, 2], [-1, 2], [-1, 1], [-1, 0],
                        [-2, 0], [-3, 0], [-3, 1], [-3, 2], [ 0, 0]]]), "Wrong vaulues"
-    print("\033[92mAll tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
-def model_tests():
+def model_tests(retrain:bool):
+    print(f"\n=== {model_tests.__name__} ===")
     # def __init__(self, path: str = None, train:str = None, test:str = None, word_to_vec_map = None, word_to_index = None, max_len:int = None, learning_rate:float = 0.01):
     # https://nlp.stanford.edu/projects/glove/
-    model = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', 'data/Emojifier/train_emoji.csv', 'data/Emojifier/tesss.csv')
+    model = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', "models/LSTM_Emojifier.keras", 'data/Emojifier/train_emoji.csv', 'data/Emojifier/tesss.csv')
     model.BuildModel()
-    model.Train(50, 32)
+    model.Train(100, 32, retrain)
     model.Evaluate()
-    model.Predict("I can't play")
+    sentences = ["The meal was great!", "I had a tough day!", "The job looks interesting!", "I had a great trip!", "I learnt something new today!"]
+    for i in sentences:
+        model.Predict(i)
 
 if __name__ == "__main__":
-    sentences_to_indices_test()
-    pretrained_embedding_layer_test()
-    model_tests()
+    """
+    https://docs.python.org/3/library/argparse.html
+    'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
+    """
+    parser = argparse.ArgumentParser(description='LSTM Emojifier')
+    parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
+    args = parser.parse_args()
+    InitializeGPU()
+    sentences_to_indices_test(args.retrain)
+    pretrained_embedding_layer_test(args.retrain)
+    model_tests(args.retrain)

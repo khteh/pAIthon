@@ -2,6 +2,7 @@ import numpy, spacy, csv, emoji
 from tqdm import tqdm
 from Softmax import softmax
 from utils.ConfusionMatrix import ConfusionMatrix
+from utils.TermColour import bcolors
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
@@ -187,9 +188,8 @@ class Emojifier():
         return emoji.emojize(self._emoji_dictionary[str(label)], language='alias')
     
     def print_predictions(self, X, pred):
-        print()
         for i in range(X.shape[0]):
-            print(X[i], self._label_to_emoji(int(pred[i,0])))
+            print(f"{X[i]}: {self._label_to_emoji(int(pred[i,0]))}")
     
     def _convert_to_one_hot(self, data, C):
         return numpy.eye(C)[data.reshape(-1)]
@@ -219,6 +219,7 @@ class Emojifier():
                 self._word_to_vec_map[curr_word] = numpy.array(line[1:], dtype=numpy.float64)
 
 def sentence_to_avg_tests():
+    print(f"\n=== {sentence_to_avg_tests.__name__} ===")
     # https://nlp.stanford.edu/projects/glove/
     nlp = Emojifier('/usr/src/GloVe/glove.6B.300d.txt')
     avg = nlp.sentence_to_avg("Morrocan couscous is my favorite dish")
@@ -241,9 +242,10 @@ def sentence_to_avg_tests():
     assert numpy.array_equal(avg, [0, 0]), "Average of no words must give an array of zeros"
     avg = nlp.sentence_to_avg("c_se foo a a_nw c_w a_s deeplearning c_nw")
     assert numpy.allclose(avg, [0.1666667, 2.0]), "Debug the last example"
-    print("\033[92mAll tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 def model_tests():
+    print(f"\n=== {model_tests.__name__} ===")
     # Create a controlled word to vec map
     word_to_vec_map = {'a': [3, 3], 'synonym_of_a': [3, 3], 'a_nw': [2, 4], 'a_s': [3, 2], 'a_n': [3, 4], 
                        'c': [-2, 1], 'c_n': [-2, 2],'c_ne': [-1, 2], 'c_e': [-1, 1], 'c_se': [-1, 0], 
@@ -274,19 +276,20 @@ def model_tests():
     nlp = Emojifier('/usr/src/GloVe/glove.6B.300d.txt')
     pred, W, b = nlp.BuildModel(X_train, Y_train)
     #print(f"Y_train prediction: {pred}")
-    print("Training set:")
+    print("\nTraining set:")
     pred_train = nlp.Predict(X_train, Y_train, W, b)
-    print('Test set:')
+    print('\nTest set:')
     pred_test = nlp.Predict(X_test, Y_test, W, b)
+    print(f"Y_test: {Y_test.shape}")
+    ConfusionMatrix(Y_test.reshape(1,56), pred_test.reshape(1,56), "Emojifier") #assert truths.shape[0] == 1
 
+    print("\nPredict custom sentences:")
     X_my_sentences = numpy.array(["i treasure you", "i love you", "funny lol", "lets play with a ball", "food is ready", "today is not good"])
     Y_my_labels = numpy.array([[0], [0], [2], [1], [4],[3]])
 
     pred = nlp.Predict(X_my_sentences, Y_my_labels , W, b)
     nlp.print_predictions(X_my_sentences, pred)
-    print(f"Y_test: {Y_test.shape}")
-    ConfusionMatrix(Y_test.reshape(1,56), pred_test.reshape(1,56), "Emojifier") #assert truths.shape[0] == 1
-    print("\033[92mAll tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 if __name__ == "__main__":
     sentence_to_avg_tests()

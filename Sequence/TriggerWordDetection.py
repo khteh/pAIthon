@@ -10,6 +10,7 @@ from tensorflow.keras.layers import Dense, Activation, Dropout, Input, Masking, 
 from tensorflow.keras.layers import GRU, Bidirectional, BatchNormalization, Reshape
 from tensorflow.keras.optimizers import Adam
 from utils.TrainingMetricsPlot import PlotModelHistory
+from utils.TermColour import bcolors
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
@@ -442,7 +443,7 @@ def IsOverlapping_test():
     assert trigger.IsOverlapping((800, 1100), [(300, 600), (900, 1000), (1600, 1800)]) == True, "New segment contains the second segment"
     assert not trigger.IsOverlapping((950, 1430), [(2000, 2550), (260, 949)])
     assert trigger.IsOverlapping((2305, 2950), [(824, 1532), (1900, 2305), (3424, 3656)])
-    print("\033[92m All tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 def insert_audio_clip_test():
     print(f"=== {insert_audio_clip_test.__name__} ===")
@@ -462,7 +463,7 @@ def insert_audio_clip_test():
     # Not possible to insert clip into background
     audio_clip, segment_time = trigger.InsertAudioClip(0, 0, [(0, 9999)])
     assert segment_time == (10000, 10000), "Segment must match the out by max-retry mark"
-    print("\033[92m All tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 def insert_ones_test():
     print(f"=== {insert_ones_test.__name__} ===")
@@ -500,7 +501,7 @@ def insert_ones_test():
     arr1 = trigger.insert_ones(numpy.zeros((1, Ty)), 9980)
     assert numpy.sum(arr1) == 2, f"Expected sum of 2, but got {numpy.sum(arr1)}"
 
-    print("\033[92m All tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 def create_training_example_test():
     print(f"=== {create_training_example_test.__name__} ===")
@@ -523,7 +524,7 @@ def create_training_example_test():
     assert numpy.sum(y) % 50 == 0, "Sum of activate marks must be a multiple of 50"
     #assert numpy.isclose(numpy.linalg.norm(x), 39745552.52075), f"Spectrogram is wrong. Check the parameters passed to the insert_audio_clip function. Got {numpy.linalg.norm(x)}"
 
-    print("\033[92m All tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 def model_tests():
     print(f"=== {model_tests.__name__} ===")

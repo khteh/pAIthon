@@ -16,6 +16,7 @@ from tensorflow.keras.utils import get_file
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.shakespeare_utils import on_epoch_end, sample
+from utils.TermColour import bcolors
 from .GRULanguageModel import GRULanguageModel
 from utils.GPU import InitializeGPU, SetMemoryLimit
 from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
@@ -419,7 +420,7 @@ class GRU_CharacterGeneration():
         used_voc = set(text_l)
         assert used_voc.issubset(self._vocab), "Something went wrong. Only characters in vocab can be produced." \
         f" Unexpected characters: {used_voc.difference(self._vocab)}"
-        print("\n\033[92mAll test passed!")
+        print(f"\n{bcolors.OKGREEN}All test passed!{bcolors.DEFAULT}")
     
 if __name__ == "__main__":
     """

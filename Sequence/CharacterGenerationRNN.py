@@ -9,6 +9,7 @@ from tensorflow.keras.layers import LSTM
 from tensorflow.keras.utils import get_file
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from utils.shakespeare_utils import on_epoch_end, sample
+from utils.TermColour import bcolors
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 """
@@ -395,6 +396,7 @@ class CharacterGenerationRNN():
 
 # Test with a max value of 10
 def clip_test(mValue):
+    print(f"\n=== {clip_test.__name__} ===")
     chargen = CharacterGenerationRNN("data/dinos.txt", 0.01, args.dinasaur, False)
     print(f"\nGradients for mValue={mValue}")
     dWax = rng.standard_normal((5, 3)) * 10
@@ -420,9 +422,10 @@ def clip_test(mValue):
         assert maxk <= abs(mValue), f"Problem with {grad}.Set a_max to mValue in the numpy.clip call"
         index_not_clipped = numpy.logical_and(valuei <= mValue, valuei >= -mValue)
         assert numpy.all(valuei[index_not_clipped] == valuef[index_not_clipped]), f" Problem with {grad}. Some values that should not have changed, changed during the clipping process."
-    print("\033[92mAll tests passed!\x1b[0m")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 def sample_test():
+    print(f"\n=== {sample_test.__name__} ===")
     chargen = CharacterGenerationRNN("data/dinos.txt", 0.01, args.dinasaur, False)
     _, n_a = 20, 100
     Wax, Waa, Wya = rng.standard_normal((n_a, chargen.VocabSize())), rng.standard_normal((n_a, n_a)), rng.standard_normal((chargen.VocabSize(), n_a))
@@ -437,9 +440,10 @@ def sample_test():
     assert indices[-1] == chargen.char_to_ix('\n'), "All samples must end with \\n"
     assert min(indices) >= 0 and max(indices) < chargen.IndexSize(), f"Sampled indexes must be between 0 and len(char_to_ix)={chargen.IndexSize()}"
     #assert numpy.allclose(indices, [23, 16, 26, 26, 24, 3, 21, 1, 7, 24, 15, 3, 25, 20, 6, 13, 10, 8, 20, 12, 2, 0]), "Wrong values"
-    print("\033[92mAll tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 def optimize_test():
+    print(f"\n=== {optimize_test.__name__} ===")
     chargen = CharacterGenerationRNN("data/dinos.txt", 0.01, args.dinasaur, False)
     vocab_size, n_a = 27, 100
     a_prev = rng.standard_normal((n_a, 1))
@@ -465,7 +469,7 @@ def optimize_test():
     assert numpy.allclose(gradients['dWaa'][1, 2], 0.1947093), "Unexpected gradients. Check the rnn_backward call"
     assert numpy.allclose(gradients['dWya'][1, 2], -0.007773876), "Unexpected gradients. Check the rnn_backward call"
     assert not numpy.allclose(parameters['Wya'], old_parameters['Wya']), "parameters were not updated"   
-    print("\033[92mAll tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 if __name__ == "__main__":
     """
@@ -482,7 +486,7 @@ if __name__ == "__main__":
         clip_test(5)
         sample_test()
         parameters, last_name = chargen.BuildTrainDinasaurModel(22001, verbose = True)
-        print(f"Generated dinasaur name: {last_name}")
+        print(f"\n{bcolors.OKGREEN}Generated dinasaur name: {last_name}{bcolors.DEFAULT}")
     elif args.shakespeare:
         user_input = input("Write the beginning of your poem, the Shakespeare machine will complete it. Your input is: ")
         chargen = CharacterGenerationRNN("data/shakespeare.txt", 0.01, False, args.shakespeare, user_input, 40, 3)

@@ -1,7 +1,5 @@
-import numpy, matplotlib.pyplot as plt, scipy.io, math, sklearn, sklearn.datasets
-#from opt_utils_v1a import load_params_and_grads, initialize_parameters, forward_propagation, backward_propagation
-#from opt_utils_v1a import compute_cost, predict, predict_dec, plot_decision_boundary, load_dataset
-from copy import deepcopy
+import numpy, matplotlib.pyplot as plt, scipy.io, math
+from utils.TermColour import bcolors
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
@@ -151,8 +149,9 @@ def random_mini_batches_tests():
     if ( m % mini_batch_size > 0):
         assert mini_batches[n_batches - 1][0].shape == (nx, m % mini_batch_size), f"Wrong shape in the last minibatch. {mini_batches[n_batches - 1][0].shape} != {(nx, m % mini_batch_size)}"
 
-    assert numpy.allclose(mini_batches[0][0][0][0:3], [294912,  86016, 454656]), "Wrong values. Check the indexes used to form the mini batches"
-    assert numpy.allclose(mini_batches[-1][0][-1][0:3], [1425407, 1769471, 897023]), "Wrong values. Check the indexes used to form the mini batches"
+    # Notebook: Optimization_methods.ipynb
+    #assert numpy.allclose(mini_batches[0][0][0][0:3], [294912,  86016, 454656]), "Wrong values. Check the indexes used to form the mini batches" This needs setting numpy.random.seed(1)
+    #assert numpy.allclose(mini_batches[-1][0][-1][0:3], [1425407, 1769471, 897023]), "Wrong values. Check the indexes used to form the mini batches" This needs setting numpy.random.seed(1)
 
     mini_batch_size = 64
     X = rng.standard_normal((12288, 148))
@@ -166,7 +165,7 @@ def random_mini_batches_tests():
     print ("shape of the 2nd mini_batch_Y: " + str(mini_batches[1][1].shape)) 
     print ("shape of the 3rd mini_batch_Y: " + str(mini_batches[2][1].shape))
     print ("mini batch sanity check: " + str(mini_batches[0][0][0][0:3]))
-    print("\033[92mAll tests passed!")
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 def update_parameters_with_momentum_tests():
     print(f"\n=== {update_parameters_with_momentum_tests.__name__} ===")

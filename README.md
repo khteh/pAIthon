@@ -20,7 +20,7 @@ Python AI, ML, DL and NLP exploration playground.
 - Architecture:
   ![Machine Translation](images/MachineTranslation.png?raw=true "Machine Translation")
 - Attention Map:
-  ![Attention Map](images/AttentionMap.png?raw=true "Attention Map")
+  ![Attention Map](images/MachineTranslationAttentionMap.png?raw=true "Attention Map")
 
 ## LSTM Name Entity Recognition
 
@@ -43,6 +43,19 @@ Python AI, ML, DL and NLP exploration playground.
     ’t: I-per
     necessarily: I-per
     ```
+
+## LSTM Emojifier
+
+- Sentiment analysis of input sentence with an emoji output using GloVe vectors.
+  ![LSTM Emojifier](images/LSTM_Emojifier.png?raw=true "LSTM Emojifier")
+- Examples (Some of them are mislabelled):
+  ```
+  The meal was great!:  🍴
+  I had a tough day!:  ❤️
+  The job looks interesting!:  😄
+  I had a great trip!:  🍴
+  I learnt something new today!:  ❤️
+  ```
 
 ## Siamese Neural Network
 

@@ -1,6 +1,7 @@
 import numpy, spacy
 from tqdm import tqdm
 from utils.CosineSimilarity import cosine_similarity
+from utils.TermColour import bcolors
 class Embeddings():
     _nlp = None
     _path:str = None
@@ -236,6 +237,7 @@ class Embeddings():
                 self._word_to_vec_map[curr_word] = numpy.array(line[1:], dtype=numpy.float64)
 
 def complete_analogy_tests():
+    print(f"\n=== {complete_analogy_tests.__name__} ===")
     a = [3, 3] # Center at a
     a_nw = [2, 4] # North-West oriented vector from a
     a_s = [3, 2] # South oriented vector from a
@@ -266,9 +268,10 @@ def complete_analogy_tests():
     assert(nlp.complete_analogy('a', 'a_s', 'c', word_to_vec_map) == 'c_s')
     assert(nlp.complete_analogy('a', 'synonym_of_a', 'c', word_to_vec_map) != 'c'), "Best word cannot be input query"
     assert(nlp.complete_analogy('a', 'c', 'a', word_to_vec_map) == 'c')
-    print("\033[92mAll tests passed")
+    print(f"{bcolors.OKGREEN}All tests passed{bcolors.DEFAULT}")
 
 def triads_analogy_tests():
+    print(f"\n=== {triads_analogy_tests.__name__} ===")
     # https://nlp.stanford.edu/projects/glove/
     nlp = Embeddings('/usr/src/GloVe/glove.6B.300d.txt')
     triads_to_try = [('italy', 'italian', 'spain'), ('india', 'delhi', 'japan'), ('man', 'woman', 'boy'), ('small', 'smaller', 'large')]
