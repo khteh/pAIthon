@@ -309,7 +309,7 @@ class MNISTGAN():
             ave_disc_loss /= count
             gen_losses.append(ave_gen_loss)
             disc_losses.append(ave_disc_loss)
-            print(f"Epoch {epoch + 1} : {time.time()-start}s Generator Loss: {ave_gen_loss} Discriminator Loss: {ave_disc_loss}")
+            print(f"Epoch {epoch + 1}: {time.time()-start}s Generator Loss: {ave_gen_loss} Discriminator Loss: {ave_disc_loss}")
 
         # Generate after the final epoch
         PlotGANLossHistory("MNIST GAN", gen_losses, disc_losses)

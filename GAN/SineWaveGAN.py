@@ -238,16 +238,16 @@ class SineWaveGAN():
     def _save_images(self, data, title:str, filename: str):
         # Notice `training` is set to False. This is so all layers forward in inference mode (batchnorm).
         #print(f"save_images data.shape: {data.shape}, ndim: {data.ndim}") # data.shape: (1, 1024, 2), ndim: 3
-        plt.plot(data[0, :, 0], data[0, :, 1], ".")
+        plt.plot(data[0, :, 0], data[0, :, 1], ".", color="blue")
         plt.suptitle(title)
         plt.savefig(f"output/SineWaveGAN/{filename}")
         plt.close()
 
     def _ShowSineWaves(self, data):
-        fig, axes = plt.subplots(3,3,figsize=(5,5))
+        fig, axes = plt.subplots(3,3,figsize=(10,10))
         for i, ax in enumerate(axes.flat):
             index = rng.choice(len(data))
-            ax.plot(data[index, :, 0], data[index, :, 1], ".")
+            ax.plot(data[index, :, 0], data[index, :, 1], ".", color="blue")
             ax.set_axis_off()
         fig.suptitle("Noisy Sine Waves")
         plt.show()
@@ -264,7 +264,7 @@ class SineWaveGAN():
         self._ShowSineWaves(dataset)
         assert dataset.shape == (self._num_sine_waves, self._samples, 2)
         print(f"dataset type: {type(dataset)}, shape: {dataset.shape}") # <class 'numpy.ndarray'>, shape: (10000, 1024, 2)
-        self._batch_dataset = tf.data.Dataset.from_tensor_slices(tf.constant(dataset)).shuffle(self._num_sine_waves).batch(self._batch_size) # train_dataset: TensorSpec(shape=(None, 2), dtype=tf.float64, name=None)
+        self._batch_dataset = tf.data.Dataset.from_tensor_slices(tf.constant(dataset)).shuffle(self._num_sine_waves, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE) # train_dataset: TensorSpec(shape=(None, 2), dtype=tf.float64, name=None)
 
 if __name__ == "__main__":
     NUM_SINE_WAVES = 25000
@@ -276,8 +276,8 @@ if __name__ == "__main__":
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
     Path("output/SineWaveGAN").mkdir(parents=True, exist_ok=True)
     Path("output/SineWaveGAN").is_dir()
-    sinewaveGAN = SineWaveGAN(NUM_SINE_WAVES, BATCH_SIZE, SAMPLES, EPOCHS, checkpoint_prefix)
-    sinewaveGAN.PrepareTrainingData()
-    sinewaveGAN.Train()
-    ShowImage(f'output/SineWaveGAN/sinewave_gan_epoch_{EPOCHS:04d}.png')
+    #sinewaveGAN = SineWaveGAN(NUM_SINE_WAVES, BATCH_SIZE, SAMPLES, EPOCHS, checkpoint_prefix)
+    #sinewaveGAN.PrepareTrainingData()
+    #sinewaveGAN.Train()
+    #ShowImage(f'output/SineWaveGAN/sinewave_gan_epoch_{EPOCHS:04d}.png')
     CreateGIF("output/SineWaveGAN/sinewave_gan.gif", 'output/SineWaveGAN/sinewave_gan_epoch_*.png')
