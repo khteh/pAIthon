@@ -1,5 +1,6 @@
 import numpy, pandas as pd
 from pathlib import Path
+from utils.TermColour import bcolors
 from utils.UniVariatePlot import UniVariatePlot
 from utils.CosineSimilarity import cosine_similarity
 
@@ -297,3 +298,5 @@ if __name__ == "__main__":
     print(f"\nstrings: {len(strings)}, difference: {result - strings}")
     min_edit_distance_tests()
     CosineSimilarityTests()
+    colors = bcolors()
+    colors.Show()

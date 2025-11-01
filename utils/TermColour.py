@@ -24,7 +24,7 @@ class bcolors:
     FAIL = '\033[91m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'    
+    UNDERLINE = '\033[4m'
     def disable(self):
         self.HEADER = ''
         self.OKBLUE = ''
@@ -35,3 +35,14 @@ class bcolors:
         self.ENDC = ''
         self.BOLD = ''
         self.UNDERLINE = ''
+    def Show(self):
+        print(f"{self.HEADER}HEADER")
+        print(f"{self.OKBLUE}OKBLUE")
+        print(f"{self.OKCYAN}OKCYAN")
+        print(f"{self.OKGREEN}OKGREEN")
+        print(f"{self.WARNING}WARNING")
+        print(f"{self.FAIL}FAIL")
+        print(f"{self.ENDC}ENDC")
+        print(f"{self.BOLD}BOLD")
+        print(f"{self.UNDERLINE}UNDERLINE")
+        print(f"{self.DEFAULT}DEFAULT")
