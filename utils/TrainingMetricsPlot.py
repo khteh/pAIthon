@@ -14,7 +14,7 @@ def PlotModelHistory(title, history):
     loss = history.history['loss']
     val_loss = history.history['val_loss']
     x = range(1, len(acc) + 1)
-    fig, axs = plt.subplots(1, 2) # 1 row with 2 columns
+    fig, axs = plt.subplots(1, 2, figsize=(10,10)) # 1 row with 2 columns; figsize = (width, height)
     fig.suptitle(title)
     fig.set_size_inches(12, 5) # (w, h) inches
     fig.set_layout_engine('constrained')
@@ -32,7 +32,7 @@ def PlotModelHistory(title, history):
 
 def PlotGANLossHistory(title, gen_losses, disc_losses):
     print(f"\n=== {PlotGANLossHistory.__name__} ===")
-    fig, axs = plt.subplots(1, 1) # 1 row with 1 columns
+    fig, axs = plt.subplots(1, 1, figsize=(10,10)) # 1 row with 1 columns; figsize = (width, height)
     fig.suptitle(title)
     fig.set_size_inches(12, 5) # (w, h) inches
     fig.set_layout_engine('constrained')

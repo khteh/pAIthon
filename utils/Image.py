@@ -1,21 +1,21 @@
-import glob, imageio, matplotlib.pyplot as plt
+import glob, matplotlib.pyplot as plt, imageio, imageio.v3 as iio
+from .TermColour import bcolors
 
 def ShowImage(path: int):
   image = plt.imread(path)
   plt.imshow(image)
   plt.show()
 
-def CreateGIF(anim_file: str, input_images: str):
+def CreateGIF(gif_path: str, input_images: str, duration:float = 0.2):
     """
     Use imageio to create an animated gif using the images saved during training.
     """
-    with imageio.get_writer(anim_file, mode='I') as writer:
-        filenames = glob.glob(input_images)
-        filenames = sorted(filenames)
-        for f in filenames:
-            image = imageio.imread(f)
-            writer.append_data(image)
-    print(f"{anim_file} created successfully!")
+    filenames = glob.glob(input_images)
+    filenames = sorted(filenames)
+    images = [iio.imread(f) for f in filenames]
+    # Save the frames as a GIF that plays once (loop=1)
+    imageio.mimsave(gif_path, images, duration=duration, loop=1)
+    print(f"{bcolors.OKGREEN}{gif_path} created successfully!{bcolors.DEFAULT}")
 
 # Assuming 'images' is a TensorFlow tensor of shape (batch_size, H, W, C)
 def make_image_grid(images, num_rows, num_cols):
