@@ -62,7 +62,7 @@ class NameEntityRecognition():
             # https://github.com/keras-team/keras/issues/21666
             self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=self._model.hf_compute_loss, metrics=['accuracy']) # can also use any keras loss fn
         if new_model or retrain:
-            history = self._model.fit(self._train.batch(self._batch_size), epochs=epochs, batch_size=self._batch_size)
+            history = self._model.fit(self._train.batch(self._batch_size), epochs=epochs, batch_size=self._batch_size, shuffle=True)
             PlotModelHistory("Name Entity Recognition", history)
             #if self._model_path:
             #    self._model.save(self._model_path)
@@ -75,6 +75,8 @@ class NameEntityRecognition():
         predictions = numpy.argmax(predictions['logits'].reshape(1, -1, 12), axis=-1)
         print(f"predictions: {predictions.shape}, {predictions}")
         pred_labels = [[self._id2tag.get(index, "Empty") for index in predictions[i]] for i in range(len(predictions))]
+        fig = plt.figure(figsize=(20, 10)) # figsize = (width, height)
+        plt.rcParams.update({'font.size': 22})
         p = plt.hist(numpy.array(pred_labels).flatten())
         plt.xticks(rotation='vertical')
         plt.tight_layout()
@@ -106,6 +108,8 @@ class NameEntityRecognition():
         ))
         self._true_labels = [[self._id2tag.get(true_index, "Empty") for true_index in self._test['labels'][i]] for i in range(len(self._test['labels']))]
         #numpy.array(true_labels).shape
+        fig = plt.figure(figsize=(20, 10)) # figsize = (width, height)
+        plt.rcParams.update({'font.size': 22})
         p = plt.hist(numpy.array(self._true_labels).flatten())
         plt.xticks(rotation='vertical')
         plt.title("True Labels")
