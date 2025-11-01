@@ -76,10 +76,13 @@ class NameEntityRecognition():
         print(f"predictions: {predictions.shape}, {predictions}")
         pred_labels = [[self._id2tag.get(index, "Empty") for index in predictions[i]] for i in range(len(predictions))]
         fig = plt.figure(figsize=(20, 10)) # figsize = (width, height)
-        plt.rcParams.update({'font.size': 22})
+        #plt.rcParams.update({'font.size': 22})
         p = plt.hist(numpy.array(pred_labels).flatten())
         plt.xticks(rotation='vertical')
-        plt.tight_layout()
+        plt.tick_params(axis='x', labelsize=22)
+        plt.tick_params(axis='y', labelsize=22)
+        plt.title("Predicted Labels", fontsize=30, fontweight='bold', pad=50)
+        fig.tight_layout(pad=0.1,rect=[0, 0.03, 1, 0.92]) #[left, bottom, right, top]
         plt.show()
 
     def _PrepareData(self):
@@ -109,11 +112,13 @@ class NameEntityRecognition():
         self._true_labels = [[self._id2tag.get(true_index, "Empty") for true_index in self._test['labels'][i]] for i in range(len(self._test['labels']))]
         #numpy.array(true_labels).shape
         fig = plt.figure(figsize=(20, 10)) # figsize = (width, height)
-        plt.rcParams.update({'font.size': 22})
+        #plt.rcParams.update({'font.size': 22})
         p = plt.hist(numpy.array(self._true_labels).flatten())
         plt.xticks(rotation='vertical')
-        plt.title("True Labels")
-        plt.tight_layout()
+        plt.tick_params(axis='x', labelsize=22)
+        plt.tick_params(axis='y', labelsize=22)
+        plt.title("True Labels", fontsize=30, fontweight='bold', pad=50)
+        fig.tight_layout(pad=0.1,rect=[0, 0.03, 1, 0.95]) #[left, bottom, right, top]
         plt.show()
         print(Counter(numpy.array(self._true_labels).flatten()))
 
