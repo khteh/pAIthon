@@ -241,7 +241,7 @@ class MNISTGAN():
         """
         train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
         # Batch and shuffle the data
-        self._batch_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self._buffer_size).batch(self._batch_size) # Batch dataset: TensorSpec(shape=(None, 28, 28, 1), dtype=tf.float32, name=None). shape[0] = None is the batch size. None because it is flexible.
+        self._batch_dataset = tf.data.Dataset.from_tensor_slices(train_images).shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE) # Batch dataset: TensorSpec(shape=(None, 28, 28, 1), dtype=tf.float32, name=None). shape[0] = None is the batch size. None because it is flexible.
         #print(f"Batch dataset: {self._batch_dataset.element_spec}")
 
     def _ShowMNISTImages(self, images):
