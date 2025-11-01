@@ -326,18 +326,16 @@ class GRU_CharacterGeneration():
 
         # Convert your data into a tensor using the given vocab
         all_ids = self._line_to_tensor(single_line_data)
-        # Create a TensorFlow dataset from the data tensor
-        ids_dataset = tf.data.Dataset.from_tensor_slices(all_ids)
         # Create a batch dataset
-        data_generator = ids_dataset.batch(self._seq_length + 1, drop_remainder=True) 
         # Map each input sample using the split_input_target function
-        dataset_xy = data_generator.map(self._split_input_target)
+        dataset_xy = tf.data.Dataset.from_tensor_slices(all_ids).batch(self._seq_length + 1, drop_remainder=True).map(self._split_input_target)
         
         # Assemble the final dataset with shuffling, batching, and prefetching
-        dataset = (                                   
+        dataset = (
             dataset_xy                                
-            .shuffle(self._buffer_size)
+            .shuffle(self._buffer_size, reshuffle_each_iteration=True)
             .batch(self._batch_size, drop_remainder=True)
+            .cache()
             .prefetch(tf.data.experimental.AUTOTUNE)  
             )
         return dataset
