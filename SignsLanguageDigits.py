@@ -22,11 +22,15 @@ class SignsLanguageDigits():
     _model_path:str = None
     _circuit_breaker = None
     _trained: bool = False
-    def __init__(self, path):
+    _batch_size: int = None
+    _learning_rate: float = None
+    def __init__(self, path, batch_size:int, learning_rate:float):
+        self._learning_rate = learning_rate
+        self._batch_size = batch_size
         InitializeGPU()
         self._model_path = path
         self._prepare_data()
-        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 5)
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 7)
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._model = tf.keras.models.load_model(self._model_path)
@@ -79,7 +83,7 @@ class SignsLanguageDigits():
         self._Y_train = self._Y_train.T
         self._Y_test = self._Y_test.T
         
-    def BuildModel(self, rebuild: bool = False, learning_rate:float = 0.01):
+    def BuildModel(self, rebuild: bool = False):
         """
         Implements the forward propagation for the model:
         CONV2D -> RELU -> MAXPOOL -> CONV2D -> RELU -> MAXPOOL -> FLATTEN -> DENSE
@@ -116,7 +120,7 @@ class SignsLanguageDigits():
             ])
         self._model.compile(
                 loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
-                optimizer=Adam(learning_rate=learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                 metrics=['accuracy']
             )
         self._model.summary()
@@ -130,12 +134,12 @@ class SignsLanguageDigits():
             expand_nested=True,
             show_layer_activations=True)
 
-    def TrainEvaluate(self, rebuild: bool, epochs:int, batch_size:int):
+    def TrainEvaluate(self, rebuild: bool, epochs:int):
         if self._model:
             if not self._trained or rebuild:
                 tensorboard = CreateTensorBoardCallback("SignsLanguageDigits") # Create a new folder with current timestamp
-                train_dataset = tf.data.Dataset.from_tensor_slices((self._X_train, self._Y_train)).batch(batch_size)
-                validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_test, self._Y_test)).batch(batch_size)
+                train_dataset = tf.data.Dataset.from_tensor_slices((self._X_train, self._Y_train)).shuffle(self._Y_train.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+                validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_test, self._Y_test)).shuffle(self._Y_train.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
                 history = self._model.fit(train_dataset, epochs=epochs, validation_data=validation_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker])
                 PlotModelHistory("Signs Language multi-class classifier", history)
                 self._trained = True
@@ -168,9 +172,9 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 
-    signs = SignsLanguageDigits("models/SignsLanguageDigits.keras")
-    signs.BuildModel(args.retrain, 0.01)
-    signs.TrainEvaluate(args.retrain, 100, 64)
+    signs = SignsLanguageDigits("models/SignsLanguageDigits.keras", 64, 0.001)
+    signs.BuildModel(args.retrain)
+    signs.TrainEvaluate(args.retrain, 300)
     signs.PredictSign("images/my_handsign0.jpg", 2)
     signs.PredictSign("images/my_handsign1.jpg", 1)
     signs.PredictSign("images/my_handsign2.jpg", 3)
