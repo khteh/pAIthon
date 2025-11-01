@@ -16,6 +16,7 @@ from Transformer.NLPTransformer import NLPTransformer
 from Transformer.CustomSchedule import CustomSchedule
 from Transformer.masks import *
 from utils.GPU import InitializeGPU
+from utils.TermColour import bcolors
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
@@ -113,19 +114,18 @@ class TextSummarizer():
                 for (batch, (inp, tar)) in enumerate(self._dataset):
                     print(f'Epoch {epoch+1}/{epochs}, Batch {batch+1}/{number_of_batches}', end='\r')
                     self._model.train_step(inp, tar, self._loss_object, self._optimizer, self._train_loss)
-                print (f'Epoch {epoch+1}/{epochs}, Loss {self._train_loss.result():.4f}')
                 self._losses.append(self._train_loss.result())
                 # Take an example from the test set, to monitor it during training
-                print(f'Time taken for one epoch: {time.time() - start} sec')
+                print (f'Epoch {epoch+1}/{epochs} {(time.time() - start):.2f}s Loss: {self._train_loss.result():.4f}')
                 print(f"Document: {document}")
-                print('Example summarization on the test set:')
-                print('  True summarization:')
-                print(f'    {true_summary}')
-                print('  Predicted summarization:')
-                print(f'    {self.Summarize(document)}\n')
+                print(f"{bcolors.OKGREEN}Expected Summarization:")
+                print(f"  {true_summary}")
+                print(f"{bcolors.WARNING}Predicted summarization:")
+                print(f'  {self.Summarize(document)}{bcolors.DEFAULT}\n')
+            fig = plt.figure(figsize=(20, 10)) # figsize = (width, height)
             plt.plot(self._losses)
-            plt.ylabel('Loss')
-            plt.xlabel('Epoch')
+            plt.ylabel('Loss', fontsize=22)
+            plt.xlabel('Epoch', fontsize=22)
             plt.show()
             """
             plot_model(
@@ -217,7 +217,7 @@ class TextSummarizer():
         self._targets = tf.cast(self._targets, dtype=tf.int32)
 
         # Create the final training dataset.
-        self._dataset = tf.data.Dataset.from_tensor_slices((self._inputs, self._targets)).shuffle(self._buffer_size).batch(self._batch_size)
+        self._dataset = tf.data.Dataset.from_tensor_slices((self._inputs, self._targets)).shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
     def _Preprocess(self, input_data):
         # Define the custom preprocessing function
