@@ -261,7 +261,7 @@ class QuestionAnswering():
         self._targets = tf.cast(self._targets, dtype=tf.int32)
 
         # Create the final training dataset.
-        self._dataset = tf.data.Dataset.from_tensor_slices((self._inputs, self._targets)).shuffle(self._buffer_size).batch(self._batch_size)
+        self._dataset = tf.data.Dataset.from_tensor_slices((self._inputs, self._targets)).shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
         
     def _LoadSquadDataset(self):
         """
@@ -305,7 +305,7 @@ class QuestionAnswering():
         self._train_inputs = tf.cast(self._train_inputs, dtype=tf.int32)
         self._train_labels = tf.cast(self._train_labels, dtype=tf.int32)
         
-        self._dataset = tf.data.Dataset.from_tensor_slices((self._train_inputs, self._train_labels)).shuffle(self._buffer_size).batch(self._batch_size)
+        self._dataset = tf.data.Dataset.from_tensor_slices((self._train_inputs, self._train_labels)).shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
         # pairs for training
         inputs_str = [self._tokenizer.tokenize(s) for s in self._test_data]
