@@ -37,7 +37,7 @@ class ImageSegmentationUNet():
         self._batch_size = batch_size
         self._learning_rate = learning_rate
         self._normalization = Normalization(axis=-1)
-        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 3)
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 5)
         self._PrepareData()
         if self._path and len(self._path) and Path(self._path).exists() and Path(self._path).is_file():
             print(f"Using saved model {self._path}...")
@@ -246,9 +246,9 @@ class ImageSegmentationUNet():
         validation_image_ds = training_dataset.map(self._process_path)
         processed_validation_image_ds = training_image_ds.map(self._preprocess)
         print(f"processed_training_image_ds: {processed_training_image_ds.element_spec}, processed_validation_image_ds: {processed_validation_image_ds.element_spec}")
-        self._train_dataset = processed_training_image_ds.cache().shuffle(self._buffer_size).batch(self._batch_size)
+        self._train_dataset = processed_training_image_ds.shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
         self._normalization.adapt(self._train_dataset.map(lambda x, y: x))
-        self._val_dataset = processed_training_image_ds.cache().shuffle(self._buffer_size).batch(self._batch_size)
+        self._val_dataset = processed_training_image_ds.shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
         #mask = np.array([max(mask[i, j]) for i in range(mask.shape[0]) for j in range(mask.shape[1])]).reshape(img.shape[0], img.shape[1])
         """
         N = 2

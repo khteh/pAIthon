@@ -42,7 +42,7 @@ class SiameseNN():
         self._learning_rate = learning_rate
         self._embedding_dimension = embedding_dim
         self._PrepareData()
-        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 5)
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_loss", "min", 5)
         #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
         #    print(f"Using saved model {self._model_path}...")
         #    self._model = tf.keras.models.load_model(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
@@ -151,7 +151,7 @@ class SiameseNN():
         Returns:
             bool: True if the questions are duplicates, False otherwise.
         """
-        generator = tf.data.Dataset.from_tensor_slices((([question1], [question2]),None)).batch(batch_size=1)
+        generator = tf.data.Dataset.from_tensor_slices((([question1], [question2]),None)).batch(batch_size=1).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
         
         # Call the predict method of your model and save the output into v1v2
         pred = self._model.predict(generator)
@@ -227,13 +227,13 @@ class SiameseNN():
         self._vocab = self._text_vectorizer.get_vocabulary()
         self._train_dataset = tf.data.Dataset.from_tensor_slices(((self._train_Q1, self._train_Q2),tf.constant([1]*len(self._train_Q1))))
         self._val_dataset = tf.data.Dataset.from_tensor_slices(((self._val_Q1, self._val_Q2),tf.constant([1]*len(self._val_Q1))))
-        self._train_dataset = self._train_dataset.cache().shuffle(len(self._train_Q1),
+        self._train_dataset = self._train_dataset.shuffle(len(self._train_Q1),
                                                 seed=7, 
-                                                reshuffle_each_iteration=True).batch(batch_size=self._batch_size)
-        self._val_dataset = self._val_dataset.cache().shuffle(len(self._val_Q1), 
+                                                reshuffle_each_iteration=True).batch(batch_size=self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        self._val_dataset = self._val_dataset.shuffle(len(self._val_Q1), 
                                         seed=7,
-                                        reshuffle_each_iteration=True).batch(batch_size=self._batch_size)        
-        self._test_dataset = tf.data.Dataset.from_tensor_slices(((self._Q1_test, self._Q2_test),None)).batch(batch_size=self._batch_size)
+                                        reshuffle_each_iteration=True).batch(batch_size=self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        self._test_dataset = tf.data.Dataset.from_tensor_slices(((self._Q1_test, self._Q2_test),None)).batch(batch_size=self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
     def _TripletLoss(self, labels, out, margin=0.25):
         _, embedding_size = out.shape # get embedding size
@@ -315,7 +315,7 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 
-    siamese = SiameseNN("data/questions.csv", "models/SiameseNN.keras", 128, 512, 0.01)
+    siamese = SiameseNN("data/questions.csv", "models/SiameseNN.keras", 128, 512, 0.001)
     siamese.BuildTrainModel(30, args.retrain)
     siamese.Evaluate(0.7)
     question1 = "When will I see you?"
