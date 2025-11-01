@@ -1,6 +1,8 @@
 import os, numpy, pandas as pd, tensorflow as tf, PIL
+from tensorflow.keras.applications import InceptionResNetV2
 from tensorflow.keras.models import Model, Sequential, model_from_json
 from tensorflow.keras import backend as K
+from utils.TermColour import bcolors
 K.set_image_data_format('channels_last')
 
 class FaceRecognition():
@@ -14,15 +16,18 @@ class FaceRecognition():
 
     def BuildModel(self):
         """
-        This network uses 160x160 dimensional RGB images as its input. Specifically, a face image (or batch of  𝑚 face images) as a tensor of shape  (𝑚,𝑛𝐻,𝑛𝑊,𝑛𝐶)=(𝑚,160,160,3)
-        The input images are originally of shape 96x96, thus, you need to scale them to 160x160. This is done in the self._img_to_encoding() function.
+        This network uses 299x299 dimensional RGB images as its input. Specifically, a face image (or batch of 𝑚 face images) as a tensor of shape  (𝑚,𝑛𝐻,𝑛𝑊,𝑛𝐶)=(𝑚,299,299,3)
+        The input images are originally of shape 96x96, thus, you need to scale them to 299x299. This is done in the self._img_to_encoding() function.
         The output is a matrix of shape  (𝑚,128) that encodes each input face image into a 128-dimensional vector.
         By using a 128-neuron fully connected layer as its last layer, the model ensures that the output is an encoding vector of size 128. You then use the encodings to compare two face images as follows:
+        https://www.tensorflow.org/api_docs/python/tf/keras/applications/InceptionResNetV2 width and height should be no smaller than 75. E.g. (150, 150, 3) would be one valid value.
+        classes: optional number of classes to classify images into, only to be specified if include_top is True, and if no weights argument is specified.
         """
-        with open('./models/keras-facenet-h5/model.json', 'r', newline='') as f: # XXX: TypeError: Could not locate class 'Functional'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`.
-            loaded_model_json = f.read()
-            self._model = model_from_json(loaded_model_json)
-        self._model.load_weights('./models/keras-facenet-h5/model.h5')
+        self._model = InceptionResNetV2()
+        #with open('./models/keras-facenet-h5/model.json', 'r', newline='') as f: # XXX: TypeError: Could not locate class 'Functional'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`.
+        #    loaded_model_json = f.read()
+        #    self._model = model_from_json(loaded_model_json)
+        #self._model.load_weights('./models/keras-facenet-h5/model.h5')
         print(f"Model input: {self._model.inputs}")
         print(f"Model output: {self._model.outputs}")
 
@@ -40,7 +45,7 @@ class FaceRecognition():
         self._database["benoit"] = self._img_to_encoding("images/benoit.jpg")
         self._database["arnaud"] = self._img_to_encoding("images/arnaud.jpg")
 
-    def Verify(self, image_path, identity):
+    def Verify(self, image_path:str, identity:str):
         """
         Face verification supervised learning:
         - 1:1 mapping
@@ -63,7 +68,7 @@ class FaceRecognition():
         #print(f"encoding: {encoding}, identity: {database[identity]}, diff: {encoding - database[identity]}")
         dist1 = encoding -  self._database[identity]
         dist = numpy.linalg.norm(encoding - self._database[identity], ord=2)
-        print(f"distance: {dist1.shape}, {encoding - self._database[identity]}, ord=2: {dist}")
+        #print(f"distance: {dist1.shape}, {encoding - self._database[identity]}, ord=2: {dist}")
         # Step 3: Open the door if dist < 0.7, else don't open (≈ 3 lines)
         if dist < self._threshold:
             print("It's " + str(identity) + ", welcome in!")
@@ -73,7 +78,7 @@ class FaceRecognition():
             door_open = False
         return dist, door_open
 
-    def Who_Is_It(self, image_path):
+    def Who_Is_It(self, image_path:str):
         """
         Implements face recognition for the office by finding who is the person on the image_path image.
         
@@ -144,17 +149,18 @@ class FaceRecognition():
         print(f"loss: {loss}")
         return loss
     #tf.keras.backend.set_image_data_format('channels_last')
-    def _img_to_encoding(self, image_path):
+    def _img_to_encoding(self, image_path:str):
         """
         Generate one encoding vector for each person by running the forward propagation of the model on the specified image.
         """
-        img = tf.keras.preprocessing.image.load_img(image_path, target_size=(160, 160))
+        img = tf.keras.preprocessing.image.load_img(image_path, target_size=(299, 299))
         img = numpy.around(numpy.array(img) / 255.0, decimals=12)
         x_train = numpy.expand_dims(img, axis=0)
         embedding = self._model.predict_on_batch(x_train)
         return embedding / numpy.linalg.norm(embedding, ord=2)
     
     def triplet_loss_test(self):
+        print(f"\n=== {self.triplet_loss_test.__name__} ===")
         y_pred_perfect = ([[1., 1.]], [[1., 1.]], [[1., 1.,]])
         loss = self._triplet_loss(y_pred_perfect, 5)
         assert loss == 5, "Wrong value. Did you add the alpha to basic_loss?"
@@ -175,17 +181,18 @@ class FaceRecognition():
         if (loss == 4.):
             raise Exception('Perhaps you are not using axis=-1 in reduce_sum?')
         assert loss == 5, "Wrong value. Check your implementation"    
+        print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 if __name__ == "__main__":
     faceRecognition = FaceRecognition(0.7)
     faceRecognition.triplet_loss_test()
     distance, door_open_flag = faceRecognition.Verify("images/camera_0.jpg", "younes")
-    assert numpy.isclose(distance, 0.5992949), "Distance not as expected"
-    assert door_open_flag, "Door should be opened for younes"
+    assert numpy.isclose(distance, 0.5992949), f"{bcolors.FAIL}Distance {distance} between images/camera_0.jpg and younes not as expected!{bcolors.DEFAULT}"
+    assert door_open_flag, f"{bcolors.FAIL}Door should be opened for younes{bcolors.DEFAULT}"
     print("(", distance, ",", door_open_flag, ")")
     distance, door_open_flag = faceRecognition.Verify("images/camera_1.jpg", "kian")
     #assert numpy.isclose(distance, 0.5992949), "Distance not as expected"
-    assert not door_open_flag, "Door should NOT be opened for kian"
+    assert not door_open_flag, f"{bcolors.FAIL}Door should NOT be opened for kian{bcolors.DEFAULT}"
     print("(", distance, ",", door_open_flag, ")")
 
     # Test 2 with Younes pictures 
