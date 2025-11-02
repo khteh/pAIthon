@@ -8,7 +8,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
-from utils.Plots import *
+from utils.Plots import plot_train_cv_test, plot_train_cv_mses, plot_dataset
 # reduce display precision on numpy arrays
 numpy.set_printoptions(precision=2)
 
@@ -18,7 +18,7 @@ tf.autograph.set_verbosity(0)
 
 #TODO: Add similar classes for NN and Classification
 
-class LinearRegressionModelEvaluationAndSelection():
+class ModelEvaluationAndSelection():
     _X_train = None
     _X_train_scaled = None
 
@@ -46,7 +46,7 @@ class LinearRegressionModelEvaluationAndSelection():
         self._prepare_data(path)
         self._X_train_scaled = self.ScaleData(self._X_train)
         # Plot the results
-        plot_dataset(x=self._X_train_scaled, y=self._Y_train, title="scaled input vs. target")
+        plot_dataset(x=self._X_train_scaled, y=self._Y_train, title="Scaled Input vs. Target")
         self._X_cv_scaled = self.ScaleData(self._X_cv)
         self._X_test_scaled = self.ScaleData(self._X_test)
         self._model = LinearRegression()
@@ -86,7 +86,7 @@ class LinearRegressionModelEvaluationAndSelection():
         print(f"the shape of the test set (target) is: {self._Y_test.shape}")
 
         # Data set plot to show which points were used as training, cross validation, or test data.
-        plot_train_cv_test(self._X_train, self._Y_train, self._X_cv, self._Y_cv, self._X_test, self._Y_test, title="input vs. target")
+        plot_train_cv_test(self._X_train, self._Y_train, self._X_cv, self._Y_cv, self._X_test, self._Y_test, title="Input vs. Target")
         """
         StandardScaler from scikitlearn computes the z-score of your inputs. As a refresher, the z-score is given by the equation:
             z = (x - 𝜇) / lambda
@@ -236,7 +236,7 @@ class LinearRegressionModelEvaluationAndSelection():
             
         # Plot the results
         degrees=range(1,11)
-        plot_train_cv_mses(degrees, train_mses, cv_mses, title="degree of polynomial vs. train and CV MSEs")
+        plot_train_cv_mses(degrees, train_mses, cv_mses, title="Degree of polynomial vs. Train and CV MSEs")
         # use the model with the lowest cv_mse as the one best suited for your application.
         # Get the model with the lowest CV MSE (add 1 because list indices start at 0)
         # This also corresponds to the degree of the polynomial added
@@ -268,7 +268,7 @@ class LinearRegressionModelEvaluationAndSelection():
         print(f"Test MSE: {self._test_mse:.2f}")
 
 if __name__ == "__main__":
-    model = LinearRegressionModelEvaluationAndSelection('./data/data_w3_ex1.csv')
+    model = ModelEvaluationAndSelection('./data/data_w3_ex1.csv')
     model.TrainModel()
     linear_mse = model.EvaluateLinearModel()
 
