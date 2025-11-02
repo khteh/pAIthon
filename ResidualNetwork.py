@@ -481,7 +481,7 @@ class ResidualNetwork50():
     def TrainEvaluate(self, rebuild: bool, epochs:int):
         if self._model:
             if not self._trained or rebuild:
-                history = self._model.fit(self._X_train, self._Y_train, epochs = epochs, batch_size = self._batch_size)
+                history = self._model.fit(self._X_train, self._Y_train, epochs = epochs, shuffle=True, batch_size = self._batch_size)
                 PlotModelHistory("ResNet-50 multi-class classifier", history)
                 self._trained = True
                 # remote: error: File models/ResidualNetwork50.keras is 270.44 MB; this exceeds GitHub's file size limit of 100.00 MB
@@ -519,7 +519,7 @@ if __name__ == "__main__":
 
     resnet50 = ResidualNetwork50("models/ResidualNetwork50.keras", (64, 64, 3), 0.00015, 32)
     resnet50.BuildModel(args.retrain)
-    resnet50.TrainEvaluate(args.retrain, 20)
+    resnet50.TrainEvaluate(args.retrain, 30)
     resnet50.PredictSign("images/my_handsign0.jpg", 2)
     resnet50.PredictSign("images/my_handsign1.jpg", 1)
     resnet50.PredictSign("images/my_handsign2.jpg", 3)
