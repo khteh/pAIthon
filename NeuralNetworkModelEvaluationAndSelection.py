@@ -190,6 +190,7 @@ class NeuralNetworkModelEvaluationAndSelection():
             model.fit(
                 self._X_train_scaled, self._Y_train,
                 epochs=epochs,
+                shuffle=True,
                 verbose=0
             )
             print("Done!\n")
