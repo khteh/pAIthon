@@ -148,15 +148,9 @@ class SineWaveGAN():
     Structures that generate data, including GANs, are considered generative models in contrast to the more widely studied discriminative 
     """
     _num_sine_waves: int = None
-    _batch_size: int = None
     _samples: int = None
-    _epochs: int = None
-    _checkpoint_path: str = None
-    _batch_dataset: tf.data.Dataset = None
     _generator: Generator = None
     _discriminator: Discriminator = None
-    _checkpoint: tf.train.Checkpoint = None
-    _noise_dim: int = None
     def __init__(self, num_sine_waves:int, batch_size:int, samples:int, epochs:int, checkpoint_path: str):
         self._num_sine_waves = num_sine_waves
         self._batch_size = batch_size
