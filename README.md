@@ -13,6 +13,11 @@ Python AI, ML, DL and NLP exploration playground.
 
 - `pipenv run tensorboard --logdir <path>`
 
+## CNN Signs Language Digits Multiclass Classification
+
+- Architecture:
+  ![CNN Signs Language Digits](images/SignsLanguageDigits.png?raw=true "CNN Signs Language Digits")
+
 ## Machine Translation
 
 - Bidirection LSTM

@@ -87,7 +87,7 @@ class SiameseNN():
         if new_model or retrain:
             # Train the model 
             tensorboard = CreateTensorBoardCallback("SiameseNN") # Create a new folder with current timestamp
-            history = self._model.fit(self._train_dataset, epochs = epochs, validation_data = self._val_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker])
+            history = self._model.fit(self._train_dataset, epochs = epochs, shuffle=True, validation_data = self._val_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker])
             PlotModelHistory("Siamese NN", history)
             #if self._model_path:
             #    self._model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
