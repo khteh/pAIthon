@@ -35,7 +35,6 @@ class HandWrittenDigitsNN():
     def _prepare_data(self):
         """
         - The data set contains 1000 training examples of handwritten digits $^1$, here limited to zero and one.  
-
             - Each training example is a 20-pixel x 20-pixel grayscale image of the digit. 
                 - Each pixel is represented by a floating-point number indicating the grayscale intensity at that location. 
                 - The 20 by 20 grid of pixels is “unrolled” into a 400-dimensional vector. 
@@ -43,7 +42,6 @@ class HandWrittenDigitsNN():
                 - This gives us a 1000 x 400 matrix `X` where every row is a training example of a handwritten digit image.
         - The second part of the training set is a 1000 x 1 dimensional vector `y` that contains labels for the training set
             - `y = 0` if the image is of the digit `0`, `y = 1` if the image is of the digit `1`.
-
         This is a subset of the MNIST handwritten digit dataset (http://yann.lecun.com/exdb/mnist/)</sub>
         """
         self._X = numpy.load("data/X.npy")
@@ -75,37 +73,38 @@ class HandWrittenDigitsNN():
         fig.suptitle("Label", fontsize=22, fontweight="bold")
         plt.show()
 
-    def BuildTrainModel(self, epochs:int, rebuild: bool = False):
+    def BuildTrainModel(self, epochs:int, retrain: bool = False):
         print(f"\n=== {self.BuildTrainModel.__name__} ===")
-        if self._model and not rebuild:
-            return
-        self._model = Sequential(
-            [               
-                Input(shape=(400,)),    #specify input size
-                Dense(25, activation='sigmoid', name="L1"), # Densely connected, or fully connected
-                Dense(15, activation='sigmoid', name="L2"),
-                Dense(1, name="L3"),
-            ], name = "HandWrittenDigits" 
-        )
-        self._model.compile(
-            loss=BinaryCrossentropy(from_logits=True),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to sigmoid activation which is typically used for binary classification
-            optimizer=Adam(self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-        )
-        self._model.summary()
-        plot_model(
-            self._model,
-            to_file="output/HandWrittenDigitsNN.png",
-            show_shapes=True,
-            show_dtype=True,
-            show_layer_names=True,
-            rankdir="TB", # rankdir argument passed to PyDot, a string specifying the format of the plot: "TB" creates a vertical plot; "LR" creates a horizontal plot.
-            expand_nested=True,
-            show_layer_activations=True)
-        history = self._model.fit(self._X, self._Y, epochs=epochs)
-        PlotModelHistory("Hand Written Digits NN", history)
-        if self._model_path:
-            self._model.save(self._model_path)
-            print(f"Model saved to {self._model_path}.")
+        new_model:bool = not self._model
+        if new_model:
+            self._model = Sequential(
+                [               
+                    Input(shape=(400,)),    #specify input size
+                    Dense(25, activation='sigmoid', name="L1"), # Densely connected, or fully connected
+                    Dense(15, activation='sigmoid', name="L2"),
+                    Dense(1, name="L3"),
+                ], name = "HandWrittenDigits" 
+            )
+            self._model.compile(
+                loss=BinaryCrossentropy(from_logits=True),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to sigmoid activation which is typically used for binary classification
+                optimizer=Adam(self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+            )
+            self._model.summary()
+            plot_model(
+                self._model,
+                to_file="output/HandWrittenDigitsNN.png",
+                show_shapes=True,
+                show_dtype=True,
+                show_layer_names=True,
+                rankdir="TB", # rankdir argument passed to PyDot, a string specifying the format of the plot: "TB" creates a vertical plot; "LR" creates a horizontal plot.
+                expand_nested=True,
+                show_layer_activations=True)
+        if new_model or retrain:
+            history = self._model.fit(self._X, self._Y, epochs=epochs, shuffle=True)
+            PlotModelHistory("Hand Written Digits NN", history)
+            if self._model_path:
+                self._model.save(self._model_path)
+                print(f"Model saved to {self._model_path}.")
 
     def Predict(self):
         """
@@ -154,5 +153,5 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
     handwritten = HandWrittenDigitsNN("models/HandwrittenDigits.keras", 0.001)
-    handwritten.BuildTrainModel(30, args.retrain)
+    handwritten.BuildTrainModel(100, args.retrain)
     handwritten.Predict()
