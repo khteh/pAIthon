@@ -5,7 +5,7 @@ from tensorflow.keras.utils import plot_model
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Input, Conv2D, ReLU, MaxPool2D, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose, UpSampling2D
+from tensorflow.keras.layers import Input, Conv2D, ReLU, MaxPool2D, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose, UpSampling2D, Normalization
 from tensorflow.keras.optimizers import Adam
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
@@ -52,8 +52,8 @@ class SignsLanguageDigits():
         self._Y_test = self._Y_test.reshape((1, self._Y_test.shape[0]))
 
         # Normalize image vectors
-        self._X_train = self._X_train/255.
-        self._X_test = self._X_test/255.
+        self._X_train = self._X_train
+        self._X_test = self._X_test
 
         # Reshape
         self._convert_labels_to_one_hot()
@@ -102,18 +102,21 @@ class SignsLanguageDigits():
             return
         self._model = Sequential([
                 Input(shape=(64,64,3)),
+                Normalization(axis=-1),
                 ## CONV2D: 8 filters 4x4, stride of 1, padding 'SAME'
                 Conv2D(8, (4,4), strides=(1,1), padding="same", name="L1"),
-                BatchNormalization(axis=3), # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+                BatchNormalization(axis=-1), # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
                 ## ReLU
                 ReLU(name="L2"),
+                Dropout(0.3),
                 ## MAXPOOL: window 8x8, stride 8, padding 'SAME'
                 MaxPool2D((8,8), strides=(8,8), padding="same", name="L3"),
                 ## CONV2D: 16 filters 2x2, stride 1, padding 'SAME'
                 Conv2D(16, (2,2), strides=(1,1), padding="same", name="L4"),
-                BatchNormalization(axis=3), # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+                BatchNormalization(axis=-1), # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
                 ## ReLU
                 ReLU(name="L5"),
+                Dropout(0.3),
                 ## MAXPOOL: window 4x4, stride 4, padding 'SAME'
                 MaxPool2D((4,4), strides=(4,4), padding="same", name="L6"),
                 ## Flatten layer
@@ -157,7 +160,6 @@ class SignsLanguageDigits():
         img = image.load_img(path, target_size=(64, 64))
         x = image.img_to_array(img)
         x = numpy.expand_dims(x, axis=0)
-        x = x/255.0
         x2 = x 
         print(f"Input image: {path}, shape: {x.shape}")
         imshow(img)
