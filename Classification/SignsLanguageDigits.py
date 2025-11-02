@@ -1,6 +1,6 @@
 import argparse, numpy, h5py, tensorflow as tf, matplotlib.pyplot as plt
 from pathlib import Path
-from matplotlib.pyplot import imshow
+from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.losses import CategoricalCrossentropy
@@ -19,6 +19,8 @@ class SignsLanguageDigits():
     _classes: int = None
     _X_train: numpy.array = None
     _Y_train: numpy.array = None
+    _X_cv: numpy.array = None
+    _Y_cv: numpy.array = None
     _X_test: numpy.array = None
     _Y_test: numpy.array = None
     _model = None
@@ -80,7 +82,7 @@ class SignsLanguageDigits():
                     ## Flatten layer
                     Flatten(),
                     ## Dense layer with 1 unit for output & 'sigmoid' activation
-                    Dense(6)   # Linear activation ("pass-through") if not specified. Since the labels are 6 categories, use CategoricalCrossentropy
+                    Dense(self._classes)   # Linear activation ("pass-through") if not specified. Since the labels are 6 categories, use CategoricalCrossentropy
                 ])
             self._model.compile(
                     loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
@@ -100,17 +102,18 @@ class SignsLanguageDigits():
             
     def TrainModel(self, epochs:int, use_circuit_breaker:bool = False, retrain: bool = False):
         if not self._trained or retrain:
-            tensorboard = CreateTensorBoardCallback("SignsLanguageDigits") # Create a new folder with current timestamp
+            tensorboard = CreateTensorBoardCallback(self._name) # Create a new folder with current timestamp
             callbacks=[tensorboard]
             if use_circuit_breaker:
                 callbacks.append(self._circuit_breaker)
             history = self._model.fit(self._train_dataset, epochs=epochs, shuffle=True, validation_data=self._validation_dataset, validation_freq=1, callbacks=callbacks)
             self._trained = True
-            PlotModelHistory("Signs Language Multi-class Classifier", history)
+            PlotModelHistory(f"{self._name} Multi-class Classifier", history)
             if self._model_path:
                 self._model.save(self._model_path)
                 print(f"Model saved to {self._model_path}.")
-        
+        self._model.evaluate(self._X_test, self._Y_test)
+
     def PredictSign(self, path:str, truth:int):
         img = image.load_img(path, target_size=(64, 64))
         x = image.img_to_array(img)
@@ -124,23 +127,36 @@ class SignsLanguageDigits():
         print(f"{color}Truth: {truth}, Class: {prediction}{bcolors.DEFAULT}")
 
     def _PrepareData(self):
-        train_dataset = h5py.File('data/train_signs.h5', "r")
-        self._X_train = numpy.array(train_dataset["train_set_x"][:]) # your train set features
-        self._Y_train = numpy.array(train_dataset["train_set_y"][:]) # your train set labels
+        #train_dataset = h5py.File('data/train_signs.h5', "r")
+        X = numpy.load("data/SignsLanguage/X.npy")
+        Y = numpy.load("data/SignsLanguage/Y.npy")
+        # Get 60% of the dataset as the training set. Put the remaining 40% in temporary variables: x_ and y_.
+        self._X_train, x_, self._Y_train, y_ = train_test_split(X, Y, test_size=0.30, random_state=1)
 
-        test_dataset = h5py.File('data/test_signs.h5', "r")
-        self._X_test = numpy.array(test_dataset["test_set_x"][:]) # your test set features
-        self._Y_test = numpy.array(test_dataset["test_set_y"][:]) # your test set labels
+        # Split the 40% subset above into two: one half for cross validation and the other for the test set
+        self._X_cv, self._X_test, self._Y_cv, self._Y_test = train_test_split(x_, y_, test_size=0.50, random_state=1)
 
-        self._classes = numpy.array(test_dataset["list_classes"][:]) # the list of classes
+        # Delete temporary variables
+        del x_, y_
 
-        self._Y_train = self._Y_train.reshape((1, self._Y_train.shape[0]))
-        self._Y_test = self._Y_test.reshape((1, self._Y_test.shape[0]))
+        #self._X_train = numpy.array(train_dataset["train_set_x"][:]) # your train set features
+        #self._Y_train = numpy.array(train_dataset["train_set_y"][:]) # your train set labels
+
+        #test_dataset = h5py.File('data/test_signs.h5', "r")
+        #self._X_test = numpy.array(test_dataset["test_set_x"][:]) # your test set features
+        #self._Y_test = numpy.array(test_dataset["test_set_y"][:]) # your test set labels
+
+        self._classes = 10 #numpy.array(test_dataset["list_classes"][:]) # the list of classes
+        print(f"X_train: {self._X_train.shape}, Y_train: {self._Y_train.shape}, X_cv: {self._X_cv.shape}, Y_cv: {self._Y_cv.shape}, X_test: {self._X_test.shape}, Y_test: {self._Y_test.shape}")
+        # X_train: (1443, 64, 64), Y_train: (1443, 10), X_cv: (309, 64, 64), Y_cv: (309, 10), X_test: (310, 64, 64), Y_test: (310, 10)
+
+        #self._Y_train = self._Y_train.reshape((1, self._Y_train.shape[0]))
+        #self._Y_test = self._Y_test.reshape((1, self._Y_test.shape[0]))
 
         # Reshape
-        self._convert_labels_to_one_hot()
+        #self._convert_labels_to_one_hot()
         self._train_dataset = tf.data.Dataset.from_tensor_slices((self._X_train, self._Y_train)).shuffle(self._Y_train.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
-        self._validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_test, self._Y_test)).shuffle(self._Y_train.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        self._validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_cv, self._Y_cv)).shuffle(self._Y_cv.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
         print (f"number of training examples = {self._X_train.shape[0]}")
         print (f"number of test examples = {self._X_test.shape[0]}")
@@ -148,7 +164,7 @@ class SignsLanguageDigits():
         print (f"Y_train shape: {self._Y_train.shape}")
         print (f"X_test shape: {self._X_test.shape}")
         print (f"Y_test shape: {self._Y_test.shape}")
-        print(f"Class#: {self._classes} {self._classes.shape}")
+        print(f"Class#: {self._classes} {self._classes}")
         print(f"Y_train: {self._Y_train[:10]}")
         print(f"Y_test: {self._Y_test[:10]}")
         """
@@ -157,14 +173,14 @@ class SignsLanguageDigits():
         plt.figure(figsize=(10, 10))
         for i in range(25):
             ax = plt.subplot(5, 5, i + 1)
-            plt.imshow(next(images_iter).numpy().astype("uint8"))
-            plt.title(next(labels_iter).numpy().astype("uint8"))
+            plt.imshow(next(images_iter).astype("uint8"))
+            plt.title(next(labels_iter).astype("uint8"))
             plt.axis("off")
+        plt.show()
         """
-
     def _convert_labels_to_one_hot(self):
-        self._Y_train = numpy.eye(len(self._classes))[self._Y_train.reshape(-1)].T
-        self._Y_test = numpy.eye(len(self._classes))[self._Y_test.reshape(-1)].T
+        self._Y_train = numpy.eye(self._classes)[self._Y_train.reshape(-1)].T
+        self._Y_test = numpy.eye(self._classes)[self._Y_test.reshape(-1)].T
         self._Y_train = self._Y_train.T
         self._Y_test = self._Y_test.T
         
@@ -177,12 +193,14 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 
-    signs = SignsLanguageDigits("SignsLanguageDigits", "models/SignsLanguageDigits.keras", (64, 64, 3), 32, 0.00015)
+    signs = SignsLanguageDigits("SignsLanguageDigits", "models/SignsLanguageDigits.keras", (64, 64, 1), 32, 0.00015)
     signs.BuildModel()
     #InitializeGPU()
     signs.TrainModel(500, False, args.retrain)
+    """
     signs.PredictSign("images/my_handsign0.jpg", 2)
     signs.PredictSign("images/my_handsign1.jpg", 1)
     signs.PredictSign("images/my_handsign2.jpg", 3)
     signs.PredictSign("images/my_handsign3.jpg", 5)
     signs.PredictSign("images/my_handsign4.jpg", 5)
+    """
