@@ -188,7 +188,7 @@ class ImageSegmentationUNet():
                 show_layer_activations=True)
         if new_model or retrain:
             tensorboard = CreateTensorBoardCallback("ImageSegmentationUNet") # Create a new folder with current timestamp
-            history = self._model.fit(self._train_dataset, epochs=epochs, validation_data = self._val_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker]) # Use kwargs. Otherwise, the epochs will be treated as the labels and will hit error since this is using tf.data.Dataset which includes BOTH X and Y.
+            history = self._model.fit(self._train_dataset, epochs=epochs, shuffle=True, validation_data = self._val_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker]) # Use kwargs. Otherwise, the epochs will be treated as the labels and will hit error since this is using tf.data.Dataset which includes BOTH X and Y.
             PlotModelHistory("ImageSegmentation UNet", history)
             if self._path:
                 self._model.save(self._path)
