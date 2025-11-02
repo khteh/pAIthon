@@ -1,4 +1,4 @@
-import argparse, numpy, logging, warnings
+import argparse, numpy, logging, warnings, pickle
 import tensorflow as tf
 from pathlib import Path
 from tensorflow.keras.models import Sequential
@@ -47,15 +47,18 @@ class HandWrittenDigitsNN():
         This is a subset of the MNIST handwritten digit dataset (http://yann.lecun.com/exdb/mnist/)</sub>
         """
         self._X = numpy.load("data/X.npy")
-        self._Y = numpy.load("data/y.npy")
+        self._Y = numpy.load("data/y.npy", allow_pickle=True)
         self._X = self._X[0:1000]
         self._Y = self._Y[0:1000]
 
     def _visualize_data(self):
+        print(f"\n=== {self._visualize_data.__name__} ===")
         m, n = self._X.shape
-        fig, axes = plt.subplots(8,8, constrained_layout=True, figsize=(10, 10)) # figsize = (width, height)
-        fig.tight_layout(pad=0.1,rect=[0, 0.03, 1, 0.92]) #[left, bottom, right, top]
-        for i,ax in enumerate(axes.flat):
+        fig, axes = plt.subplots(8,8, constrained_layout=True, figsize=(20, 20)) # figsize = (width, height)
+        # Use tight_layout with h_pad to adjust vertical padding
+        # Adjust h_pad for more/less vertical space
+        fig.tight_layout(h_pad=2.0, rect=[0, 0.03, 1, 0.92]) #[left, bottom, right, top]
+        for i, ax in enumerate(axes.flat):
             # Select random indices
             random_index = rng.integers(m, size=1)
             
@@ -67,12 +70,13 @@ class HandWrittenDigitsNN():
             ax.imshow(X_random_reshaped, cmap='gray')
             
             # Display the label above the image
-            ax.set_title(self._Y[random_index,0])
+            ax.set_title(self._Y[random_index,0][0], fontsize=20, pad=0) # The offset of the title from the top of the Axes, in points.
             ax.set_axis_off()
-        fig.suptitle("Label", fontsize=16)
+        fig.suptitle("Label", fontsize=22, fontweight="bold")
         plt.show()
 
     def BuildTrainModel(self, epochs:int, rebuild: bool = False):
+        print(f"\n=== {self.BuildTrainModel.__name__} ===")
         if self._model and not rebuild:
             return
         self._model = Sequential(
@@ -97,11 +101,8 @@ class HandWrittenDigitsNN():
             rankdir="TB", # rankdir argument passed to PyDot, a string specifying the format of the plot: "TB" creates a vertical plot; "LR" creates a horizontal plot.
             expand_nested=True,
             show_layer_activations=True)
-        history = self._model.fit(
-            self._X, self._Y, epochs=epochs
-        )
+        history = self._model.fit(self._X, self._Y, epochs=epochs)
         PlotModelHistory("Hand Written Digits NN", history)
-
         if self._model_path:
             self._model.save(self._model_path)
             print(f"Model saved to {self._model_path}.")
@@ -119,10 +120,12 @@ class HandWrittenDigitsNN():
         # The following code compares the predictions vs the labels for a random sample of 64 digits. This takes a moment to run.
         m, n = self._X.shape
 
-        fig, axes = plt.subplots(8,8, constrained_layout=True, figsize=(10, 10)) # figsize = (width, height)
-        fig.tight_layout(pad=0.1,rect=[0, 0.03, 1, 0.92]) #[left, bottom, right, top]
-
-        for i,ax in enumerate(axes.flat):
+        fig, axes = plt.subplots(8,8, constrained_layout=True, figsize=(20, 20)) # figsize = (width, height)
+        # Use tight_layout with h_pad to adjust vertical padding
+        # Adjust h_pad for more/less vertical space
+        fig.tight_layout(h_pad=2.0, rect=[0, 0.03, 1, 0.92]) #[left, bottom, right, top]
+        print(f"_Y: {self._Y.shape}")
+        for i, ax in enumerate(axes.flat):
             # Select random indices
             random_index = rng.integers(m, size=1)
             
@@ -135,15 +138,11 @@ class HandWrittenDigitsNN():
             
             # Predict using the Neural Network
             prediction = self._model.predict(self._X[random_index].reshape(1,400))
-            if prediction >= 0.5:
-                yhat = 1
-            else:
-                yhat = 0
-            
+            yhat = int(prediction.item() >= 0.5)
             # Display the label above the image
-            ax.set_title(f"{self._Y[random_index,0]},{yhat}")
+            ax.set_title(f"{self._Y[random_index,0][0]},{yhat}", fontsize=20, pad=0)
             ax.set_axis_off()
-        fig.suptitle("Label, yhat", fontsize=16)
+        fig.suptitle("Label vs Prediction", fontsize=22, fontweight="bold")
         plt.show()
 
 if __name__ == "__main__":
