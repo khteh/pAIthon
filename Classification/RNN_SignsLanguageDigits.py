@@ -337,8 +337,6 @@ class RNN_SignsLanguageDigits(SignsLanguageDigits):
                 expand_nested=True,
                 show_layer_activations=True)
             """
-    def TrainModel(self, epochs:int, use_circuit_breaker:bool = False, retrain: bool = False):
-        super().TrainModel(epochs, use_circuit_breaker, retrain)
 
     def _identity_block(self, X, f, filters, initializer=random_uniform):
         """
