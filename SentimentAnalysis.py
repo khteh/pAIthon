@@ -1,4 +1,4 @@
-import numpy,polars,timeit, pandas as pd
+import numpy, pandas as pd
 from pathlib import Path
 from utils.FileUtil import Download, Unzip, Rename
 from utils.GPU import InitializeGPU
@@ -9,13 +9,12 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras import regularizers
-from tensorflow.keras.layers import Dense, Embedding, Conv1D, GlobalMaxPool1D
+from tensorflow.keras.layers import Dense, Embedding, Conv1D, GlobalMaxPool1D, Input, BatchNormalization
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.optimizers import Adam
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score
 import tensorflow as tf
 import tensorflow.keras.models as models
-import tensorflow.keras.layers as layers
 from utils.TrainingMetricsPlot import PlotModelHistory
 
 """
@@ -71,7 +70,7 @@ def OneHotEncoding():
     result = onehot_encoder.fit_transform(cities1)
     print(f"Word labels (OneHotEncoder): {result}")
 
-def CustomEmbeddingLayer(url, path):
+def CustomEmbeddingLayer(url:str, path:str, epochs:int):
     print(f"\n=== {CustomEmbeddingLayer.__name__} ===")
     Download(url, Path(path))
     Unzip(Path(path), "/tmp")
@@ -122,6 +121,7 @@ def CustomEmbeddingLayer(url, path):
         # L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
         #                            Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
         Conv1D(128, 5, activation='relu'),
+        BatchNormalization(),
         GlobalMaxPool1D(),
         #Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
         Dense(10, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
@@ -148,7 +148,8 @@ def CustomEmbeddingLayer(url, path):
     history = model.fit(
         x_train, 
         y_train, 
-        epochs=25,
+        epochs=epochs,
+        validation_freq=1,
         validation_data=(x_test, y_test)
     )
     # Predict using linear activation with from_logits=True
@@ -167,7 +168,7 @@ def CustomEmbeddingLayer(url, path):
     Some popular pretrained embeddings include Word2Vec from Google and GloVe from the NLP team at Standord Uni.
     """
 
-def SentimentAnalysis(url, path):
+def SentimentAnalysis(url:str, path:str, epochs:int):
     """
     Each unique word will be assigned a unique index which is used to identify the words during training.
     Each sentence is converted into a list of numbers using the indices mapped in the vocabulary. This produces a feature vector for each sentence, a numerical representation of a sentence.
@@ -247,7 +248,8 @@ def SentimentAnalysis(url, path):
     history = model.fit(
         x_train, 
         y_train, 
-        epochs=25,
+        epochs=epochs,
+        validation_freq=1,
         validation_data=(x_test, y_test)
     )
     # Predict using linear activation with from_logits=True
@@ -264,5 +266,5 @@ if __name__ == "__main__":
     InitializeGPU()
     BagOfWords()
     OneHotEncoding()
-    SentimentAnalysis("https://archive.ics.uci.edu/ml/machine-learning-databases/00331/sentiment%20labelled%20sentences.zip", "/tmp/sentiment_data.zip")
-    CustomEmbeddingLayer("https://archive.ics.uci.edu/ml/machine-learning-databases/00331/sentiment%20labelled%20sentences.zip", "/tmp/sentiment_data.zip")
+    SentimentAnalysis("https://archive.ics.uci.edu/ml/machine-learning-databases/00331/sentiment%20labelled%20sentences.zip", "/tmp/sentiment_data.zip", 100)
+    CustomEmbeddingLayer("https://archive.ics.uci.edu/ml/machine-learning-databases/00331/sentiment%20labelled%20sentences.zip", "/tmp/sentiment_data.zip", 100)
