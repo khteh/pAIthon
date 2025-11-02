@@ -145,7 +145,7 @@ class SignsLanguageDigits():
                 validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_test, self._Y_test)).shuffle(self._Y_train.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
                 #history = self._model.fit(train_dataset, epochs=epochs, shuffle=True, validation_data=validation_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker])
                 history = self._model.fit(train_dataset, epochs=epochs, shuffle=True, validation_data=validation_dataset, validation_freq=1, callbacks=[tensorboard])
-                PlotModelHistory("Signs Language multi-class classifier", history)
+                PlotModelHistory("Signs Language Multi-class Classifier", history)
                 self._trained = True
                 if self._model_path:
                     self._model.save(self._model_path)
