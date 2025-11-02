@@ -17,7 +17,7 @@ data too large to keep in git:
 """
 class ImageSegmentationUNet():
     _path:str = None
-    _input_size = None
+    _input_shape = None
     _n_filters: int = None
     _n_classes: int = None
     _buffer_size: int = None
@@ -28,9 +28,9 @@ class ImageSegmentationUNet():
     _model: Model = None
     _normalization: Normalization = None
     _circuit_breaker = None
-    def __init__(self, path:str, input_size, n_filters:int, n_classes: int, buffer_size:int, batch_size:int, learning_rate:float):
+    def __init__(self, path:str, input_shape, n_filters:int, n_classes: int, buffer_size:int, batch_size:int, learning_rate:float):
         self._path = path
-        self._input_size = input_size
+        self._input_shape = input_shape
         self._n_filters = n_filters
         self._n_classes = n_classes
         self._buffer_size = buffer_size
@@ -69,14 +69,14 @@ class ImageSegmentationUNet():
                     activation="relu",
                     padding="same",
                     kernel_initializer='he_normal')(inputs)
-        conv = BatchNormalization()(conv)
+        conv = BatchNormalization(axis=3)(conv)
         conv = Conv2D(n_filters, # Number of filters
                     3,   # Kernel size
                     activation="relu",
                     padding="same",
                     # set 'kernel_initializer' same as above
                     kernel_initializer='he_normal')(conv)
-        conv = BatchNormalization()(conv)
+        conv = BatchNormalization(axis=3)(conv)
         
         # if dropout_prob > 0 add a dropout layer, with the variable dropout_prob as parameter
         if dropout_prob > 0:
@@ -111,14 +111,14 @@ class ImageSegmentationUNet():
                     activation="relu",
                     padding="same",
                     kernel_initializer='he_normal')(merge)
-        conv = BatchNormalization()(conv)
+        conv = BatchNormalization(axis=3)(conv)
         conv = Conv2D(n_filters,  # Number of filters
                     3,   # Kernel size
                     activation="relu",
                     padding="same",
                     # set 'kernel_initializer' same as above
                     kernel_initializer='he_normal')(conv)
-        conv = BatchNormalization()(conv)
+        conv = BatchNormalization(axis=3)(conv)
         return conv
 
     def BuildTrainModel(self, epochs: int, retrain:bool = False):
@@ -126,7 +126,7 @@ class ImageSegmentationUNet():
         Unet model
         
         Arguments:
-            input_size -- Input shape 
+            input_shape -- Input shape 
             n_filters -- Number of filters for the convolutional layers
             n_classes -- Number of output classes
         Returns: 
@@ -135,7 +135,7 @@ class ImageSegmentationUNet():
         print(f"\n=== {self.BuildTrainModel.__name__} ===")
         new_model = not self._model
         if not self._model:
-            inputs = Input(self._input_size)
+            inputs = Input(self._input_shape)
             #print(f"inputs: {tf.math.reduce_mean(inputs, axis=-1)}")
             inputs = self._normalization(inputs)
             # Contracting Path (encoding)
@@ -166,10 +166,10 @@ class ImageSegmentationUNet():
                         padding='same',
                         # set 'kernel_initializer' same as above exercises
                         kernel_initializer='he_normal')(ublock9)
-
+            conv9 = BatchNormalization(axis=3)(conv9)
             # Add a Conv2D layer with n_classes filter, kernel size of 1 and a 'same' padding
             conv10 = Conv2D(self._n_classes, 1, padding="same")(conv9)
-            
+            conv10 = BatchNormalization(axis=3)(conv10)
             self._model = tf.keras.Model(inputs=inputs, outputs=conv10)
             # In semantic segmentation, you need as many masks as you have object classes. In the dataset you're using, each pixel in every mask has been assigned a single integer probability that it belongs to a certain class, from 0 to num_classes-1. The correct class is the layer with the higher probability.
             # This is different from categorical crossentropy, where the labels should be one-hot encoded (just 0s and 1s). Here, you'll use sparse categorical crossentropy as your loss function, to perform pixel-wise multiclass prediction. Sparse categorical crossentropy is more efficient than other loss functions when you're dealing with lots of classes.
