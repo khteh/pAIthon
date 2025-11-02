@@ -41,7 +41,7 @@ def PlotModelHistory(title, history):
 def PlotGANLossHistory(title, gen_losses, disc_losses):
     print(f"\n=== {PlotGANLossHistory.__name__} ===")
     fig, axs = plt.subplots(1, 1, constrained_layout=True, figsize=(20, 10)) # 1 row with 1 columns; figsize = (width, height)
-    fig.tight_layout(pad=5.0, rect=[0, 0.03, 1, 0.92]) #[left, bottom, right, top]
+    fig.tight_layout(pad=2, rect=[0, 0.03, 1, 0.92]) #[left, bottom, right, top]
     fig.suptitle(title, fontsize=22, fontweight="bold")
     x = range(1, len(gen_losses) + 1)
     axs.plot(x, gen_losses, 'b', label='Generator Loss')
@@ -52,5 +52,4 @@ def PlotGANLossHistory(title, gen_losses, disc_losses):
     axs.tick_params(axis='x', labelsize=20) 
     # Set y-axis tick label size
     axs.tick_params(axis='y', labelsize=20)    
-
     plt.show()# This blocks

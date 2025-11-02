@@ -2,7 +2,10 @@ import glob, matplotlib.pyplot as plt, imageio, imageio.v3 as iio
 from .TermColour import bcolors
 
 def ShowImage(path: int):
-  image = plt.imread(path)
+  image = iio.imread(path)
+  plt.figure(figsize=(10, 10))
+  plt.tight_layout(pad=0.1,rect=[0, 0, 1, 0.98]) #[left, bottom, right, top]
+  plt.axis('off')
   plt.imshow(image)
   plt.show()
 

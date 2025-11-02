@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt, os, PIL, time
 import numpy, math, tensorflow as tf
+from tqdm import tqdm
 from pathlib import Path
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose
@@ -287,7 +288,7 @@ class MNISTGAN():
         The training loop begins with generator receiving a random seed as input. That seed is used to produce an image. The discriminator is then used to classify real images (drawn from the training set) and fakes images (produced by the generator). 
         The loss is calculated for each of these models, and the gradients are used to update the generator and discriminator.
         """
-        for epoch in range(self._epochs):
+        for epoch in tqdm(range(self._epochs)):
             start = time.time()
             ave_gen_loss = 0
             ave_disc_loss = 0

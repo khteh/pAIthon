@@ -1,6 +1,7 @@
 import glob, imageio, matplotlib.pyplot as plt, os, time
 import numpy, math, tensorflow as tf
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from pathlib import Path
 from utils.Image import CreateGIF, ShowImage
 from tensorflow.keras.models import Sequential
@@ -207,7 +208,7 @@ class SineWaveGAN():
         """
         gen_losses = []
         disc_losses = []
-        for epoch in range(self._epochs):
+        for epoch in tqdm(range(self._epochs)):
             start = time.time()
             ave_gen_loss = 0
             ave_disc_loss = 0
@@ -276,8 +277,8 @@ if __name__ == "__main__":
     checkpoint_prefix = os.path.join(checkpoint_dir, "sinewave_gan")
     Path("output/SineWaveGAN").mkdir(parents=True, exist_ok=True)
     Path("output/SineWaveGAN").is_dir()
-    #sinewaveGAN = SineWaveGAN(NUM_SINE_WAVES, BATCH_SIZE, SAMPLES, EPOCHS, checkpoint_prefix)
-    #sinewaveGAN.PrepareTrainingData()
-    #sinewaveGAN.Train()
-    #ShowImage(f'output/SineWaveGAN/sinewave_gan_epoch_{EPOCHS:04d}.png')
+    sinewaveGAN = SineWaveGAN(NUM_SINE_WAVES, BATCH_SIZE, SAMPLES, EPOCHS, checkpoint_prefix)
+    sinewaveGAN.PrepareTrainingData()
+    sinewaveGAN.Train()
+    ShowImage(f'output/SineWaveGAN/sinewave_gan_epoch_{EPOCHS:04d}.png')
     CreateGIF("output/SineWaveGAN/sinewave_gan.gif", 'output/SineWaveGAN/sinewave_gan_epoch_*.png')
