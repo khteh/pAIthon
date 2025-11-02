@@ -85,7 +85,7 @@ class SmilingFaceConvNet():
                     ## Conv2D with 32 7x7 filters and stride of 1
                     Conv2D(32, (7, 7), strides=(1, 1)),
                     ## BatchNormalization for axis 3
-                    BatchNormalization(axis=3), # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+                    BatchNormalization(axis=-1), # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
                     ## ReLU
                     ReLU(),
                     ## Max Pooling 2D with default parameters
