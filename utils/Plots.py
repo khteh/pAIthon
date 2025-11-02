@@ -8,22 +8,26 @@ This allows you to specify a custom region within the figure for tight_layout to
 The default value for rect is (0, 0, 1, 1), meaning the entire figure area.
 """
 def plot_dataset(x, y, title):
-    plt.rcParams["figure.figsize"] = (12,8)
-    plt.rcParams["lines.markersize"] = 12
-    plt.scatter(x, y, marker='x', c='r'); 
-    plt.title(title)
-    plt.xlabel("x"); 
-    plt.ylabel("y"); 
+    plt.figure(figsize=(12, 10)) # (width, height)
+    plt.scatter(x, y, marker='x', c='r', s=100)
+    plt.title(title, fontsize=22, fontweight="bold", y=1.05)
+    plt.xlabel("x", fontsize=22)
+    plt.ylabel("y", fontsize=22)
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)    
     plt.show()
 
 def plot_train_cv_test(x_train, y_train, x_cv, y_cv, x_test, y_test, title):
-    plt.scatter(x_train, y_train, marker='x', c='r', label='training'); 
-    plt.scatter(x_cv, y_cv, marker='o', c='b', label='cross validation'); 
-    plt.scatter(x_test, y_test, marker='^', c='g', label='test'); 
-    plt.title("input vs. target")
-    plt.xlabel("x"); 
-    plt.ylabel("y"); 
-    plt.legend()
+    plt.figure(figsize=(12, 10)) # (width, height)
+    plt.scatter(x_train, y_train, marker='x', c='r', label='training', s=100)
+    plt.scatter(x_cv, y_cv, marker='o', c='b', label='cross validation', s=100)
+    plt.scatter(x_test, y_test, marker='^', c='g', label='test', s=100)
+    plt.title(title, fontsize=22, fontweight="bold", y=1.05)
+    plt.xlabel("x", fontsize=22) 
+    plt.ylabel("y", fontsize=22)
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)    
+    plt.legend(fontsize='x-large')
     plt.show()
 
 def plot_train_cv_mses(degrees, train_mses, cv_mses, title):

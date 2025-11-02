@@ -11,7 +11,7 @@ from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras import Sequential
 from tensorflow.keras.regularizers import l2
 from utils.GPU import InitializeGPU
-from utils.Plots import *
+from utils.Plots import plot_train_cv_test, plot_dataset
 # reduce display precision on numpy arrays
 numpy.set_printoptions(precision=2)
 
@@ -54,10 +54,11 @@ class NeuralNetworkModelEvaluationAndSelection():
 
     _degree: int = None # Best performing linear regression model degree which yields the lowest mse.
     _poly : PolynomialFeatures = None
+    _learning_rate:float = None
     _models: list[Sequential] = None
-
-    def __init__(self, path):
+    def __init__(self, path, learning_rate:float):
         InitializeGPU()
+        self._learning_rate = learning_rate
         self._prepare_data(path)
 
     def _prepare_data(self, path: str):
@@ -95,7 +96,7 @@ class NeuralNetworkModelEvaluationAndSelection():
         print(f"the shape of the test set (target) is: {self._Y_test.shape}")
 
         # Data set plot to show which points were used as training, cross validation, or test data.
-        plot_train_cv_test(self._X_train, self._Y_train, self._X_cv, self._Y_cv, self._X_test, self._Y_test, title="input vs. target")
+        plot_train_cv_test(self._X_train, self._Y_train, self._X_cv, self._Y_cv, self._X_test, self._Y_test, title="Input vs. Target")
         """
         StandardScaler from scikitlearn computes the z-score of your inputs. As a refresher, the z-score is given by the equation:
             z = (x - 𝜇) / sigma
@@ -115,7 +116,7 @@ class NeuralNetworkModelEvaluationAndSelection():
         print(f"data: {data.shape}, Y_train: {self._Y_train.shape}")
         print(f"x: {data.shape}, y: {self._Y_train.shape}")
         if data.shape == self._Y_train.shape:
-            plot_dataset(x=data, y=self._Y_train, title="scaled input vs. target")
+            plot_dataset(x=data, y=self._Y_train, title="Scaled Input vs. Target")
         return scaled_data
     
     def BuildModels(self):
@@ -169,29 +170,26 @@ class NeuralNetworkModelEvaluationAndSelection():
         self._X_cv_scaled = self.ScaleData(X_cv_mapped)
         self._X_test_scaled = self.ScaleData(X_test_mapped)
 
-    def ModelSelection(self, rate: float):
+    def ModelSelection(self, epochs: int):
         # Initialize lists that will contain the errors for each model
         nn_train_mses = []
         nn_cv_mses = []
 
         # Build the models
         self.BuildModels()
-
         # Loop over the the models
         for model in self._models:
-            
             # Setup the loss and optimizer
             model.compile(
                 loss='mse',
-                optimizer=tf.keras.optimizers.Adam(learning_rate=rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                optimizer=tf.keras.optimizers.Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
             )
-
             print(f"Training {model.name}...")
             
             # Train the model
             model.fit(
                 self._X_train_scaled, self._Y_train,
-                epochs=300,
+                epochs=epochs,
                 verbose=0
             )
             print("Done!\n")
@@ -232,7 +230,7 @@ class NeuralNetworkModelEvaluationAndSelection():
         print(f"Test MSE: {self._test_mse:.2f}")
 
 if __name__ == "__main__":
-    nn = NeuralNetworkModelEvaluationAndSelection('./data/data_w3_ex1.csv')
+    nn = NeuralNetworkModelEvaluationAndSelection('./data/data_w3_ex1.csv', 0.01)
     nn.AddPolynomialFeatures()
-    nn.ModelSelection(0.1)
+    nn.ModelSelection(300)
     nn.TestDataSetPerformance()
