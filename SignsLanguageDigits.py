@@ -10,6 +10,7 @@ from tensorflow.keras.optimizers import Adam
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 from utils.GPU import InitializeGPU
+from utils.TermColour import bcolors
 class SignsLanguageDigits():
     """
     A convolution NN which differentiates among 6 sign language digits.
@@ -30,7 +31,7 @@ class SignsLanguageDigits():
         InitializeGPU()
         self._model_path = path
         self._prepare_data()
-        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 7)
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_loss", "min", 7)
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._model = tf.keras.models.load_model(self._model_path)
@@ -103,12 +104,14 @@ class SignsLanguageDigits():
                 Input(shape=(64,64,3)),
                 ## CONV2D: 8 filters 4x4, stride of 1, padding 'SAME'
                 Conv2D(8, (4,4), strides=(1,1), padding="same", name="L1"),
+                BatchNormalization(axis=3), # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
                 ## ReLU
                 ReLU(name="L2"),
                 ## MAXPOOL: window 8x8, stride 8, padding 'SAME'
                 MaxPool2D((8,8), strides=(8,8), padding="same", name="L3"),
                 ## CONV2D: 16 filters 2x2, stride 1, padding 'SAME'
                 Conv2D(16, (2,2), strides=(1,1), padding="same", name="L4"),
+                BatchNormalization(axis=3), # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
                 ## ReLU
                 ReLU(name="L5"),
                 ## MAXPOOL: window 4x4, stride 4, padding 'SAME'
@@ -140,7 +143,8 @@ class SignsLanguageDigits():
                 tensorboard = CreateTensorBoardCallback("SignsLanguageDigits") # Create a new folder with current timestamp
                 train_dataset = tf.data.Dataset.from_tensor_slices((self._X_train, self._Y_train)).shuffle(self._Y_train.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
                 validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_test, self._Y_test)).shuffle(self._Y_train.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
-                history = self._model.fit(train_dataset, epochs=epochs, shuffle=True, validation_data=validation_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker])
+                #history = self._model.fit(train_dataset, epochs=epochs, shuffle=True, validation_data=validation_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker])
+                history = self._model.fit(train_dataset, epochs=epochs, shuffle=True, validation_data=validation_dataset, validation_freq=1, callbacks=[tensorboard])
                 PlotModelHistory("Signs Language multi-class classifier", history)
                 self._trained = True
                 if self._model_path:
@@ -160,8 +164,8 @@ class SignsLanguageDigits():
         prediction = self._model.predict(x2)
         print(f"Class prediction vector [p(0), p(1), p(2), p(3), p(4), p(5)] = {prediction}")
         prediction = numpy.argmax(prediction)
-        print(f"Truth: {truth}, Class: {prediction}")
-        #assert truth == prediction
+        color = bcolors.OKGREEN if truth == prediction else bcolors.FAIL
+        print(f"{color}Truth: {truth}, Class: {prediction}{bcolors.DEFAULT}")
 
 if __name__ == "__main__":
     """
@@ -174,7 +178,7 @@ if __name__ == "__main__":
 
     signs = SignsLanguageDigits("models/SignsLanguageDigits.keras", 64, 0.001)
     signs.BuildModel(args.retrain)
-    signs.TrainEvaluate(args.retrain, 300)
+    signs.TrainEvaluate(args.retrain, 500)
     signs.PredictSign("images/my_handsign0.jpg", 2)
     signs.PredictSign("images/my_handsign1.jpg", 1)
     signs.PredictSign("images/my_handsign2.jpg", 3)
