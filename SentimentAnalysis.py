@@ -149,6 +149,7 @@ def CustomEmbeddingLayer(url:str, path:str, epochs:int):
         x_train, 
         y_train, 
         epochs=epochs,
+        shuffle=True,
         validation_freq=1,
         validation_data=(x_test, y_test)
     )
