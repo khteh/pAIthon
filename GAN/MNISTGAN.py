@@ -4,7 +4,8 @@ from tqdm import tqdm
 from pathlib import Path
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose
-from tensorflow.keras import losses, optimizers, regularizers
+from tensorflow.keras import losses, optimizers
+from tensorflow.keras.regularizers import l2
 from utils.Image import ShowImage, CreateGIF
 from utils.GPU import InitializeGPU
 from utils.TrainingMetricsPlot import PlotGANLossHistory
@@ -46,7 +47,7 @@ class Discriminator():
 
                         Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
                         # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
-                        Dense(1, kernel_regularizer=regularizers.l2(0.01))]) # Linear activation ("pass-through") if not specified. Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+                        Dense(1, kernel_regularizer=l2(0.01))]) # Linear activation ("pass-through") if not specified. Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
         """
         In TensorFlow Keras, the from_logits argument in cross-entropy loss functions determines how the input predictions are interpreted. When from_logits=True, the loss function expects raw, unscaled output values (logits) from the model's last layer. 
         These logits are then internally converted into probabilities using the sigmoid or softmax function before calculating the cross-entropy loss. Conversely, when from_logits=False, the loss function assumes that the input predictions are already probabilities, typically obtained by applying a sigmoid or softmax activation function in the model's output layer.
@@ -97,7 +98,7 @@ class Generator():
     def __init__(self):
         self.model = Sequential()
         self.model.add(Input(shape=(100,)))
-        self.model.add(Dense(7*7*256, name="L1", kernel_regularizer=regularizers.l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
+        self.model.add(Dense(7*7*256, name="L1", kernel_regularizer=l2(0.01))) # Decrease to fix high bias; Increase to fix high variance.
         self.model.add(BatchNormalization()) # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
         self.model.add(LeakyReLU())
         self.model.add(Reshape((7, 7, 256))) # Match the Dense layer's shape

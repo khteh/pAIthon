@@ -5,6 +5,7 @@ import tensorflow as tf
 from utils.GPU import InitializeGPU
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import regularizers, models
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Flatten, Dropout
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
@@ -137,9 +138,9 @@ def build_model():
                     Conv2D(64, (3, 3), activation='softmax', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
                     MaxPooling2D((2, 2)),
                     Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
-                    Dense(64, activation='softmax', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+                    Dense(64, activation='softmax', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
                     Dropout(0.5),
-                    Dense(64, activation='softmax', name="L2", kernel_regularizer=regularizers.l2(0.01)),
+                    Dense(64, activation='softmax', name="L2", kernel_regularizer=l2(0.01)),
                     Dropout(0.5),
                     # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
                     Dense(NUM_CATEGORIES, name="L3") # Linear activation ("pass-through") if not specified

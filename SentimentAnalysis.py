@@ -8,7 +8,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras import regularizers
+from tensorflow.keras.regularizers import l2
 from tensorflow.keras.layers import Dense, Embedding, Conv1D, GlobalMaxPool1D, Input, BatchNormalization
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.optimizers import Adam
@@ -124,7 +124,7 @@ def CustomEmbeddingLayer(url:str, path:str, epochs:int):
         BatchNormalization(),
         GlobalMaxPool1D(),
         #Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
-        Dense(10, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+        Dense(10, activation='relu', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
         Dense(1, activation='linear', name="L2") # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
     ]) 
     """
@@ -224,7 +224,7 @@ def SentimentAnalysis(url:str, path:str, epochs:int):
     """
     model = models.Sequential([
         Input(shape=(x_train.shape[1],)),  # Specify the input shape. https://keras.io/guides/sequential_model/#specifying-the-input-shape-in-advance
-        Dense(10, activation='relu', name="L1", kernel_regularizer=regularizers.l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
+        Dense(10, activation='relu', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance.
         Dense(1, activation='linear', name="L2")]) # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
     print("Model Summary:")
     model.summary()

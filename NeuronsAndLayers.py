@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense
 from tensorflow.keras import regularizers, Sequential
 from tensorflow.keras.activations import sigmoid
+from tensorflow.keras.regularizers import l2
 from utils.GPU import InitializeGPU
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -32,7 +33,7 @@ def LinearRegressionModel():
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
                                Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
     """       
-    linear_layer = tf.keras.layers.Dense(units=1, activation = 'linear', name="L1", kernel_regularizer=regularizers.l2(0.01)) # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+    linear_layer = tf.keras.layers.Dense(units=1, activation = 'linear', name="L1", kernel_regularizer=l2(0.01)) # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
     w, b = linear_layer.get_weights()
     # There are no weights as the weights are not yet instantiated. 
     print(f"weights: {w}")
@@ -90,7 +91,7 @@ def LogisticNeuron():
     model = Sequential(
         [
             Input(shape=(1,)),
-            tf.keras.layers.Dense(1, activation = 'sigmoid', name='L1', kernel_regularizer=regularizers.l2(0.01)) # Decrease to fix high bias; Increase to fix high variance.
+            tf.keras.layers.Dense(1, activation = 'sigmoid', name='L1', kernel_regularizer=l2(0.01)) # Decrease to fix high bias; Increase to fix high variance.
         ]
     )
     # model.summary() shows the layers and number of parameters in the model. There is only one layer in this model and that layer has only one unit. The unit has two parameters, w and b
