@@ -54,3 +54,4 @@ data/CameraRGB filter=lfs diff=lfs merge=lfs -text
 *.h5 filter=lfs diff=lfs merge=lfs -text
 models/ImageSegmentationUNet.keras filter=lfs diff=lfs merge=lfs -text
 models/LSTM_Emojifier.keras filter=lfs diff=lfs merge=lfs -text
+models/ResidualNetwork50.keras filter=lfs diff=lfs merge=lfs -text

@@ -249,16 +249,18 @@ class ResidualNetwork50():
     _model_path:str = None
     _input_shape = None
     _classes: int = None
+    _batch_size:int = None
     _learning_rate: float = None
     _X_train: numpy.array = None
     _Y_train: numpy.array = None
     _X_test: numpy.array = None
     _Y_test: numpy.array = None
     _trained: bool = False
-    def __init__(self, path:str, input_shape, learning_rate:float):
+    def __init__(self, path:str, input_shape, learning_rate:float, batch_size:int):
         InitializeGPU()
         self._model_path = path
         self._input_shape = input_shape
+        self._batch_size = batch_size
         self._learning_rate = learning_rate
         self._prepare_data()
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
@@ -476,10 +478,10 @@ class ResidualNetwork50():
             )
         self._model.summary()
 
-    def TrainEvaluate(self, rebuild: bool, epochs:int, batch_size:int):
+    def TrainEvaluate(self, rebuild: bool, epochs:int):
         if self._model:
             if not self._trained or rebuild:
-                history = self._model.fit(self._X_train, self._Y_train, epochs = epochs, batch_size = batch_size)
+                history = self._model.fit(self._X_train, self._Y_train, epochs = epochs, batch_size = self._batch_size)
                 PlotModelHistory("ResNet-50 multi-class classifier", history)
                 self._trained = True
                 # remote: error: File models/ResidualNetwork50.keras is 270.44 MB; this exceeds GitHub's file size limit of 100.00 MB
@@ -515,9 +517,9 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 
-    resnet50 = ResidualNetwork50("/tmp/ResidualNetwork50.keras", (64, 64, 3), 0.00015)
+    resnet50 = ResidualNetwork50("models/ResidualNetwork50.keras", (64, 64, 3), 0.00015, 32)
     resnet50.BuildModel(args.retrain)
-    resnet50.TrainEvaluate(args.retrain, 20, 32)
+    resnet50.TrainEvaluate(args.retrain, 20)
     resnet50.PredictSign("images/my_handsign0.jpg", 2)
     resnet50.PredictSign("images/my_handsign1.jpg", 1)
     resnet50.PredictSign("images/my_handsign2.jpg", 3)
