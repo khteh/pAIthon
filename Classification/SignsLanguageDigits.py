@@ -106,7 +106,7 @@ class SignsLanguageDigits():
             callbacks=[tensorboard]
             if use_circuit_breaker:
                 callbacks.append(self._circuit_breaker)
-            history = self._model.fit(self._train_dataset, epochs=epochs, shuffle=True, validation_data=self._validation_dataset, validation_freq=1, callbacks=callbacks)
+            history = self._model.fit(self._train_dataset, epochs=epochs, shuffle=True, validation_data=self._validation_dataset, validation_freq=1, callbacks=callbacks) # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
             self._trained = True
             PlotModelHistory(f"{self._name} Multi-class Classifier", history)
             if self._model_path:
@@ -127,6 +127,7 @@ class SignsLanguageDigits():
         print(f"{color}Truth: {truth}, Class: {prediction}{bcolors.DEFAULT}")
 
     def _PrepareData(self):
+        # https://www.kaggle.com/datasets/ardamavi/sign-language-digits-dataset
         #train_dataset = h5py.File('data/train_signs.h5', "r")
         X = numpy.load("data/SignsLanguage/X.npy")
         Y = numpy.load("data/SignsLanguage/Y.npy")

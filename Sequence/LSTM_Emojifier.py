@@ -206,7 +206,7 @@ class LSTMEmojifier():
     def Train(self, epochs: int = 50, batch_size:int = 32, retrain:bool = False):
         if not self._trained or retrain:
             if self._model:
-                history = self._model.fit(self._X_train_indices, self._Y_train_oh, epochs = epochs, batch_size = batch_size, shuffle=True)
+                history = self._model.fit(self._X_train_indices, self._Y_train_oh, epochs = epochs, batch_size = batch_size, shuffle=True) # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
                 PlotModelHistory("LSTM Emojifier", history)
                 if self._model_path:
                     self._model.save(self._model_path) #https://github.com/tensorflow/tensorflow/issues/102475

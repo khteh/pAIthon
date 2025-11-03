@@ -69,14 +69,14 @@ class ImageSegmentationUNet():
                     activation="relu",
                     padding="same",
                     kernel_initializer='he_normal')(inputs)
-        conv = BatchNormalization(axis=3)(conv)
+        conv = BatchNormalization(axis=-1)(conv)
         conv = Conv2D(n_filters, # Number of filters
                     3,   # Kernel size
                     activation="relu",
                     padding="same",
                     # set 'kernel_initializer' same as above
                     kernel_initializer='he_normal')(conv)
-        conv = BatchNormalization(axis=3)(conv)
+        conv = BatchNormalization(axis=-1)(conv)
         
         # if dropout_prob > 0 add a dropout layer, with the variable dropout_prob as parameter
         if dropout_prob > 0:
@@ -105,20 +105,20 @@ class ImageSegmentationUNet():
                     padding="same")(expansive_input)
         
         # Merge the previous output and the contractive_input
-        merge = concatenate([up, contractive_input], axis=3)
+        merge = concatenate([up, contractive_input], axis=-1)
         conv = Conv2D(n_filters,   # Number of filters
                     3,     # Kernel size
                     activation="relu",
                     padding="same",
                     kernel_initializer='he_normal')(merge)
-        conv = BatchNormalization(axis=3)(conv)
+        conv = BatchNormalization(axis=-1)(conv)
         conv = Conv2D(n_filters,  # Number of filters
                     3,   # Kernel size
                     activation="relu",
                     padding="same",
                     # set 'kernel_initializer' same as above
                     kernel_initializer='he_normal')(conv)
-        conv = BatchNormalization(axis=3)(conv)
+        conv = BatchNormalization(axis=-1)(conv)
         return conv
 
     def BuildTrainModel(self, epochs: int, retrain:bool = False):
@@ -166,10 +166,10 @@ class ImageSegmentationUNet():
                         padding='same',
                         # set 'kernel_initializer' same as above exercises
                         kernel_initializer='he_normal')(ublock9)
-            conv9 = BatchNormalization(axis=3)(conv9)
+            conv9 = BatchNormalization(axis=-1)(conv9)
             # Add a Conv2D layer with n_classes filter, kernel size of 1 and a 'same' padding
             conv10 = Conv2D(self._n_classes, 1, padding="same")(conv9)
-            conv10 = BatchNormalization(axis=3)(conv10)
+            conv10 = BatchNormalization(axis=-1)(conv10)
             self._model = tf.keras.Model(inputs=inputs, outputs=conv10)
             # In semantic segmentation, you need as many masks as you have object classes. In the dataset you're using, each pixel in every mask has been assigned a single integer probability that it belongs to a certain class, from 0 to num_classes-1. The correct class is the layer with the higher probability.
             # This is different from categorical crossentropy, where the labels should be one-hot encoded (just 0s and 1s). Here, you'll use sparse categorical crossentropy as your loss function, to perform pixel-wise multiclass prediction. Sparse categorical crossentropy is more efficient than other loss functions when you're dealing with lots of classes.
@@ -188,6 +188,7 @@ class ImageSegmentationUNet():
                 show_layer_activations=True)
         if new_model or retrain:
             tensorboard = CreateTensorBoardCallback("ImageSegmentationUNet") # Create a new folder with current timestamp
+            # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
             history = self._model.fit(self._train_dataset, epochs=epochs, shuffle=True, validation_data = self._val_dataset, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker]) # Use kwargs. Otherwise, the epochs will be treated as the labels and will hit error since this is using tf.data.Dataset which includes BOTH X and Y.
             PlotModelHistory("ImageSegmentation UNet", history)
             if self._path:

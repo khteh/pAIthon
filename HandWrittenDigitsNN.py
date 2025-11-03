@@ -100,7 +100,7 @@ class HandWrittenDigitsNN():
                 expand_nested=True,
                 show_layer_activations=True)
         if new_model or retrain:
-            history = self._model.fit(self._X, self._Y, epochs=epochs, shuffle=True)
+            history = self._model.fit(self._X, self._Y, epochs=epochs, shuffle=True) # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
             PlotModelHistory("Hand Written Digits NN", history)
             if self._model_path:
                 self._model.save(self._model_path)

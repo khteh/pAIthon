@@ -62,7 +62,7 @@ class NameEntityRecognition():
             # https://github.com/keras-team/keras/issues/21666
             self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=self._model.hf_compute_loss, metrics=['accuracy']) # can also use any keras loss fn
         if new_model or retrain:
-            history = self._model.fit(self._train.batch(self._batch_size), epochs=epochs, batch_size=self._batch_size, shuffle=True)
+            history = self._model.fit(self._train.batch(self._batch_size), epochs=epochs, batch_size=self._batch_size, shuffle=True) # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
             PlotModelHistory("Name Entity Recognition", history)
             #if self._model_path:
             #    self._model.save(self._model_path)

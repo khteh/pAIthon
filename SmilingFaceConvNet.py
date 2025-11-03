@@ -111,7 +111,7 @@ class SmilingFaceConvNet():
                 expand_nested=True,
                 show_layer_activations=True)
         if new_model or retrain:
-            history = self._model.fit(self._X_train, self._Y_train, epochs=epochs, batch_size=self._batch_size, shuffle=True)
+            history = self._model.fit(self._X_train, self._Y_train, epochs=epochs, batch_size=self._batch_size, shuffle=True) # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
             print(f"history: {history.history}")
             PlotModelHistory("Smiling face binary classifier", history)
             if self._model_path:

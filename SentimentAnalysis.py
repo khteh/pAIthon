@@ -149,7 +149,7 @@ def CustomEmbeddingLayer(url:str, path:str, epochs:int):
         x_train, 
         y_train, 
         epochs=epochs,
-        shuffle=True,
+        shuffle=True, # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
         validation_freq=1,
         validation_data=(x_test, y_test)
     )

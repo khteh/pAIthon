@@ -190,7 +190,7 @@ class NeuralNetworkModelEvaluationAndSelection():
             model.fit(
                 self._X_train_scaled, self._Y_train,
                 epochs=epochs,
-                shuffle=True,
+                shuffle=True, # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
                 verbose=0
             )
             print("Done!\n")

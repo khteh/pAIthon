@@ -174,7 +174,7 @@ class LSTM_NameEntityRecognition():
         if new_model or retrain:
             tensorboard = CreateTensorBoardCallback("LSTM_NameEntityRecognition") # Create a new folder with current timestamp
             history = self.model.fit(self._train_dataset.batch(self._batch_size),
-                                        validation_data = self._val_dataset.batch(self._batch_size), shuffle=True, epochs = epochs, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker])
+                                        validation_data = self._val_dataset.batch(self._batch_size), shuffle=True, epochs = epochs, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker]) # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
             PlotModelHistory("LSTM Name Entity Recognition", history)
             #if self._model_path:
             #    self.model.save(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
