@@ -1,4 +1,4 @@
-import argparse, h5py, numpy
+import argparse
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Input, Add, Dense, Dropout, Activation, ZeroPadding2D, Flatten, Conv2D, AveragePooling2D, MaxPooling2D, BatchNormalization, Normalization
 from tensorflow.keras.models import Model, load_model

@@ -1,7 +1,10 @@
 import os, numpy, pandas as pd, tensorflow as tf, PIL
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.applications import InceptionResNetV2
 from tensorflow.keras.models import Model, Sequential, model_from_json
 from tensorflow.keras.layers import Input, Add, Dense, Dropout, Activation, GlobalAveragePooling2D, Flatten, Conv2D, AveragePooling2D, MaxPooling2D, BatchNormalization, Normalization
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras import backend as K
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.initializers import random_uniform, glorot_uniform, constant, identity
@@ -52,7 +55,7 @@ class FaceRecognition():
             self._model.summary()
             plot_model(
                 self._model,
-                to_file=f"output/{self._name}.png",
+                to_file=f"output/FaceRecognition.png",
                 show_shapes=True,
                 show_dtype=True,
                 show_layer_names=True,

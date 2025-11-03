@@ -1,4 +1,4 @@
-import argparse, h5py, numpy
+import argparse
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.applications import ResNet152V2
 from tensorflow.keras.optimizers import Adam
