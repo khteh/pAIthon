@@ -10,7 +10,6 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.initializers import random_uniform, glorot_uniform, constant, identity
 from utils.TrainingMetricsPlot import PlotModelHistory
-from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 from utils.TermColour import bcolors
 K.set_image_data_format('channels_last')
 
@@ -22,7 +21,6 @@ class FaceRecognition():
     _names = ["andrew", "arnaud", "benoit",  "bertrand", "dan", "danielle", "felix", "kevin", "kian", "sebastiano", "tian", "younes"]
     def __init__(self, threshold:bool):
         self._threshold = threshold
-        self._circuit_breaker = CreateCircuitBreakerCallback("val_loss", "min", 9)
         self._BuildModel()
         self._PrepareData()
 
@@ -53,10 +51,6 @@ class FaceRecognition():
                 rankdir="TB",
                 expand_nested=True,
                 show_layer_activations=True)
-            #with open('./models/keras-facenet-h5/model.json', 'r', newline='') as f: # XXX: TypeError: Could not locate class 'Functional'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`.
-            #    loaded_model_json = f.read()
-            #    self._model = model_from_json(loaded_model_json)
-            #self._model.load_weights('./models/keras-facenet-h5/model.h5')
         print(f"Model input: {self._model.inputs}")
         print(f"Model output: {self._model.outputs}")
 
