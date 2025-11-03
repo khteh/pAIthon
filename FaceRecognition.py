@@ -1,7 +1,10 @@
 import os, numpy, pandas as pd, tensorflow as tf, PIL
 from tensorflow.keras.applications import InceptionResNetV2
 from tensorflow.keras.models import Model, Sequential, model_from_json
+from tensorflow.keras.layers import Input, Add, Dense, Dropout, Activation, GlobalAveragePooling2D, Flatten, Conv2D, AveragePooling2D, MaxPooling2D, BatchNormalization, Normalization
 from tensorflow.keras import backend as K
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.initializers import random_uniform, glorot_uniform, constant, identity
 from utils.TermColour import bcolors
 K.set_image_data_format('channels_last')
 
@@ -12,7 +15,7 @@ class FaceRecognition():
     def __init__(self, threshold:bool):
         self._threshold = threshold
         self.BuildModel()
-        self.PrepareData()
+        self._PrepareData()
 
     def BuildModel(self):
         """
@@ -23,15 +26,48 @@ class FaceRecognition():
         https://www.tensorflow.org/api_docs/python/tf/keras/applications/InceptionResNetV2 width and height should be no smaller than 75. E.g. (150, 150, 3) would be one valid value.
         classes: optional number of classes to classify images into, only to be specified if include_top is True, and if no weights argument is specified.
         """
-        self._model = InceptionResNetV2()
-        #with open('./models/keras-facenet-h5/model.json', 'r', newline='') as f: # XXX: TypeError: Could not locate class 'Functional'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`.
-        #    loaded_model_json = f.read()
-        #    self._model = model_from_json(loaded_model_json)
-        #self._model.load_weights('./models/keras-facenet-h5/model.h5')
+        if not self._model:
+            base_model = InceptionResNetV2(include_top=False)
+            # freeze the base model by making it non trainable
+            base_model.trainable = False
+            x = base_model.output
+
+            # add the new Multi-class classification layers
+            # use global avg pooling to summarize the info in each channel
+            x = GlobalAveragePooling2D(name="AveragePooling")(x)
+            x = BatchNormalization()(x)
+
+            # include dropout with probability of 0.2 to avoid overfitting
+            x = Dropout(0.2, name="FinalDropout")(x)
+            outputs = Dense(128, name="FinalOutput", kernel_initializer = glorot_uniform(seed=0), kernel_regularizer=l2(0.01))(x) # Decrease to fix high bias; Increase to fix high variance.
+
+            # Create model
+            self._model = Model(base_model.input, outputs)
+            self._model.name = self._name
+            self._model.compile(
+                    loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
+                    optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                    metrics=['accuracy']
+                )
+            self._model.summary()
+            plot_model(
+                self._model,
+                to_file=f"output/{self._name}.png",
+                show_shapes=True,
+                show_dtype=True,
+                show_layer_names=True,
+                rankdir="TB",
+                expand_nested=True,
+                show_layer_activations=True)
+
+            #with open('./models/keras-facenet-h5/model.json', 'r', newline='') as f: # XXX: TypeError: Could not locate class 'Functional'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`.
+            #    loaded_model_json = f.read()
+            #    self._model = model_from_json(loaded_model_json)
+            #self._model.load_weights('./models/keras-facenet-h5/model.h5')
         print(f"Model input: {self._model.inputs}")
         print(f"Model output: {self._model.outputs}")
 
-    def PrepareData(self):
+    def _PrepareData(self):
         self._database["danielle"] = self._img_to_encoding("images/danielle.png")
         self._database["younes"] = self._img_to_encoding("images/younes.jpg")
         self._database["tian"] = self._img_to_encoding("images/tian.jpg")
@@ -154,7 +190,7 @@ class FaceRecognition():
         Generate one encoding vector for each person by running the forward propagation of the model on the specified image.
         """
         img = tf.keras.preprocessing.image.load_img(image_path, target_size=(299, 299))
-        img = numpy.around(numpy.array(img) / 255.0, decimals=12)
+        #img = numpy.around(numpy.array(img) / 255.0, decimals=12)
         x_train = numpy.expand_dims(img, axis=0)
         embedding = self._model.predict_on_batch(x_train)
         return embedding / numpy.linalg.norm(embedding, ord=2)

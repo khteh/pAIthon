@@ -42,7 +42,7 @@ class SignsLanguageDigits():
         self._batch_size = batch_size
         self._model_path = path
         self._PrepareData()
-        self._circuit_breaker = CreateCircuitBreakerCallback("val_loss", "min", 7)
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_loss", "min", 9)
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._model = load_model(self._model_path)
