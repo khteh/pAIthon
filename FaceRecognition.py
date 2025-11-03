@@ -1,5 +1,6 @@
 import os, numpy, pandas as pd, tensorflow as tf, PIL
 from tensorflow.keras.utils import plot_model
+from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications import InceptionResNetV2
 from tensorflow.keras.models import Model, Sequential, model_from_json
 from tensorflow.keras.layers import Input, Add, Dense, Dropout, Activation, GlobalAveragePooling2D, Flatten, Conv2D, AveragePooling2D, MaxPooling2D, BatchNormalization, Normalization
@@ -8,19 +9,24 @@ from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras import backend as K
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.initializers import random_uniform, glorot_uniform, constant, identity
+from utils.TrainingMetricsPlot import PlotModelHistory
+from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 from utils.TermColour import bcolors
 K.set_image_data_format('channels_last')
 
 class FaceRecognition():
     _model: Model = None
     _threshold: float = None
+    _circuit_breaker = None
     _database = {}
+    _names = ["andrew", "arnaud", "benoit",  "bertrand", "dan", "danielle", "felix", "kevin", "kian", "sebastiano", "tian", "younes"]
     def __init__(self, threshold:bool):
         self._threshold = threshold
-        self.BuildModel()
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_loss", "min", 9)
+        self._BuildModel()
         self._PrepareData()
 
-    def BuildModel(self):
+    def _BuildModel(self):
         """
         This network uses 299x299 dimensional RGB images as its input. Specifically, a face image (or batch of 𝑚 face images) as a tensor of shape  (𝑚,𝑛𝐻,𝑛𝑊,𝑛𝐶)=(𝑚,299,299,3)
         The input images are originally of shape 96x96, thus, you need to scale them to 299x299. This is done in the self._img_to_encoding() function.
@@ -28,31 +34,16 @@ class FaceRecognition():
         By using a 128-neuron fully connected layer as its last layer, the model ensures that the output is an encoding vector of size 128. You then use the encodings to compare two face images as follows:
         https://www.tensorflow.org/api_docs/python/tf/keras/applications/InceptionResNetV2 width and height should be no smaller than 75. E.g. (150, 150, 3) would be one valid value.
         classes: optional number of classes to classify images into, only to be specified if include_top is True, and if no weights argument is specified.
+        
+        Default Behavior:
+        By default, tf.keras.applications.InceptionResNetV2() is instantiated with include_top=True and pre-trained weights='imagenet'. In this configuration, the predict() method returns a vector of 1000 probabilities corresponding to the ImageNet object categories, not a general-purpose encoding vector. 
+        Feature Extraction (Encoding Vector)
+        To obtain a feature or encoding vector for use in transfer learning or other tasks, you should instantiate the model with specific parameters:
+        include_top=False: This excludes the final fully-connected classification layer.
+        pooling='avg' or pooling='max': This applies global average pooling or global max pooling to the output of the last convolutional block, converting the 4D tensor output into a 2D tensor (a vector for each image in the batch).         
         """
         if not self._model:
-            base_model = InceptionResNetV2(include_top=False)
-            # freeze the base model by making it non trainable
-            base_model.trainable = False
-            x = base_model.output
-
-            # add the new Multi-class classification layers
-            # use global avg pooling to summarize the info in each channel
-            x = GlobalAveragePooling2D(name="AveragePooling")(x)
-            x = BatchNormalization()(x)
-
-            # include dropout with probability of 0.2 to avoid overfitting
-            x = Dropout(0.2, name="FinalDropout")(x)
-            outputs = Dense(128, name="FinalOutput", kernel_initializer = glorot_uniform(seed=0), kernel_regularizer=l2(0.01))(x) # Decrease to fix high bias; Increase to fix high variance.
-
-            # Create model
-            self._model = Model(base_model.input, outputs)
-            self._model.name = self._name
-            self._model.compile(
-                    loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
-                    optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-                    metrics=['accuracy']
-                )
-            self._model.summary()
+            self._model = InceptionResNetV2(include_top=False, pooling="avg")
             plot_model(
                 self._model,
                 to_file=f"output/FaceRecognition.png",
@@ -62,7 +53,6 @@ class FaceRecognition():
                 rankdir="TB",
                 expand_nested=True,
                 show_layer_activations=True)
-
             #with open('./models/keras-facenet-h5/model.json', 'r', newline='') as f: # XXX: TypeError: Could not locate class 'Functional'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`.
             #    loaded_model_json = f.read()
             #    self._model = model_from_json(loaded_model_json)
@@ -71,6 +61,7 @@ class FaceRecognition():
         print(f"Model output: {self._model.outputs}")
 
     def _PrepareData(self):
+        print(f"\n=== {self._PrepareData.__name__} ===")
         self._database["danielle"] = self._img_to_encoding("images/danielle.png")
         self._database["younes"] = self._img_to_encoding("images/younes.jpg")
         self._database["tian"] = self._img_to_encoding("images/tian.jpg")
@@ -83,6 +74,11 @@ class FaceRecognition():
         self._database["felix"] = self._img_to_encoding("images/felix.jpg")
         self._database["benoit"] = self._img_to_encoding("images/benoit.jpg")
         self._database["arnaud"] = self._img_to_encoding("images/arnaud.jpg")
+        encoding = self._img_to_encoding("images/danielle.png")
+        # Step 2: Compute distance with identity's image (≈ 1 line)
+        #print(f"encoding: {encoding}, identity: {database[identity]}, diff: {encoding - database[identity]}")
+        dist = numpy.linalg.norm(encoding - self._database["danielle"], ord=2)
+        print(f"Perfect match dist: {dist}")
 
     def Verify(self, image_path:str, identity:str):
         """
@@ -104,16 +100,15 @@ class FaceRecognition():
         # Step 1: Compute the encoding for the image. Use img_to_encoding() see example above. (≈ 1 line)
         encoding = self._img_to_encoding(image_path)
         # Step 2: Compute distance with identity's image (≈ 1 line)
-        #print(f"encoding: {encoding}, identity: {database[identity]}, diff: {encoding - database[identity]}")
-        dist1 = encoding -  self._database[identity]
+        # sqrt(sum((A - B) ** 2))
         dist = numpy.linalg.norm(encoding - self._database[identity], ord=2)
-        #print(f"distance: {dist1.shape}, {encoding - self._database[identity]}, ord=2: {dist}")
+        print(f"dist: {dist}")
         # Step 3: Open the door if dist < 0.7, else don't open (≈ 3 lines)
         if dist < self._threshold:
-            print("It's " + str(identity) + ", welcome in!")
+            print(f"{bcolors.OKGREEN}It's {identity}, welcome in!{bcolors.DEFAULT}")
             door_open = True
         else:
-            print("It's not " + str(identity) + ", please go away")
+            print(f"{bcolors.FAIL}It's not {identity}, please leave!{bcolors.DEFAULT}")
             door_open = False
         return dist, door_open
 
@@ -134,12 +129,11 @@ class FaceRecognition():
         encoding =  self._img_to_encoding(image_path)
         
         ## Step 2: Find the closest encoding ##
-                # Initialize "min_dist" to a large value, say 100 (≈1 line)
+        # Initialize "min_dist" to a large value, say 100 (≈1 line)
         min_dist = 100
         
         # Loop over the database dictionary's names and encodings.
         for (name, db_enc) in self._database.items():
-            
             # Compute L2 distance between the target "encoding" and the current db_enc from the database. (≈ 1 line)
             dist = numpy.linalg.norm(encoding - self._database[name], ord=2)
 
@@ -147,11 +141,10 @@ class FaceRecognition():
             if dist < min_dist:
                 min_dist = dist
                 identity = name
-
         if min_dist > self._threshold:
-            print("Not in the database.")
+            print(f"{bcolors.FAIL}Not in the database.{bcolors.DEFAULT}")
         else:
-            print ("it's " + str(identity) + ", the distance is " + str(min_dist))
+            print (f"{bcolors.OKGREEN}It's {identity}, the distance is {min_dist}{bcolors.DEFAULT}")
         return min_dist, identity
     
     def _triplet_loss(self, y_pred, alpha = 0.2):
@@ -170,7 +163,6 @@ class FaceRecognition():
         Returns:
         loss -- real number, value of the loss
         """
-        
         anchor, positive, negative = y_pred[0], y_pred[1], y_pred[2]
         
         #(≈ 4 lines)
@@ -223,23 +215,18 @@ class FaceRecognition():
         print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 if __name__ == "__main__":
-    faceRecognition = FaceRecognition(0.7)
+    faceRecognition = FaceRecognition(0.1)
     faceRecognition.triplet_loss_test()
     distance, door_open_flag = faceRecognition.Verify("images/camera_0.jpg", "younes")
-    assert numpy.isclose(distance, 0.5992949), f"{bcolors.FAIL}Distance {distance} between images/camera_0.jpg and younes not as expected!{bcolors.DEFAULT}"
-    assert door_open_flag, f"{bcolors.FAIL}Door should be opened for younes{bcolors.DEFAULT}"
-    print("(", distance, ",", door_open_flag, ")")
+    assert door_open_flag, f"{bcolors.FAIL}Door should be opened for younes - ({distance} {door_open_flag}){bcolors.DEFAULT}"
     distance, door_open_flag = faceRecognition.Verify("images/camera_1.jpg", "kian")
-    #assert numpy.isclose(distance, 0.5992949), "Distance not as expected"
-    assert not door_open_flag, f"{bcolors.FAIL}Door should NOT be opened for kian{bcolors.DEFAULT}"
-    print("(", distance, ",", door_open_flag, ")")
+    assert not door_open_flag, f"{bcolors.FAIL}Door should NOT be opened for kian - ({distance} {door_open_flag}){bcolors.DEFAULT}"
 
     # Test 2 with Younes pictures 
     dist, identity = faceRecognition.Who_Is_It("images/camera_0.jpg")
-    assert numpy.isclose(dist, 0.5992946)
-    assert identity == 'younes'
+    assert identity == 'younes', f"identity: {identity}, distance: {dist}"
 
     # Test 3 with Younes pictures 
     dist, identity = faceRecognition.Who_Is_It("images/younes.jpg")
     assert numpy.isclose(dist, 0.0)
-    assert identity == 'younes'
+    assert identity == 'younes', f"identity: {identity}, distance: {dist}"
