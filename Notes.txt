@@ -907,14 +907,14 @@ Output volume = Nh[l] x Nw[l] x Nc[l] = 29 * 29 * 32 = 26912
 
 Input: 128x128x12
 Max Pooling: filter size:4, stride: 4
-Nh[l] = floor((n+2p-f) / s) + 1 = 32
-Nw[l] = floor((n+2p-f) / s) + 1 = 32
+Nh[l] = floor((n+2p-f) / s) + 1 = floor((128 - 4)/4) + 1 = floor(124/4) + 1 = 31 + 1 = 32
+Nw[l] = floor((n+2p-f) / s) + 1 = floor((128 - 4)/4) + 1 = floor(124/4) + 1 = 31 + 1 = 32
 Output volume = Nh[l] x Nw[l] x Nc[l] = 32 x 32 x 12
 
 Input: 66x66x21
 Max Pooling: filter size:3, stride: 3
-Nh[l] = floor((n+2p-f) / s) + 1 = 32
-Nw[l] = floor((n+2p-f) / s) + 1 = 32
+Nh[l] = floor((n+2p-f) / s) + 1 = floor((66 - 3)/3) + 1 = floor(63/3) + 1 = 31+1 = 32
+Nw[l] = floor((n+2p-f) / s) + 1 = floor((66 - 3)/3) + 1 = floor(63/3) + 1 = 31+1 = 32
 Output volume = Nh[l] x Nw[l] x Nc[l] = 22 x 22 x 21
 
 Input: 3D data with 64x64x64x3

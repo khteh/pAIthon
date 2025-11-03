@@ -1,11 +1,5 @@
 import argparse, h5py, numpy
-import tensorflow as tf
-from pathlib import Path
-from tensorflow.keras.utils import plot_model
-from matplotlib.pyplot import imshow
-from tensorflow.keras.preprocessing import image
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.preprocessing import image
 from tensorflow.keras.layers import Input, Add, Dense, Dropout, Activation, ZeroPadding2D, Flatten, Conv2D, AveragePooling2D, MaxPooling2D, BatchNormalization, Normalization
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.losses import CategoricalCrossentropy
@@ -13,8 +7,6 @@ from tensorflow.keras.regularizers import l2
 from tensorflow.keras.initializers import random_uniform, glorot_uniform, constant, identity
 from utils.GPU import InitializeGPU
 from utils.TrainingMetricsPlot import PlotModelHistory
-from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
-from utils.TermColour import bcolors
 from .SignsLanguageDigits import SignsLanguageDigits
 # _convolutional_block_output1 = [[[[0.,         0.,         0.6442667,  0.,         0.13945118, 0.78498244],
 #                                  [0.01695363, 0.,         0.7052939,  0.,         0.27986753, 0.67453355]],
@@ -222,6 +214,7 @@ ResNet50_summary =[['InputLayer', [(None, 64, 64, 3)], 0],
 
 class RNN_SignsLanguageDigits(SignsLanguageDigits):
     """
+    https://github.com/fchollet/deep-learning-models/blob/master/resnet50.py
     Very deep "plain" networks don't work in practice because vanishing gradients make them hard to train.
     Skip connections help address the Vanishing Gradient problem. They also make it easy for a ResNet block to learn an identity function.
     There are two main types of blocks: The identity block and the convolutional block.
@@ -444,18 +437,17 @@ if __name__ == "__main__":
     https://docs.python.org/3/library/argparse.html
     'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
     """
-    parser = argparse.ArgumentParser(description='ResNet-50 multi-class classifier')
+    parser = argparse.ArgumentParser(description='RNN Signs Language multi-class classifier')
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
+    parser.add_argument('-g', '--grayscale', action='store_true', help='Use grayscale model')
     args = parser.parse_args()
-
-    rnn = RNN_SignsLanguageDigits("RNN_SignsLanguageDigits", "models/RNN_SignsLanguageDigits.keras", (64, 64, 1), 32, 0.00015)
-    rnn.BuildModel()
+    model = f"models/RNN_SignsLanguageDigits_{'grayscale' if args.grayscale else 'RGB'}.keras"
+    signs = RNN_SignsLanguageDigits("RNN_SignsLanguageDigits", args.grayscale, model, (64, 64, 1 if args.grayscale else 3), 32, 0.00015)
+    signs.BuildModel()
     #InitializeGPU()
-    rnn.TrainModel(400, args.retrain)
-    """
-    rnn.PredictSign("images/my_handsign0.jpg", 2)
-    rnn.PredictSign("images/my_handsign1.jpg", 1)
-    rnn.PredictSign("images/my_handsign2.jpg", 3)
-    rnn.PredictSign("images/my_handsign3.jpg", 5)
-    rnn.PredictSign("images/my_handsign4.jpg", 5)
-    """
+    signs.TrainModel(400, args.retrain)
+    signs.PredictSign("images/my_handsign0.jpg", 2, args.grayscale)
+    signs.PredictSign("images/my_handsign1.jpg", 1, args.grayscale)
+    signs.PredictSign("images/my_handsign2.jpg", 3, args.grayscale)
+    signs.PredictSign("images/my_handsign3.jpg", 5, args.grayscale)
+    signs.PredictSign("images/my_handsign4.jpg", 5, args.grayscale)
