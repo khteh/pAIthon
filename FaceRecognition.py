@@ -69,8 +69,6 @@ class FaceRecognition():
         self._database["benoit"] = self._img_to_encoding("images/benoit.jpg")
         self._database["arnaud"] = self._img_to_encoding("images/arnaud.jpg")
         encoding = self._img_to_encoding("images/danielle.png")
-        # Step 2: Compute distance with identity's image (≈ 1 line)
-        #print(f"encoding: {encoding}, identity: {database[identity]}, diff: {encoding - database[identity]}")
         dist = numpy.linalg.norm(encoding - self._database["danielle"], ord=2)
         print(f"Perfect match dist: {dist}")
 
