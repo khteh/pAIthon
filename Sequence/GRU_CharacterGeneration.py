@@ -7,7 +7,7 @@ from keras import saving
 from tensorflow.keras.utils import plot_model
 from tensorflow.strings import unicode_split, reduce_join
 from tensorflow.keras.callbacks import LambdaCallback
-from tensorflow.keras.models import Model, load_model, Sequential
+from tensorflow.keras.models import Model, load_model, load_model
 from tensorflow.keras.layers import Dense, Embedding, Activation, Dropout, Input, GRU, LSTM, StringLookup
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
@@ -93,7 +93,7 @@ class GRU_CharacterGeneration():
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._saved_model = True
-            self._model = tf.keras.models.load_model(self._model_path) # https://github.com/tensorflow/tensorflow/issues/102475
+            self._model = load_model(self._model_path) # https://github.com/tensorflow/tensorflow/issues/102475
    
     def BuildTrainModel(self, epochs:int, retrain:bool = False):
         """

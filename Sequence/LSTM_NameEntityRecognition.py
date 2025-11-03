@@ -2,7 +2,7 @@ import argparse, numpy, pandas as pd, tensorflow as tf
 from pathlib import Path
 from tensorflow.keras.utils import plot_model
 from keras import saving
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Input, LSTM, Embedding, TextVectorization
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
@@ -147,7 +147,7 @@ class LSTM_NameEntityRecognition():
         self._circuit_breaker = CreateCircuitBreakerCallback("val_masked_accuracy", "max", 5)
         #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
         #    print(f"Using saved model {self._model_path}...") 
-        #    self.model = tf.keras.models.load_model(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
+        #    self.model = load_model(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
     
     def BuildTrainModel(self, epochs: int, retrain: bool = False):
         new_model = not self.model

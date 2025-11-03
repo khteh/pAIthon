@@ -2,6 +2,7 @@ import argparse, json, string, numpy, pandas as pd, tensorflow as tf, matplotlib
 from pathlib import Path
 from tqdm import tqdm
 from termcolor import colored
+from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
@@ -94,7 +95,7 @@ class QuestionAnswering():
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._saved_model = True
-            self._model = tf.keras.models.load_model(self._model_path) # https://github.com/tensorflow/tensorflow/issues/102475
+            self._model = load_model(self._model_path) # https://github.com/tensorflow/tensorflow/issues/102475
 
     def BuildModel(self):
         print(f"\n=== {self.BuildModel.__name__} ===")

@@ -2,7 +2,7 @@ import argparse, numpy, spacy, tensorflow as tf, csv, emoji
 from pathlib import Path
 from utils.TrainingMetricsPlot import PlotModelHistory
 from tensorflow.keras.utils import plot_model
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Dense, Input, Dropout, LSTM, Activation, Embedding
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
@@ -64,7 +64,7 @@ class LSTMEmojifier():
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._saved_model = True
-            self._model = tf.keras.models.load_model(self._model_path) # https://github.com/tensorflow/tensorflow/issues/102475
+            self._model = load_model(self._model_path) # https://github.com/tensorflow/tensorflow/issues/102475
             self._trained = True
         if word_to_vec_map:
             self._word_to_vec_map = word_to_vec_map

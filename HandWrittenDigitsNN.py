@@ -1,7 +1,7 @@
 import argparse, numpy, logging, warnings, pickle
 import tensorflow as tf
 from pathlib import Path
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Input
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.optimizers import Adam
@@ -30,7 +30,7 @@ class HandWrittenDigitsNN():
         self._visualize_data()
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
-            self._model = tf.keras.models.load_model(self._model_path)
+            self._model = load_model(self._model_path)
 
     def _prepare_data(self):
         """

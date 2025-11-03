@@ -5,6 +5,7 @@ import tensorflow as tf
 from utils.GPU import InitializeGPU
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import regularizers, models
+from tensorflow.keras.models import load_model
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Flatten, Dropout
 from tensorflow.keras.losses import CategoricalCrossentropy
@@ -37,7 +38,7 @@ def main(model_path):
     saveModel: bool = False
     if model_path and len(model_path) and Path(model_path).exists() and Path(model_path).is_file():
         print(f"Using saved model {model_path}...")
-        model = tf.keras.models.load_model(model_path)
+        model = load_model(model_path)
     else:
         # Get a compiled neural network
         model = build_model()

@@ -9,6 +9,7 @@ from tensorflow import keras
 from keras import saving
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
+from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import Dense, Input, Layer, Dot
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
@@ -62,7 +63,7 @@ class ContentBasedFiltering():
         self._model_path = path
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
-            self._model = tf.keras.models.load_model(self._model_path)
+            self._model = load_model(self._model_path)
         self._prepare_data()
         self._scale_data()
         self._split_data()

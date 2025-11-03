@@ -131,7 +131,7 @@ class MachineTranslation():
         self._weights_path = weights_path
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
-            self._model = tf.keras.models.load_model(self._model_path)
+            self._model = load_model(self._model_path)
             self._saved_model = True
 
     def one_step_attention(self, a, s_prev):

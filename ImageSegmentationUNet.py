@@ -2,6 +2,7 @@ import argparse, os, numpy, pandas as pd, imageio.v3 as iio
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from pathlib import Path
+from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras import Model
 from tensorflow.keras.layers import concatenate, Input, Conv2D, MaxPooling2D, Dropout, Conv2DTranspose, BatchNormalization, Normalization
@@ -41,7 +42,7 @@ class ImageSegmentationUNet():
         self._PrepareData()
         if self._path and len(self._path) and Path(self._path).exists() and Path(self._path).is_file():
             print(f"Using saved model {self._path}...")
-            self._model = tf.keras.models.load_model(self._path)
+            self._model = load_model(self._path)
 
     def Encoder(self, inputs=None, n_filters=32, dropout_prob=0, max_pooling=True):
         """

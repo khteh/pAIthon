@@ -2,7 +2,7 @@ import argparse, numpy, pandas as pd, tensorflow as tf
 from pathlib import Path
 from tensorflow.keras.utils import plot_model
 from tensorflow.math import l2_normalize
-from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.models import Sequential, Model, load_model
 from tensorflow.keras.layers import Lambda, Concatenate, Dense, Input, LSTM, Embedding, TextVectorization, GlobalAveragePooling1D
 from tensorflow.keras.optimizers import Adam
 from utils.TrainingMetricsPlot import PlotModelHistory
@@ -45,7 +45,7 @@ class SiameseNN():
         self._circuit_breaker = CreateCircuitBreakerCallback("val_loss", "min", 5)
         #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
         #    print(f"Using saved model {self._model_path}...")
-        #    self._model = tf.keras.models.load_model(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
+        #    self._model = load_model(self._model_path) https://github.com/tensorflow/tensorflow/issues/102475
 
     def BuildTrainModel(self, epochs:int, retrain: bool = False):
         new_model = not self._model
