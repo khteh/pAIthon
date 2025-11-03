@@ -13,10 +13,35 @@ Python AI, ML, DL and NLP exploration playground.
 
 - `pipenv run tensorboard --logdir <path>`
 
-## CNN Signs Language Digits Multiclass Classification
+## Signs Language Digits Multiclass Classification
 
-- Architecture:
-  ![CNN Signs Language Digits](images/SignsLanguageDigits.png?raw=true "CNN Signs Language Digits")
+- Use `ResNet152V2` pretrained model.
+- Test dataset accuracy:
+  ```
+  16/16 ━━━━━━━━━━━━━━━━━━━━ 9s 308ms/step - accuracy: 0.8898 - loss: 0.4807
+  ```
+- Example predictions:
+  ```
+  Class prediction vector [p(0), p(1), p(2), p(3), p(4), p(5)] = [[-1.7949121  -0.9373978   5.988724   -1.3011266  -0.30785906  2.200963
+    0.3628277   0.494485    0.6216742  -0.4496336 ]]
+  Truth: 2, Class: 2
+  1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 39ms/step
+  Class prediction vector [p(0), p(1), p(2), p(3), p(4), p(5)] = [[ 3.2523103 -4.3629775  3.9744818 -2.2258158 -3.5589416  2.2114348
+    -1.5373676 -0.8665462 -1.4555418 -2.1932414]]
+  Truth: 1, Class: 2
+  1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 40ms/step
+  Class prediction vector [p(0), p(1), p(2), p(3), p(4), p(5)] = [[ 1.6622998 -5.4129186  0.5597717 -2.9309149 -4.046567   3.205339
+    -3.1271842 -1.589747  -1.0898973 -4.412473 ]]
+  Truth: 3, Class: 5
+  1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 39ms/step
+  Class prediction vector [p(0), p(1), p(2), p(3), p(4), p(5)] = [[ 2.0677593 -4.4180837 -0.5090899 -3.1197011 -2.7705925  4.9895453
+    -1.4480599 -2.0641685 -2.213564  -3.062584 ]]
+  Truth: 5, Class: 5
+  1/1 ━━━━━━━━━━━━━━━━━━━━ 0s 48ms/step
+  Class prediction vector [p(0), p(1), p(2), p(3), p(4), p(5)] = [[ 0.9651322 -7.367579   2.380285  -4.6137404 -3.5754316  8.407264
+    -1.0734806 -3.2308764 -2.5940378 -5.1837626]]
+  Truth: 5, Class: 5
+  ```
 
 ## Machine Translation
 
