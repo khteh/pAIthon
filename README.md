@@ -1,6 +1,6 @@
 # pAIthon
 
-Python AI, ML, DL and NLP exploration playground.
+Python AI, ML, DL, NLP and GAN exploration playground.
 
 ## Run
 
