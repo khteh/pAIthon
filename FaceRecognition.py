@@ -1,15 +1,9 @@
 import os, numpy, pandas as pd, tensorflow as tf, PIL
-from tensorflow.keras.utils import plot_model
-from tensorflow.keras.preprocessing import image
+from tensorflow.keras.utils import plot_model, load_img
 from tensorflow.keras.applications import InceptionResNetV2
-from tensorflow.keras.models import Model, Sequential, model_from_json
-from tensorflow.keras.layers import Input, Add, Dense, Dropout, Activation, GlobalAveragePooling2D, Flatten, Conv2D, AveragePooling2D, MaxPooling2D, BatchNormalization, Normalization
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.losses import CategoricalCrossentropy
+from tensorflow.keras.applications.resnet import preprocess_input
+from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
-from tensorflow.keras.regularizers import l2
-from tensorflow.keras.initializers import random_uniform, glorot_uniform, constant, identity
-from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.TermColour import bcolors
 K.set_image_data_format('channels_last')
 
@@ -18,7 +12,7 @@ class FaceRecognition():
     _threshold: float = None
     _circuit_breaker = None
     _database = {}
-    _names = ["andrew", "arnaud", "benoit",  "bertrand", "dan", "danielle", "felix", "kevin", "kian", "sebastiano", "tian", "younes"]
+    _names = None
     def __init__(self, threshold:bool):
         self._threshold = threshold
         self._BuildModel()
@@ -56,21 +50,10 @@ class FaceRecognition():
 
     def _PrepareData(self):
         print(f"\n=== {self._PrepareData.__name__} ===")
-        self._database["danielle"] = self._img_to_encoding("images/danielle.png")
-        self._database["younes"] = self._img_to_encoding("images/younes.jpg")
-        self._database["tian"] = self._img_to_encoding("images/tian.jpg")
-        self._database["andrew"] = self._img_to_encoding("images/andrew.jpg")
-        self._database["kian"] = self._img_to_encoding("images/kian.jpg")
-        self._database["dan"] = self._img_to_encoding("images/dan.jpg")
-        self._database["sebastiano"] = self._img_to_encoding("images/sebastiano.jpg")
-        self._database["bertrand"] = self._img_to_encoding("images/bertrand.jpg")
-        self._database["kevin"] = self._img_to_encoding("images/kevin.jpg")
-        self._database["felix"] = self._img_to_encoding("images/felix.jpg")
-        self._database["benoit"] = self._img_to_encoding("images/benoit.jpg")
-        self._database["arnaud"] = self._img_to_encoding("images/arnaud.jpg")
-        encoding = self._img_to_encoding("images/danielle.png")
-        dist = numpy.linalg.norm(encoding - self._database["danielle"], ord=2)
-        print(f"Perfect match dist: {dist}")
+        self._names = ["andrew", "arnaud", "benoit",  "bertrand", "dan", "danielle", "felix", "kevin", "kian", "sebastiano", "tian", "younes"]
+        for n in self._names:
+            path = f"images/{n}.png" if n == "danielle" else f"images/{n}.jpg"
+            self._database[n] = self._img_to_encoding(path)
 
     def Verify(self, image_path:str, identity:str):
         """
@@ -136,7 +119,7 @@ class FaceRecognition():
         if min_dist > self._threshold:
             print(f"{bcolors.FAIL}Not in the database.{bcolors.DEFAULT}")
         else:
-            print (f"{bcolors.OKGREEN}It's {identity}, the distance is {min_dist}{bcolors.DEFAULT}")
+            print (f"It's {identity}, the distance is {min_dist}")
         return min_dist, identity
     
     def _triplet_loss(self, y_pred, alpha = 0.2):
@@ -176,10 +159,9 @@ class FaceRecognition():
         """
         Generate one encoding vector for each person by running the forward propagation of the model on the specified image.
         """
-        img = tf.keras.preprocessing.image.load_img(image_path, target_size=(299, 299))
-        #img = numpy.around(numpy.array(img) / 255.0, decimals=12)
-        x_train = numpy.expand_dims(img, axis=0)
-        embedding = self._model.predict_on_batch(x_train)
+        img = load_img(image_path, target_size=(299, 299))
+        data = preprocess_input(numpy.expand_dims(img, axis=0))
+        embedding = self._model.predict_on_batch(data)
         return embedding / numpy.linalg.norm(embedding, ord=2)
     
     def triplet_loss_test(self):
@@ -206,19 +188,68 @@ class FaceRecognition():
         assert loss == 5, "Wrong value. Check your implementation"    
         print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
-if __name__ == "__main__":
-    faceRecognition = FaceRecognition(0.1)
-    faceRecognition.triplet_loss_test()
+    def SimilarityTests(self):
+        print(f"\n=== {self.SimilarityTests.__name__} ===")
+        for n in self._names:
+            path = f"images/{n}.png" if n == "danielle" else f"images/{n}.jpg"
+            distance, door_open_flag = faceRecognition.Verify(path, n)
+            assert numpy.isclose(distance, 0.0)
+            assert door_open_flag, f"{bcolors.FAIL}Door should be opened for {n} - ({distance} {door_open_flag}){bcolors.DEFAULT}"
+            dist, identity = faceRecognition.Who_Is_It(path)
+            assert numpy.isclose(dist, 0.0)
+            assert identity == n, f"identity: {identity}, distance: {dist}"
+        print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
+    
+def CameraPicturesTests():
+    print(f"\n=== {CameraPicturesTests.__name__} ===")
+
     distance, door_open_flag = faceRecognition.Verify("images/camera_0.jpg", "younes")
     assert door_open_flag, f"{bcolors.FAIL}Door should be opened for younes - ({distance} {door_open_flag}){bcolors.DEFAULT}"
-    distance, door_open_flag = faceRecognition.Verify("images/camera_1.jpg", "kian")
-    assert not door_open_flag, f"{bcolors.FAIL}Door should NOT be opened for kian - ({distance} {door_open_flag}){bcolors.DEFAULT}"
 
-    # Test 2 with Younes pictures 
+    distance, door_open_flag = faceRecognition.Verify("images/camera_1.jpg", "bertrand")
+    assert door_open_flag, f"{bcolors.FAIL}Door should be opened for bertrand - ({distance} {door_open_flag}){bcolors.DEFAULT}"
+
+    distance, door_open_flag = faceRecognition.Verify("images/camera_2.jpg", "benoit")
+    assert door_open_flag, f"{bcolors.FAIL}Door should be opened for benoit - ({distance} {door_open_flag}){bcolors.DEFAULT}"
+
+    distance, door_open_flag = faceRecognition.Verify("images/camera_3.jpg", "bertrand")
+    assert door_open_flag, f"{bcolors.FAIL}Door should be opened for bertrand - ({distance} {door_open_flag}){bcolors.DEFAULT}"
+
+    distance, door_open_flag = faceRecognition.Verify("images/camera_4.jpg", "dan")
+    assert door_open_flag, f"{bcolors.FAIL}Door should be opened for dan - ({distance} {door_open_flag}){bcolors.DEFAULT}"
+
+    distance, door_open_flag = faceRecognition.Verify("images/camera_5.jpg", "arnaud")
+    assert door_open_flag, f"{bcolors.FAIL}Door should be opened for arnaud - ({distance} {door_open_flag}){bcolors.DEFAULT}"
+
     dist, identity = faceRecognition.Who_Is_It("images/camera_0.jpg")
     assert identity == 'younes', f"identity: {identity}, distance: {dist}"
+
+    dist, identity = faceRecognition.Who_Is_It("images/camera_1.jpg")
+    assert identity == 'bertrand', f"identity: {identity}, distance: {dist}"
+
+    dist, identity = faceRecognition.Who_Is_It("images/camera_2.jpg")
+    assert identity == 'benoit', f"identity: {identity}, distance: {dist}"
+
+    dist, identity = faceRecognition.Who_Is_It("images/camera_3.jpg")
+    assert identity == 'bertrand', f"identity: {identity}, distance: {dist}"
+
+    dist, identity = faceRecognition.Who_Is_It("images/camera_4.jpg")
+    assert identity == 'dan', f"identity: {identity}, distance: {dist}"
+
+    dist, identity = faceRecognition.Who_Is_It("images/camera_5.jpg")
+    assert identity == 'arnaud', f"identity: {identity}, distance: {dist}"
+
+    distance, door_open_flag = faceRecognition.Verify("images/camera_1.jpg", "kian")
+    assert not door_open_flag, f"{bcolors.FAIL}Door should NOT be opened for kian - ({distance} {door_open_flag}){bcolors.DEFAULT}"
 
     # Test 3 with Younes pictures 
     dist, identity = faceRecognition.Who_Is_It("images/younes.jpg")
     assert numpy.isclose(dist, 0.0)
     assert identity == 'younes', f"identity: {identity}, distance: {dist}"
+    print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
+
+if __name__ == "__main__":
+    faceRecognition = FaceRecognition(0.1)
+    faceRecognition.triplet_loss_test()
+    faceRecognition.SimilarityTests()
+    CameraPicturesTests()
