@@ -5,7 +5,7 @@ Python AI, ML, DL and NLP exploration playground.
 ## Run
 
 - `pipenv run python -m <module>`
-- Some keras (NN) models are saved and retrieved from `models/` folder.
+- Some keras models are saved and loaded from `models/` folder.
 
 ## Model Diagnostics
 
