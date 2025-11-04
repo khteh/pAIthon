@@ -4,8 +4,9 @@ from tensorflow.keras.applications import InceptionResNetV2
 from tensorflow.keras.applications.resnet import preprocess_input
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
+from utils.DataAugmentation import AugmentData, ResizeRescale
 from utils.TermColour import bcolors
-K.set_image_data_format('channels_last')
+#K.set_image_data_format('channels_last')
 
 class FaceRecognition():
     _model: Model = None
