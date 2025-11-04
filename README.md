@@ -18,7 +18,7 @@ Python AI, ML, DL, NLP and GAN exploration playground.
 - Use `ResNet152V2` pretrained model.
 - Test dataset accuracy:
   ```
-  16/16 ━━━━━━━━━━━━━━━━━━━━ 12s 367ms/step - accuracy: 0.9020 - loss: 0.6652
+  16/16 ━━━━━━━━━━━━━━━━━━━━ 11s 366ms/step - accuracy: 0.9020 - loss: 0.7031
   ```
 - Example predictions:
   ```
