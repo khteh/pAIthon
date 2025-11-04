@@ -151,7 +151,7 @@ class ResnetSignsLanguageDigits(SignsLanguageDigits):
             x = BatchNormalization()(x)
 
             # include dropout with probability of 0.2 to avoid overfitting
-            x = Dropout(0.2, name="FinalDropout")(x)
+            x = Dropout(0.3, name="FinalDropout")(x)
                 
             # use a prediction layer with one neuron (as a binary classifier only needs one)
             x = Flatten()(x)
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--grayscale', action='store_true', help='Use grayscale model')
     args = parser.parse_args()
     model = f"models/ResnetSignsLanguageDigits_{'grayscale' if args.grayscale else 'RGB'}.keras"
-    signs = ResnetSignsLanguageDigits("ResnetSignsLanguageDigits", args.grayscale, model, (64, 64, 1 if args.grayscale else 3), 32, 0.00015)
+    signs = ResnetSignsLanguageDigits("ResnetSignsLanguageDigits", args.grayscale, model, (64, 64, 1 if args.grayscale else 3), 32, 0.0001)
     signs.BuildModel()
     #InitializeGPU()
     signs.TrainModel(400, args.retrain)

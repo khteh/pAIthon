@@ -5,9 +5,10 @@ from tensorflow.keras.utils import plot_model
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.models import Sequential, load_model
-from tensorflow.keras.layers import Input, Conv2D, ReLU, MaxPool2D, Dropout, Flatten, Dense, BatchNormalization, Reshape, Conv2DTranspose, UpSampling2D, Normalization
+from tensorflow.keras.layers import Input, Conv2D, ReLU, MaxPool2D, Dropout, Flatten, Dense, BatchNormalization, Normalization
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
+from utils.DataAugmentation import AugmentData, ResizeRescale
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 from utils.GPU import InitializeGPU
@@ -31,6 +32,7 @@ class SignsLanguageDigits():
     _learning_rate: float = None
     _train_dataset = None
     _validation_dataset = None
+    _test_dataset = None
     _trained:bool = None
     _name:str = None
     _grayscale: bool = None
@@ -42,7 +44,7 @@ class SignsLanguageDigits():
         self._batch_size = batch_size
         self._model_path = path
         self._PrepareData()
-        self._circuit_breaker = CreateCircuitBreakerCallback("val_loss", "min", 9)
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 10) # If 10 doesn't make sense, don't use it.
         if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
             print(f"Using saved model {self._model_path}...")
             self._model = load_model(self._model_path)
@@ -142,6 +144,7 @@ class SignsLanguageDigits():
                 self._model.save(self._model_path)
                 print(f"Model saved to {self._model_path}.")
         self._model.evaluate(self._X_test, self._Y_test)
+        #self._model.evaluate(self._test_dataset)
 
     def PredictSign(self, path:str, truth:int, grayscale:float = True):
         img = image.load_img(path, target_size=(64, 64))
@@ -199,10 +202,10 @@ class SignsLanguageDigits():
 
         print(f"X_train: {self._X_train.shape}, Y_train: {self._Y_train.shape}, X_cv: {self._X_cv.shape}, Y_cv: {self._Y_cv.shape}, X_test: {self._X_test.shape}, Y_test: {self._Y_test.shape}")
         # X_train: (2283, 64, 64, 3), Y_train: (2283, 10), X_cv: (489, 64, 64, 3), Y_cv: (489, 10), X_test: (490, 64, 64, 3), Y_test: (490, 10)
-
-        self._train_dataset = tf.data.Dataset.from_tensor_slices((self._X_train, self._Y_train)).shuffle(self._Y_train.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        # Note: Using ResizeRescale results in high variance and low accuracy on test dataset. Do NOT use it in this usecase!
+        self._train_dataset = AugmentData(tf.data.Dataset.from_tensor_slices((self._X_train, self._Y_train)).shuffle(self._Y_train.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE))
         self._validation_dataset = tf.data.Dataset.from_tensor_slices((self._X_cv, self._Y_cv)).shuffle(self._Y_cv.shape[0], reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
-
+        self._test_dataset = tf.data.Dataset.from_tensor_slices((self._X_test, self._Y_test)).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
         print (f"number of training examples = {self._X_train.shape[0]}")
         print (f"number of test examples = {self._X_test.shape[0]}")
         print (f"X_train shape: {self._X_train.shape}")
@@ -301,7 +304,7 @@ if __name__ == "__main__":
     ExamineGrayscaleDataset()
     model = f"models/SignsLanguageDigits_{'grayscale' if args.grayscale else 'RGB'}.keras"
     print(f"model: {model}")
-    signs = SignsLanguageDigits("SignsLanguageDigits", args.grayscale, model , (64, 64, 1 if args.grayscale else 3), 32, 0.00015)
+    signs = SignsLanguageDigits("SignsLanguageDigits", args.grayscale, model , (64, 64, 1 if args.grayscale else 3), 32, 0.0001)
     signs.BuildModel()
     #InitializeGPU()
     signs.TrainModel(500, False, args.retrain)

@@ -240,7 +240,7 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--grayscale', action='store_true', help='Use grayscale model')
     args = parser.parse_args()
     model = f"models/RNN_SignsLanguageDigits_{'grayscale' if args.grayscale else 'RGB'}.keras"
-    signs = RNN_SignsLanguageDigits("RNN_SignsLanguageDigits", args.grayscale, model, (64, 64, 1 if args.grayscale else 3), 32, 0.00015)
+    signs = RNN_SignsLanguageDigits("RNN_SignsLanguageDigits", args.grayscale, model, (64, 64, 1 if args.grayscale else 3), 32, 0.0001)
     signs.BuildModel()
     #InitializeGPU()
     signs.TrainModel(400, args.retrain)
