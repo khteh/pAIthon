@@ -60,9 +60,5 @@ models/RNN_SignsLanguageDigits_RGB.keras filter=lfs diff=lfs merge=lfs -text
 models/RNN_SignsLanguageDigits_grayscale.keras filter=lfs diff=lfs merge=lfs -text
 models/ResnetSignsLanguageDigits_RGB.keras filter=lfs diff=lfs merge=lfs -text
 models/ResnetSignsLanguageDigits_RGB_base.keras filter=lfs diff=lfs merge=lfs -text
-models/ResnetSignsLanguageDigits_RGB.keras !text !filter !merge !diff
-models/ResnetSignsLanguageDigits_RGB_base.keras !text !filter !merge !diff
-models/RNN_SignsLanguageDigits_grayscale.keras !text !filter !merge !diff
-models/RNN_SignsLanguageDigits_RGB.keras !text !filter !merge !diff
-models/SignsLanguageDigits_grayscale.keras !text !filter !merge !diff
-models/SignsLanguageDigits_RGB.keras !text !filter !merge !diff
+models/SignsLanguageDigits_grayscale.keras filter=lfs diff=lfs merge=lfs -text
+models/SignsLanguageDigits_RGB.keras filter=lfs diff=lfs merge=lfs -text

@@ -155,9 +155,9 @@ class SignsLanguageDigits():
             x2 = tf.image.rgb_to_grayscale(x2)
         elif not grayscale and x2.shape[-1] == 1:
             x2 = self._convert_grayscale_to_rgb(x2)
-        #print(f"Input image: {path}, shape: {x.shape}")
+        #print(f"Input image: {path}, shape: {x.shape} mean: {numpy.mean(x2, axis=-1)}, min: {numpy.min(x2, axis=-1)}, max: {numpy.max(x2, axis=-1)}")
         prediction = self._model.predict(x2)
-        print(f"Class prediction vector [p(0), p(1), p(2), p(3), p(4), p(5)] = {prediction}")
+        print(f"Predictions: {prediction} sum: {numpy.sum(prediction)}")
         prediction = numpy.argmax(prediction)
         color = bcolors.OKGREEN if truth == prediction else bcolors.FAIL
         print(f"{color}Truth: {truth}, Class: {prediction}{bcolors.DEFAULT}")
@@ -183,7 +183,7 @@ class SignsLanguageDigits():
         X = numpy.load("data/SignsLanguage/X.npy") # (2062, 64, 64)
         Y = numpy.load("data/SignsLanguage/Y.npy") # (2062, 10)
         X = X[..., numpy.newaxis] # Add a single grayacale channel
-        if not self._grayscale:
+        if not self._grayscale and X.shape[-1] == 1:
             X = numpy.asarray([self._convert_grayscale_to_rgb(tf.convert_to_tensor(i)) for i in X])
 
         # Add the 2 sources of dataset before splitting them up to 3 datases - train/validation/test
@@ -191,6 +191,7 @@ class SignsLanguageDigits():
         Y_dataset = numpy.concatenate((numpy.concatenate((_Y_train, Y), axis=0), _Y_test), axis=0)
         # X1: (1080, 64, 64, 3), X2: (120, 64, 64, 3), X: (2062, 64, 64, 3), total: (3262, 64, 64, 3)
         print(f"X1: {_X_train.shape}, X2: {_X_test.shape}, X: {X.shape}, total: {X_dataset.shape}")
+        #print(f"X mean: {numpy.mean(X_dataset, axis=-1)}, min: {numpy.min(X_dataset, axis=-1)}, max: {numpy.max(X_dataset, axis=-1)}")
         # Get 60% of the dataset as the training set. Put the remaining 40% in temporary variables: x_ and y_.
         self._X_train, x_, self._Y_train, y_ = train_test_split(X_dataset, Y_dataset, test_size=0.30, random_state=1)
 
@@ -215,9 +216,9 @@ class SignsLanguageDigits():
         print (f"X_test shape: {self._X_test.shape}")
         print (f"Y_test shape: {self._Y_test.shape}")
         print(f"Class#: {self._classes}")
-        print(f"Y_train: {self._Y_train[:10]}")
-        print(f"Y_cv: {self._Y_cv[:10]}")
-        print(f"Y_test: {self._Y_test[:10]}")
+        #print(f"Y_train: {self._Y_train[:10]}")
+        #print(f"Y_cv: {self._Y_cv[:10]}")
+        #print(f"Y_test: {self._Y_test[:10]}")
         """
         images_iter = iter(self._X_train)
         labels_iter = iter(self._Y_train)
