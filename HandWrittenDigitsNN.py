@@ -82,11 +82,11 @@ class HandWrittenDigitsNN():
                     Input(shape=(400,)),    #specify input size
                     Dense(25, activation='sigmoid', name="L1"), # Densely connected, or fully connected
                     Dense(15, activation='sigmoid', name="L2"),
-                    Dense(1, name="L3"),
+                    Dense(1, name="L3", activation="softmax"),
                 ], name = "HandWrittenDigits" 
             )
             self._model.compile(
-                loss=BinaryCrossentropy(from_logits=True),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to sigmoid activation which is typically used for binary classification
+                loss=BinaryCrossentropy(from_logits=False),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to sigmoid activation which is typically used for binary classification
                 optimizer=Adam(self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
             )
             self._model.summary()

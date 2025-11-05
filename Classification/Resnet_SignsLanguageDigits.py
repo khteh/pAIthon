@@ -83,13 +83,13 @@ class ResnetSignsLanguageDigits(SignsLanguageDigits):
                 
             # use a prediction layer with one neuron (as a binary classifier only needs one)
             x = Flatten()(x)
-            outputs = Dense(self._classes, name="FinalOutput", kernel_initializer = glorot_uniform(seed=0), kernel_regularizer=l2(0.01))(x) # Decrease to fix high bias; Increase to fix high variance.
+            outputs = Dense(self._classes, name="FinalOutput", activation="softmax", kernel_initializer = glorot_uniform(seed=0), kernel_regularizer=l2(0.01))(x) # Decrease to fix high bias; Increase to fix high variance.
 
             # Create model
             self._model = Model(model.input, outputs)
             self._model.name = self._name
             self._model.compile(
-                    loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
+                    loss=CategoricalCrossentropy(from_logits=False), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
                     optimizer=Adam(learning_rate=self._learning_rate * 0.1), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                     metrics=['accuracy']
                 )
@@ -155,13 +155,13 @@ class ResnetSignsLanguageDigits(SignsLanguageDigits):
                 
             # use a prediction layer with one neuron (as a binary classifier only needs one)
             x = Flatten()(x)
-            outputs = Dense(self._classes, name="FinalOutput", kernel_initializer = glorot_uniform(seed=0), kernel_regularizer=l2(0.01))(x) # Decrease to fix high bias; Increase to fix high variance.
+            outputs = Dense(self._classes, name="FinalOutput", activation="softmax", kernel_initializer = glorot_uniform(seed=0), kernel_regularizer=l2(0.01))(x) # Decrease to fix high bias; Increase to fix high variance.
 
             # Create model
             self._model = Model(base_model.input, outputs)
             self._model.name = self._name
             self._model.compile(
-                    loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
+                    loss=CategoricalCrossentropy(from_logits=False), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
                     optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                     metrics=['accuracy']
                 )

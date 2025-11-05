@@ -107,12 +107,12 @@ class RNN_SignsLanguageDigits(SignsLanguageDigits):
             
             # output layer
             X = Flatten()(X)
-            X = Dense(self._classes, kernel_initializer = glorot_uniform(seed=0), kernel_regularizer=l2(0.01))(X) # Decrease to fix high bias; Increase to fix high variance.
+            X = Dense(self._classes, name="FinalOutput", activation="softmax", kernel_initializer = glorot_uniform(seed=0), kernel_regularizer=l2(0.01))(X) # Decrease to fix high bias; Increase to fix high variance.
             # Create model
             self._model = Model(inputs = X_input, outputs = X)
             self._model.name = self._name
             self._model.compile(
-                    loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
+                    loss=CategoricalCrossentropy(from_logits=False), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
                     optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                     metrics=['accuracy']
                 )

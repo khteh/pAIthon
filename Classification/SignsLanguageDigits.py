@@ -113,10 +113,10 @@ class SignsLanguageDigits():
                     ## Flatten layer
                     Flatten(),
                     ## Dense layer with 1 unit for output & 'sigmoid' activation
-                    Dense(self._classes, kernel_regularizer=l2(0.01)) # Linear activation ("pass-through") if not specified. Decrease to fix high bias; Increase to fix high variance.
+                    Dense(self._classes, name="FinalOutput", activation="softmax", kernel_regularizer=l2(0.01)) # Linear activation ("pass-through") if not specified. Decrease to fix high bias; Increase to fix high variance.
                 ])
             self._model.compile(
-                    loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
+                    loss=CategoricalCrossentropy(from_logits=False), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
                     optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                     metrics=['accuracy']
                 )
