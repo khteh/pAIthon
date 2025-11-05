@@ -150,13 +150,12 @@ class SignsLanguageDigits():
         img = image.load_img(path, target_size=(64, 64))
         x = image.img_to_array(img)
         x = numpy.expand_dims(x, axis=0)
-        x2 = x
-        if grayscale and x2.shape[-1] == 3:
-            x2 = tf.image.rgb_to_grayscale(x2)
-        elif not grayscale and x2.shape[-1] == 1:
-            x2 = self._convert_grayscale_to_rgb(x2)
-        #print(f"Input image: {path}, shape: {x.shape} mean: {numpy.mean(x2, axis=-1)}, min: {numpy.min(x2, axis=-1)}, max: {numpy.max(x2, axis=-1)}")
-        prediction = self._model.predict(x2)
+        if grayscale and x.shape[-1] == 3:
+            x = tf.image.rgb_to_grayscale(x)
+        elif not grayscale and x.shape[-1] == 1:
+            x = self._convert_grayscale_to_rgb(x)
+        #print(f"Input image: {path}, shape: {x.shape} mean: {numpy.mean(x, axis=-1)}, min: {numpy.min(x, axis=-1)}, max: {numpy.max(x, axis=-1)}")
+        prediction = self._model.predict(x)
         print(f"Predictions: {prediction} sum: {numpy.sum(prediction)}")
         prediction = numpy.argmax(prediction)
         color = bcolors.OKGREEN if truth == prediction else bcolors.FAIL
