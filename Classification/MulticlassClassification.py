@@ -34,7 +34,7 @@ class MulticlassClassification():
         # show how classes are represented
         print(f"class representation {self._Y_train[:10]}")
         # show shapes of our dataset
-        print(f"shape of self._X_train: {self._X_train.shape}, shape of self._Y_train: {self._Y_train.shape}")    
+        print(f"_X_train: {self._X_train.shape}, _Y_train: {self._Y_train.shape}")    
         return self._X_train, self._Y_train
 
     def MulticlassClassification(self):

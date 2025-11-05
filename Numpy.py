@@ -287,7 +287,7 @@ def HierarchicalDataAnalysis(companies, prices):
     plt.xlabel("Tech Companies")
     plt.ylabel("Friday Prices ($)")
     plt.title("Tech Share Valuation")
-    plt.legend()
+    plt.legend(fontsize='x-large')
     #plt.show() This blocks
     plt.clf()
     plt.cla()

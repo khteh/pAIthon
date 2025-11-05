@@ -85,7 +85,7 @@ class HeartFailurePrediction():
         plt.xticks(ticks = range(len(min_samples_split_list )),labels=min_samples_split_list)
         plt.plot(accuracy_list_train)
         plt.plot(accuracy_list_val)
-        plt.legend(['Train','Validation'])
+        plt.legend(['Train','Validation'], fontsize='x-large')
 
         accuracy_list_train = []
         accuracy_list_val = []
@@ -105,7 +105,7 @@ class HeartFailurePrediction():
         plt.xticks(ticks = range(len(max_depth_list )),labels=max_depth_list)
         plt.plot(accuracy_list_train)
         plt.plot(accuracy_list_val)
-        plt.legend(['Train','Validation'])
+        plt.legend(['Train','Validation'], fontsize='x-large')
         # Choose min_samples_split and max_depth based on the plots above which yield highest accuracy and lowest variance / overfitting, i.e., training and test accuracy should be as close to one another as possible
         self._dt = DecisionTreeClassifier(min_samples_split = 50,
                                              max_depth = 3,
@@ -151,7 +151,7 @@ class HeartFailurePrediction():
         plt.xticks(ticks = range(len(min_samples_split_list )),labels=min_samples_split_list) 
         plt.plot(accuracy_list_train)
         plt.plot(accuracy_list_val)
-        plt.legend(['Train','Validation'])
+        plt.legend(['Train','Validation'], fontsize='x-large')
         # Choose min_samples_split and max_depth based on the plots above which yield highest accuracy and lowest variance / overfitting, i.e., training and test accuracy should be as close to one another as possible
         self._rf = RandomForestClassifier(n_estimators = 100,
                                              max_depth = 16, 

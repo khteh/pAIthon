@@ -395,7 +395,7 @@ def ShowMulticlassConfusionMatrix(confusion, font_size: int):
     for i in range(10):
         for j in range(10):
             ax.text(j, i, confusion[i, j], ha='center', va='center', color='white')
-    plt.legend()
+    plt.legend(fontsize='xx-large')
     plt.show()
 
 def ShowConfusionMatrix(confusion):
@@ -413,7 +413,7 @@ def ShowConfusionMatrix(confusion):
     for i in range(2):
         for j in range(2):
             ax.text(j, i, confusion[i, j], ha='center', va='center', color='red')
-    plt.legend()
+    plt.legend(fontsize='xx-large')
     plt.show()
 
 if __name__ == "__main__":

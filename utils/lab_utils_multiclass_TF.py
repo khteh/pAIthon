@@ -44,7 +44,6 @@ def plot_cat_decision_boundary_mc(ax, X, predict , class_labels=None, legend=Fal
     #contour plot highlights boundaries between values - classes in this case
     ax.contour(xx, yy, Z, linewidths=1) 
     #ax.axis('tight')
-
       
 def plt_mc_data(ax, X, y, classes,  class_labels=None, map=plt.cm.Paired, 
                 legend=False, size=50, m='o', equal_xy = False):
@@ -60,43 +59,54 @@ def plt_mc_data(ax, X, y, classes,  class_labels=None, map=plt.cm.Paired,
         ax.scatter(X[idx, 0], X[idx, 1],  marker=m,
                     color=map(col), vmin=0, vmax=map.N, 
                     s=size, label=label)
-    if legend: ax.legend()
-    if equal_xy: ax.axis("equal")
+    if legend: 
+        ax.legend(fontsize='xx-large')
+    if equal_xy: ax.axis("equal", fontsize=18)
 
 def plt_mc(X_train,y_train,classes, centers, std):
     css = np.unique(y_train)
-    fig,ax = plt.subplots(1,1,figsize=(3,3)) # figsize = (width, height)
+    fig, ax = plt.subplots(1, 1, constrained_layout=True, figsize=(10, 10)) # figsize = (width, height)
+    # Use tight_layout with h_pad to adjust vertical padding
+    # Adjust h_pad for more/less vertical space
+    fig.tight_layout(pad=5,rect=[0, 0, 1, 0.98]) #[left, bottom, right, top]
+
     fig.canvas.toolbar_visible = False
     fig.canvas.header_visible = False
     fig.canvas.footer_visible = False
     plt_mc_data(ax, X_train,y_train,classes, map=dkcolors_map, legend=True, size=50, equal_xy = False)
-    ax.set_title("Multiclass Data")
-    ax.set_xlabel("x0")
-    ax.set_ylabel("x1")
+    ax.set_title("Multiclass Data", fontsize=22, fontweight="bold", pad=10)
+    ax.set_xlabel("x0", fontsize='xx-large')
+    ax.set_ylabel("x1", fontsize='xx-large')
     #for c in css:
     #    circ = plt.Circle(centers[c], 2*std, color=dkcolors_map(c), clip_on=False, fill=False, lw=0.5)
     #    ax.add_patch(circ)
+    plt.xticks(fontsize=18)  # Change x-axis tick label font size
+    plt.yticks(fontsize=18)  # Change y-axis tick label font size    
     plt.show()
 
 def plt_cat_mc(X_train, y_train, model, classes):
     #make a model for plotting routines to call
     model_predict = lambda Xl: np.argmax(model.predict(Xl),axis=1)
 
-    fig,ax = plt.subplots(1,1, figsize=(3,3)) # figsize = (width, height)
+    fig, ax = plt.subplots(1, 1, constrained_layout=True, figsize=(10, 10)) # figsize = (width, height)
+    # Use tight_layout with h_pad to adjust vertical padding
+    # Adjust h_pad for more/less vertical space
+    fig.tight_layout(pad=5,rect=[0, 0, 1, 0.98]) #[left, bottom, right, top]
+
     fig.canvas.toolbar_visible = False
     fig.canvas.header_visible = False
     fig.canvas.footer_visible = False
  
     #add the original data to the decison boundary
     plt_mc_data(ax, X_train,y_train, classes, map=dkcolors_map, legend=True)
-    #plot the decison boundary. 
+    #plot the decison boundary.
     plot_cat_decision_boundary_mc(ax, X_train, model_predict, vector=True)
-    ax.set_title("model decision boundary")
-
-    plt.xlabel(r'$x_0$');
-    plt.ylabel(r"$x_1$"); 
+    ax.set_title("Model Decision Boundary", fontsize=22, fontweight="bold", pad=10)
+    plt.xlabel(r'$x_0$', fontsize=20)
+    plt.ylabel(r"$x_1$", fontsize=20)
+    plt.xticks(fontsize=18)  # Change x-axis tick label font size
+    plt.yticks(fontsize=18)  # Change y-axis tick label font size    
     plt.show()
-
     
 def plt_prob_z(ax,fwb, x0_rng=(-8,8), x1_rng=(-5,4)):
     """ plots a decision boundary but include shading to indicate the probability
@@ -139,7 +149,8 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
 def plt_layer_relu(X, Y, W1, b1, classes):
     nunits = (W1.shape[1])
     Y = Y.reshape(-1,)
-    fig,ax = plt.subplots(1,W1.shape[1], figsize=(7,2.5)) # figsize = (width, height)
+    fig,ax = plt.subplots(1,W1.shape[1], constrained_layout=True, figsize=(7,2.5)) # figsize = (width, height)
+    fig.tight_layout(pad=5,rect=[0, 0, 1, 0.98]) #[left, bottom, right, top]
     fig.canvas.toolbar_visible = False
     fig.canvas.header_visible = False
     fig.canvas.footer_visible = False
@@ -148,10 +159,12 @@ def plt_layer_relu(X, Y, W1, b1, classes):
         layerf= lambda x : np.maximum(0,(np.dot(x,W1[:,i]) + b1[i]))
         plt_prob_z(ax[i], layerf)
         plt_mc_data(ax[i], X, Y, classes, map=dkcolors_map,legend=True, size=50, m='o')
-        ax[i].set_title(f"Layer 1 Unit {i}")
-        ax[i].set_ylabel(r"$x_1$",size=10)
-        ax[i].set_xlabel(r"$x_0$",size=10)
+        ax[i].set_title(f"Layer 1 Unit {i}", fontsize=22, fontweight="bold", pad=10)
+        ax[i].set_ylabel(r"$x_1$", fontsize='xx-large')
+        ax[i].set_xlabel(r"$x_0$", fontsize='xx-large')
     fig.tight_layout()
+    plt.xticks(fontsize=18)  # Change x-axis tick label font size
+    plt.yticks(fontsize=18)  # Change y-axis tick label font size    
     plt.show()
 
 
@@ -166,10 +179,10 @@ def plt_output_layer_linear(X, Y, W, b, classes, x0_rng=None, x1_rng=None):
         layerf = lambda x : np.dot(x,W[:,i]) + b[i]
         plt_prob_z(axi, layerf, x0_rng=x0_rng, x1_rng=x1_rng)
         plt_mc_data(axi, X, Y, classes, map=dkcolors_map,legend=True, size=50, m='o')
-        axi.set_ylabel(r"$a^{[1]}_1$",size=9)
-        axi.set_xlabel(r"$a^{[1]}_0$",size=9)
+        axi.set_ylabel(r"$a^{[1]}_1$", fontsize='xx-large')
+        axi.set_xlabel(r"$a^{[1]}_0$", fontsize='xx-large')
         axi.set_xlim(x0_rng)
         axi.set_ylim(x1_rng)
-        axi.set_title(f"Linear Output Unit {i}")
+        axi.set_title(f"Linear Output Unit {i}", fontsize=22, fontweight="bold", pad=10)
     fig.tight_layout()
     plt.show()

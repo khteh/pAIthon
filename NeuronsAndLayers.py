@@ -20,7 +20,7 @@ def LinearRegressionModel():
     Y_train = numpy.array([[300.0], [500.0]], dtype=numpy.float32)       #(price in 1000s of dollars)
     fig, ax = plt.subplots(1,1) # figsize = (width, height)
     ax.scatter(X_train, Y_train, marker='x', c='r', label="Data Points")
-    ax.legend( fontsize='xx-large')
+    ax.legend(fontsize='x-large')
     ax.set_ylabel('Price (in 1000s of dollars)', fontsize='xx-large')
     ax.set_xlabel('Size (1000 sqft)', fontsize='xx-large')
     plt.show()
@@ -80,7 +80,7 @@ def LogisticNeuron():
     ax.set_ylabel('y', fontsize=12)
     ax.set_xlabel('x', fontsize=12)
     ax.set_title('one variable plot')
-    ax.legend(fontsize=12)
+    ax.legend(fontsize='x-large')
     plt.show()
     """
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.

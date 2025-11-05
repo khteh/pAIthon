@@ -140,7 +140,7 @@ def AbaloneAge(url, path):
     plt.xlabel("Count")
     plt.ylabel("Rings")
     plt.title("Abalone ring counts distribution")
-    plt.legend()
+    plt.legend(fontsize='x-large')
     #plt.show()# This blocks
     # Correlations between input variables and target output (Label)
     correlations = data.corr()

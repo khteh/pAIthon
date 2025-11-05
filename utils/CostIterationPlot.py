@@ -14,5 +14,5 @@ def CostIterationPlot(costs: list[float]):
     ax1.set_title("Cost vs. iteration(start)");  ax2.set_title("Cost vs. iteration (end)")
     ax1.set_ylabel('Cost')            ;  ax2.set_ylabel('Cost') 
     ax1.set_xlabel('iteration step')  ;  ax2.set_xlabel('iteration step') 
-    plt.legend()
+    plt.legend(fontsize='x-large')
     plt.show()
