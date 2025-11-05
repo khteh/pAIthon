@@ -159,11 +159,18 @@ class FaceRecognition():
     def _img_to_encoding(self, image_path:str):
         """
         Generate one encoding vector for each person by running the forward propagation of the model on the specified image.
+        Note: Each Keras Application expects a specific kind of input preprocessing. 
+              For InceptionResNetV2, call keras.applications.inception_resnet_v2.preprocess_input on your inputs before passing them to the model. 
+              inception_resnet_v2.preprocess_input will scale input pixels between -1 and 1.
         """
         img = load_img(image_path, target_size=(299, 299))
         data = preprocess_input(numpy.expand_dims(img, axis=0))
         embedding = self._model.predict_on_batch(data)
-        return embedding / numpy.linalg.norm(embedding, ord=2)
+        # The L2 norm of each normalized vector should be approximately 1
+        l2_norm =  numpy.linalg.norm(embedding, ord=2)
+        embedding1 = embedding / numpy.linalg.norm(embedding, ord=2)
+        print(f"embedding: shape: {embedding.shape}, {embedding}, l2_norm: {l2_norm}, embedding1: {embedding1}")
+        return embedding1
     
     def triplet_loss_test(self):
         print(f"\n=== {self.triplet_loss_test.__name__} ===")
