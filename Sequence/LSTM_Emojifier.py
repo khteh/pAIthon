@@ -48,6 +48,7 @@ class LSTMEmojifier():
     _Y_test_oh = None
     _learning_rate: float = None
     _trained: bool = False
+    # The entire set of Emoji codes as defined by the Unicode consortium is supported in addition to a bunch of aliases. By default, only the official list is enabled but doing emoji.emojize(language='alias') enables both the full list and aliases.
     _emoji_dictionary = {"0": "\u2764\uFE0F",    # :heart: prints a black instead of red heart depending on the font
                         "1": ":baseball:",
                         "2": ":smile:",
@@ -182,14 +183,14 @@ class LSTMEmojifier():
             # Add dropout with a probability of 0.5
             X = Dropout(0.5)(X)
             # Propagate X through a Dense layer with 5 units
-            X = Dense(5)(X)
+            X = Dense(5, activation="softmax")(X)
             # Add a softmax activation
             #X = Activation('softmax')(X)
             
             # Create Model instance which converts sentence_indices into X.
             self._model = Model(inputs=sentence_indices, outputs=X)
             self._model.compile(
-                    loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
+                    loss=CategoricalCrossentropy(from_logits=False), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
                     optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                     metrics=['accuracy']
                 )
@@ -238,7 +239,7 @@ class LSTMEmojifier():
             print(f"X_train: {self._X_train.shape}, Y_train: {self._Y_train.shape}")
             self._classes = len(numpy.unique(self._Y_train)) # Unique number of emojis
             self._X_train_indices = self.sentences_to_indices(self._X_train)
-            print(f"{self._classes} classes")
+            print(f"{self._classes} classes: {numpy.unique(self._Y_train)}")
             self._Y_train_oh = self._convert_to_one_hot(self._Y_train)
         if test:
             self._X_test, self._Y_test = self._read_csv(test)
@@ -304,7 +305,6 @@ def sentences_to_indices_test(retrain:bool):
     #                             [4, 8, 6, 5],
     #                             [5, 3, 7, 0],
     #                             [0, 0, 0, 0]]), "Wrong values. Debug with the given examples"
-    
     print(f"{bcolors.OKGREEN}All tests passed!{bcolors.DEFAULT}")
 
 def pretrained_embedding_layer_test(retrain:bool):
@@ -340,7 +340,7 @@ def model_tests(retrain:bool):
     print(f"\n=== {model_tests.__name__} ===")
     # def __init__(self, path: str = None, train:str = None, test:str = None, word_to_vec_map = None, word_to_index = None, max_len:int = None, learning_rate:float = 0.01):
     # https://nlp.stanford.edu/projects/glove/
-    model = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', "models/LSTM_Emojifier.keras", 'data/Emojifier/train_emoji.csv', 'data/Emojifier/tesss.csv')
+    model = LSTMEmojifier('/usr/src/GloVe/glove.6B.300d.txt', "models/LSTM_Emojifier.keras", 'data/Emojifier/train_emoji.csv', 'data/Emojifier/test_emoji.csv')
     model.BuildModel()
     model.Train(100, 32, retrain)
     model.Evaluate()
