@@ -4,6 +4,7 @@ from tensorflow.keras.utils import plot_model
 from keras import saving
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Input, LSTM, Embedding, TextVectorization
+from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 
@@ -25,7 +26,8 @@ def masked_loss(y_true, y_pred):
     loss (tensor): Calculated loss.
     """
     # Calculate the loss for each item in the batch. Remember to pass the right arguments, as discussed above!
-    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, ignore_class=-1)
+    # Since the last layer of the model finishes with a LogSoftMax call, the results are **not** normalized - they do not lie between 0 and 1. 
+    loss_fn = SparseCategoricalCrossentropy(from_logits=True, ignore_class=-1)
     # Use the previous defined function to compute the loss
     print(f"y_true: {y_true.shape}, pred: {y_pred.shape}")
     return loss_fn(y_true,y_pred)
@@ -173,6 +175,7 @@ class LSTM_NameEntityRecognition():
                 show_layer_activations=True)
         if new_model or retrain:
             tensorboard = CreateTensorBoardCallback("LSTM_NameEntityRecognition") # Create a new folder with current timestamp
+            # https://github.com/tensorflow/tensorflow/issues/103397
             history = self.model.fit(self._train_dataset.batch(self._batch_size),
                                         validation_data = self._val_dataset.batch(self._batch_size), shuffle=True, epochs = epochs, validation_freq=1, callbacks=[tensorboard, self._circuit_breaker]) # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
             PlotModelHistory("LSTM Name Entity Recognition", history)

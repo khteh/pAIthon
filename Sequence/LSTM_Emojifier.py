@@ -184,8 +184,6 @@ class LSTMEmojifier():
             X = Dropout(0.5)(X)
             # Propagate X through a Dense layer with 5 units
             X = Dense(5, activation="softmax")(X)
-            # Add a softmax activation
-            #X = Activation('softmax')(X)
             
             # Create Model instance which converts sentence_indices into X.
             self._model = Model(inputs=sentence_indices, outputs=X)
