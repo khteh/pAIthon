@@ -82,7 +82,7 @@ class HandWrittenDigitsNN():
                     Input(shape=(400,)),    #specify input size
                     Dense(25, activation='sigmoid', name="L1"), # Densely connected, or fully connected
                     Dense(15, activation='sigmoid', name="L2"),
-                    Dense(1, name="L3", activation="softmax"),
+                    Dense(1, name="L3", activation="softmax", kernel_regularizer=l2(0.01)),
                 ], name = "HandWrittenDigits" 
             )
             self._model.compile(
