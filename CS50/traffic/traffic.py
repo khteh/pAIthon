@@ -7,60 +7,76 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras import regularizers, models
 from tensorflow.keras.models import load_model
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Flatten, Dropout
+from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Flatten, Dropout, Input, BatchNormalization
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import plot_model
+from utils.DataAugmentation import AugmentData, ResizeRescale
+from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
+from utils.TrainingMetricsPlot import PlotModelHistory
 """
 https://cs50.harvard.edu/ai/projects/5/traffic/
 https://www.tensorflow.org/install/pip
 $ pipenv run python -m CS50.traffic.traffic CS50/traffic/gtsrb/
 $ pipenv run check50 --local ai50/projects/2024/x/traffic
 """
-EPOCHS = 10
+EPOCHS = 100
 IMG_WIDTH = 30
 IMG_HEIGHT = 30
 NUM_CATEGORIES = 43
 TEST_SIZE = 0.4
-
+BATCH_SIZE = 32
 def main(model_path):
     # Check command-line arguments
     if len(sys.argv) not in [2, 3]:
         sys.exit("Usage: python traffic.py data_directory [model.keras]")
     print(f"TF v{tf.version.VERSION}")
     # Get image arrays and labels for all image files
-    images, labels = load_data(sys.argv[1])
+    X_train, Y_train, X_test, Y_test, train_dataset, validation_dataset, test_dataset = prepare_data(sys.argv[1])
 
-    # Split data into training and testing sets
-    labels = tf.keras.utils.to_categorical(labels)
-    x_train, x_test, y_train, y_test = train_test_split(
-        np.array(images), np.array(labels), test_size=TEST_SIZE
-    )
-    saveModel: bool = False
+    new_model: bool = True
     if model_path and len(model_path) and Path(model_path).exists() and Path(model_path).is_file():
         print(f"Using saved model {model_path}...")
         model = load_model(model_path)
+        new_model = False
     else:
         # Get a compiled neural network
         model = build_model()
         # Fit model on training data
 
-        # Epochs and batches
-        # In the fit statement above, the number of epochs was set to 10. This specifies that the entire data set should be applied during training 10 times. During training, you see output describing the progress of training that looks like this:
-        # Epoch 1/10
-        # 6250/6250 [==============================] - 6s 910us/step - loss: 0.1782
-        # The first line, Epoch 1/10, describes which epoch the model is currently running. For efficiency, the training data set is broken into 'batches'. The default size of a batch in Tensorflow is 32. 
-        # So, for example, if there are 200000 examples in our data set, there will be 6250 batches. The notation on the 2nd line 6250/6250 [==== is describing which batch has been executed.
-        # Or, epochs = how many steps of a learning algorithm like gradient descent to run
-        history = model.fit(x_train, y_train, epochs=EPOCHS)
-        saveModel = True
-
     # Display the model's architecture
     print("Model Summary:")
     model.summary()
+    plot_model(
+        model,
+        to_file="output/TrafficLightsClassification.png",
+        show_shapes=True,
+        show_dtype=True,
+        show_layer_names=True,
+        rankdir="TB", # rankdir argument passed to PyDot, a string specifying the format of the plot: "TB" creates a vertical plot; "LR" creates a horizontal plot.
+        expand_nested=True,
+        show_layer_activations=True)
+
+    # Epochs and batches
+    # In the fit statement above, the number of epochs was set to 10. This specifies that the entire data set should be applied during training 10 times. During training, you see output describing the progress of training that looks like this:
+    # Epoch 1/10
+    # 6250/6250 [==============================] - 6s 910us/step - loss: 0.1782
+    # The first line, Epoch 1/10, describes which epoch the model is currently running. For efficiency, the training data set is broken into 'batches'. The default size of a batch in Tensorflow is 32. 
+    # So, for example, if there are 200000 examples in our data set, there will be 6250 batches. The notation on the 2nd line 6250/6250 [==== is describing which batch has been executed.
+    # Or, epochs = how many steps of a learning algorithm like gradient descent to run
+    if new_model:
+        circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 10) # If 10 doesn't make sense, don't use it.
+        tensorboard = CreateTensorBoardCallback("TrafficLightClassification") # Create a new folder with current timestamp
+        history = model.fit(train_dataset, epochs=EPOCHS, shuffle=True, validation_data=validation_dataset, validation_freq=1, callbacks=[tensorboard]) # shuffle: Boolean, whether to shuffle the training data before each epoch. This argument is ignored when x is a generator or a tf.data.Dataset.
+        PlotModelHistory("Traffic Lights Classification", history)
+        # Save model to file
+        #filename = sys.argv[2]
+        model.save(model_path)
+        print(f"Model saved to {model_path}.")
 
     # Evaluate neural network performance
-    train_loss, train_accuracy = model.evaluate(x_train,  y_train, verbose=2)
-    test_loss, test_accuracy = model.evaluate(x_test,  y_test, verbose=2)
+    train_loss, train_accuracy = model.evaluate(X_train,  Y_train, verbose=2)
+    test_loss, test_accuracy = model.evaluate(X_test,  Y_test, verbose=2)
     print(f'Training accuracy: {train_accuracy:.4f}, loss: {train_loss:.4f}')
     print(f'Testing accuracy: {test_accuracy:.4f}, loss: {test_loss:.4f}')
 
@@ -69,13 +85,7 @@ def main(model_path):
     #logits = model.predict(x_test)
     #f_x = tf.nn.softmax(logits) # g(z)
 
-    # Save model to file
-    if saveModel:
-        #filename = sys.argv[2]
-        model.save(model_path)
-        print(f"Model saved to {model_path}.")
-
-def load_data(data_dir):
+def prepare_data(data_dir):
     """
     Load image data from directory `data_dir`.
 
@@ -89,6 +99,7 @@ def load_data(data_dir):
     be a list of integer labels, representing the categories for each of the
     corresponding `images`.
     """
+    print(f"\n=== {prepare_data.__name__} ===")
     images = []
     labels = []
     if os.path.isdir(os.fsdecode(data_dir)):
@@ -113,8 +124,29 @@ def load_data(data_dir):
                 raise Exception(f"data_dir {p} not a valid directory!")
     else:
         raise Exception(f"data_dir {data_dir} not a valid directory!")
-    print(f"{len(images)} images; {len(labels)} labels")
-    return (images, labels)
+    print(f"{len(images)} images; {len(labels)} labels") # 26640 images; 26640 labels
+    # Split data into training and testing sets
+    labels = tf.keras.utils.to_categorical(labels)
+    X_train, x_, Y_train, y_ = train_test_split(np.array(images), np.array(labels), test_size=0.30, random_state=1)
+    # Split the 40% subset above into two: one half for cross validation and the other for the test set
+    X_cv, X_test, Y_cv, Y_test = train_test_split(x_, y_, test_size=0.50, random_state=1)
+    # Delete temporary variables
+    del x_, y_
+    print(f"X_train: {X_train.shape}, Y_train: {Y_train.shape}, X_cv: {X_cv.shape}, Y_cv: {Y_cv.shape}, X_test: {X_test.shape}, Y_test: {Y_test.shape}")
+    # X_train: (2283, 64, 64, 3), Y_train: (2283, 10), X_cv: (489, 64, 64, 3), Y_cv: (489, 10), X_test: (490, 64, 64, 3), Y_test: (490, 10)
+    # Note: Using ResizeRescale results in high variance and low accuracy on test dataset. Do NOT use it in this usecase!
+    train_dataset = AugmentData(tf.data.Dataset.from_tensor_slices((X_train, Y_train)).shuffle(Y_train.shape[0], reshuffle_each_iteration=True).batch(BATCH_SIZE).cache().prefetch(buffer_size=tf.data.AUTOTUNE))
+    validation_dataset = tf.data.Dataset.from_tensor_slices((X_cv, Y_cv)).shuffle(Y_cv.shape[0], reshuffle_each_iteration=True).batch(BATCH_SIZE).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+    test_dataset = tf.data.Dataset.from_tensor_slices((X_test, Y_test)).batch(BATCH_SIZE).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+    print (f"number of training examples = {X_train.shape[0]}")
+    print (f"number of test examples = {X_test.shape[0]}")
+    print (f"X_train shape: {X_train.shape}")
+    print (f"Y_train shape: {Y_train.shape}")
+    print (f"X_cv shape: {X_cv.shape}")
+    print (f"Y_cv shape: {Y_cv.shape}")
+    print (f"X_test shape: {X_test.shape}")
+    print (f"Y_test shape: {Y_test.shape}")
+    return X_train, Y_train, X_test, Y_test, train_dataset, validation_dataset, test_dataset
 
 def build_model():
     """
@@ -136,15 +168,17 @@ def build_model():
                                Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
     """
     model = models.Sequential([
-                    Conv2D(64, (3, 3), activation='softmax', input_shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
-                    MaxPooling2D((2, 2)),
-                    Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
-                    Dense(64, activation='softmax', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
-                    Dropout(0.5),
-                    Dense(64, activation='softmax', name="L2", kernel_regularizer=l2(0.01)),
-                    Dropout(0.5),
-                    # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
-                    Dense(NUM_CATEGORIES, name="L3") # Linear activation ("pass-through") if not specified
+                Input(shape=(IMG_WIDTH, IMG_HEIGHT, 3)),
+                Conv2D(64, (3, 3), activation='softmax'),
+                BatchNormalization(axis=-1), # stabilize the learning process, accelerate convergence (speed up training), and potentially improve generalization performance.
+                MaxPooling2D((2, 2)),
+                Flatten(), # transforms the shape of the data from a n-dimensional array to a one-dimensional array.
+                Dense(64, activation='softmax', name="L1", kernel_regularizer=l2(0.01)), # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+                Dropout(0.3),
+                Dense(64, activation='softmax', name="L2", kernel_regularizer=l2(0.01)),
+                Dropout(0.3),
+                # Just compute z. Puts both the activation function g(z) and cross entropy loss into the specification of the loss function below. This gives less roundoff error.
+                Dense(NUM_CATEGORIES, activation='softmax', name="L3", kernel_regularizer=l2(0.01)) # Linear activation ("pass-through") if not specified
             ])
     """
     SparseCategorialCrossentropy or CategoricalCrossEntropy
@@ -153,8 +187,8 @@ def build_model():
     SparseCategorialCrossentropy: expects the target to be an integer corresponding to the index. For example, if there are 10 potential target values, y would be between 0 and 9.
     CategoricalCrossEntropy: Expects the target value of an example to be one-hot encoded where the value at the target index is 1 while the other N-1 entries are zero. An example with 10 potential target values, where the target is 2 would be [0,0,1,0,0,0,0,0,0,0].    
     """
-    model.compile(optimizer=Adam(0.01), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
-                loss=CategoricalCrossentropy(from_logits=True),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification. CategoricalCrossEntropy is used here as the labels are provided as integers representing each class.
+    model.compile(optimizer=Adam(0.001), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
+                loss=CategoricalCrossentropy(from_logits=False),  # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification. CategoricalCrossEntropy is used here as the labels are provided as integers representing each class.
                 metrics=['accuracy'])
     return model
 """
