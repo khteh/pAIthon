@@ -5,6 +5,7 @@ from tqdm import tqdm
 from babel.dates import format_date
 from pathlib import Path
 from keras import saving
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.layers import Bidirectional, Concatenate, Permute, Dot, Input, LSTM, Multiply
@@ -203,7 +204,7 @@ class MachineTranslation():
 
         # Please note, this is the post attention LSTM cell. These have to be REUSED in the following for loop instead of instantiating new layers.
         post_activation_LSTM_cell = LSTM(self._n_s, return_state = True) # Please do not modify this global variable.
-        output_layer = Dense(len(self._machine_vocab), kernel_regularizer=l2(0.1))
+        output_layer = Dense(len(self._machine_vocab), activation="softmax", kernel_regularizer=l2(0.1)) # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
 
         # Step 2: Iterate for Ty steps
         for t in range(self._Ty):
@@ -242,7 +243,7 @@ class MachineTranslation():
         """
         assert len(self._model.outputs) == 10, f"Wrong output shape. Expected 10 != {len(self._model.outputs)}"
         self._model.compile(
-                loss=CategoricalCrossentropy(from_logits=True), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
+                loss=CategoricalCrossentropy(from_logits=False), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
                 optimizer=Adam(learning_rate=self._learning_rate, beta_1=self._beta_1, beta_2=self._beta_2, weight_decay=self._decay), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                 metrics=['accuracy'] * self._Ty # https://github.com/tensorflow/tensorflow/issues/100319
             )
@@ -280,6 +281,7 @@ class MachineTranslation():
 
     def Predict(self, dates, s00, c00):
         print(f"\n=== {self.Predict.__name__} ===")
+        result = []
         for date in dates:
             source = self._string_to_int(date, self._Tx, self._human_vocab)
             #print(source)
@@ -289,8 +291,8 @@ class MachineTranslation():
             prediction = self._model.predict([source, s00, c00])
             prediction = numpy.argmax(prediction, axis = -1) # (10, 1)
             output = [self._inv_machine_vocab[int(i.item())] for i in prediction]
-            print("source:", date)
-            print("output:", ''.join(output),"\n")    
+            result.append(''.join(output))
+        return result
 
     def visualize_attentions(self, text):
         """
@@ -355,15 +357,24 @@ class MachineTranslation():
         # get the lengths of the string
         input_length = len(text)
         output_length = Ty
-        
+
         # Plot the attention_map
-        fig, ax = plt.subplots(1,1, figsize=(8, 4), layout='constrained') # figsize = (width, height)
+        fig, ax = plt.subplots(1,1, constrained_layout=True, figsize=(20, 10)) # figsize = (width, height)
+        # Use tight_layout with h_pad to adjust vertical padding
+        # Adjust h_pad for more/less vertical space
+        fig.tight_layout(rect=[0, 0.03, 1, 0.95]) #[left, bottom, right, top]
 
         # add image
         img = ax.imshow(attention_map, interpolation='nearest', cmap='Blues')
+        # Create an axes divider from the main axes
+        divider = make_axes_locatable(ax)
 
-        # add colorbar
-        fig.colorbar(img, ax=ax, orientation='horizontal', label='Alpha value (Probability output of the "softmax")')
+        # Append a new axes for the colorbar at the "bottom", with a specific width and padding
+        # The 'size' parameter controls the colorbar's thickness, and 'pad' controls the distance
+        cax = divider.append_axes("bottom", size="5%", pad=1)
+        cbar = fig.colorbar(img, cax=cax, orientation='horizontal')
+        cbar.ax.tick_params(labelsize=18) # Change 14 to your desired font size
+        cbar.set_label("Alpha value (Probability output of the 'softmax')", fontsize=20) # Change 16 to your desired font size
 
         # add labels
         ax.set_yticks(range(output_length))
@@ -372,12 +383,17 @@ class MachineTranslation():
         ax.set_xticks(range(input_length))
         ax.set_xticklabels(text_[:input_length], rotation=45)
 
-        ax.set_xlabel('Input Sequence')
-        ax.set_ylabel('Output Sequence')
+        ax.set_xlabel('Input Sequence', fontsize=20)
+        ax.set_ylabel('Output Sequence', fontsize=20)
 
+        # Adjust the left margin to create more space
+        plt.subplots_adjust(left=0.05) # Increase 'left' value for more space
+
+        plt.xticks(fontsize=18) 
+        plt.yticks(fontsize=18) 
         # add grid and legend
         ax.grid()
-        fig.suptitle("Attention Map", fontsize=16)
+        fig.suptitle("Attention Map", y=0.95, fontsize=22, fontweight="bold")
         plt.show()
         #return attention_map
 
@@ -560,10 +576,14 @@ def model_test(retrain:bool):
     mt.Train(100, retrain)
     print(f"date.today(): {date.today()}")
     print(f"datetime.now().date: {datetime.now().date()}")
-    EXAMPLES = ['3 May 1979', '5 April 09', '21th of August 2016', 'Tue 10 Jul 2007', 'Saturday May 9 2018', 'March 3 2001', 'March 3rd 2001', '1 March 2001', "25th December 2025", "31st October 2021", "3rd November 2022"]
+    EXAMPLES = ['3 May 1979', '5 April 09', '21th of August 2016', 'Tue 10 Jul 2007', 'Saturday May 9 2018', 'March 3 2021', 'March 3rd 2001', '1 March 2001', '4th May 2023', "25th December 2025", "31st October 2021", "3rd November 2022"]
+    expected = ["1979-05-03", "2009-04-05", "2016-08-21", "2007-07-10", "2018-05-09", "2021-03-03", "2001-03-03", "2001-03-01", "2023-05-04", "2025-12-25", "2021-10-31", "2022-11-03"]
     s00 = numpy.zeros((1, n_s))
     c00 = numpy.zeros((1, n_s))
-    mt.Predict(EXAMPLES, s00, c00)
+    predictions = mt.Predict(EXAMPLES, s00, c00)
+    for d, truth, prediction in zip(EXAMPLES, expected, predictions):
+        print(f"\nsource: {d}")
+        print(f"{bcolors.OKGREEN if truth == prediction else bcolors.FAIL}Prediction: {prediction}{bcolors.DEFAULT}")
     mt.visualize_attentions("25th December 2025")
 
 if __name__ == "__main__":
