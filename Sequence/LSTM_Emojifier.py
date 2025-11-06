@@ -3,9 +3,10 @@ from pathlib import Path
 from utils.TrainingMetricsPlot import PlotModelHistory
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.layers import Dense, Input, Dropout, LSTM, Activation, Embedding
+from tensorflow.keras.layers import Dense, Input, Dropout, LSTM, Embedding
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.regularizers import l2
 from utils.TermColour import bcolors
 from utils.GPU import InitializeGPU, SetMemoryLimit
 class LSTMEmojifier():
@@ -183,7 +184,7 @@ class LSTMEmojifier():
             # Add dropout with a probability of 0.5
             X = Dropout(0.5)(X)
             # Propagate X through a Dense layer with 5 units
-            X = Dense(5, activation="softmax")(X)
+            X = Dense(5, activation="softmax", kernel_regularizer=l2(0.01))(X)
             
             # Create Model instance which converts sentence_indices into X.
             self._model = Model(inputs=sentence_indices, outputs=X)
@@ -212,7 +213,6 @@ class LSTMEmojifier():
                     print(f"Model saved to {self._model_path}.")
             else:
                 print(f"{bcolors.FAIL}Please build the model first by calling BuildModel()!{bcolors.DEFAULT}")
-
     def Evaluate(self):
         loss, acc = self._model.evaluate(self._X_test_indices, self._Y_test_oh)
         print(f"Test accuracy = {acc}, loss: {loss}")
@@ -295,7 +295,7 @@ def sentences_to_indices_test(retrain:bool):
        
     sentences = numpy.array(["I like deep learning", "deep ´0.= love machine", "machine learning smile", "$"]);
     indexes = nlp.sentences_to_indices(sentences)
-    print(indexes)
+    #print(indexes)
     
     assert type(indexes) == numpy.ndarray, "Wrong type. Use np arrays in the function"
     assert indexes.shape == (sentences.shape[0], max_len), "Wrong shape of ouput matrix"
