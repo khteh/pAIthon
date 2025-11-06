@@ -98,7 +98,17 @@ class TextSummarizer():
                 self._positional_encoding_length, 
                 self._positional_encoding_length,
             )
+        self._model.build((1, self._encoder_maxlen))
         self._model.summary()
+        plot_model(
+            self._model,
+            to_file="output/TransformerSummarizer.png",
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+            rankdir="TB",
+            expand_nested=True,
+            show_layer_activations=True)
 
     def TrainModel(self, epochs:int, retrain:bool = False):
         print(f"\n=== {self.TrainModel.__name__} ===")
@@ -134,17 +144,6 @@ class TextSummarizer():
             if self._model_path:
                 self._model.save(self._model_path) #https://github.com/tensorflow/tensorflow/issues/102475
                 print(f"Model saved to {self._model_path}.")
-        """
-        plot_model(
-            self._model,
-            to_file="output/TransformerSummarizer.png",
-            show_shapes=True,
-            show_dtype=True,
-            show_layer_names=True,
-            rankdir="TB",
-            expand_nested=True,
-            show_layer_activations=True)
-        """
         # self._model.evaluate(self._test_dataset) ValueError: You must call `compile()` before using the model.
     def Predict(self, text:str):
         print(f"\n=== {self.Predict.__name__} ===")
@@ -179,6 +178,7 @@ class TextSummarizer():
         input_document = self._tokenizer.texts_to_sequences([document])
         input_document = pad_sequences(input_document, maxlen=self._encoder_maxlen, padding='post', truncating='post')
         encoder_input = tf.expand_dims(input_document[0], 0)
+        #print(f"encoder_input: {encoder_input.shape}") (1,150)
         output = tf.expand_dims([self._tokenizer.word_index["[SOS]"]], 0)
         for i in range(self._decoder_maxlen):
             predicted_id = self._model.NextWord(encoder_input, output)
