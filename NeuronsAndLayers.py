@@ -73,14 +73,19 @@ def LogisticNeuron():
     pos = Y_train == 1
     neg = Y_train == 0
 
-    fig, ax = plt.subplots(1,1,figsize=(4,3)) # figsize = (width, height)
+    fig, ax = plt.subplots(1,1, constrained_layout=True, figsize=(10, 10)) # figsize = (width, height)
+    # Use tight_layout with h_pad to adjust vertical padding
+    # Adjust h_pad for more/less vertical space
+    fig.tight_layout(pad=5, rect=[0, 0.03, 1, 0.95]) #[left, bottom, right, top]
     ax.scatter(X_train[pos], Y_train[pos], marker='x', s=80, c = 'red', label="y=1")
     ax.scatter(X_train[neg], Y_train[neg], marker='o', s=100, label="y=0", facecolors='none', edgecolors="darkblue",lw=3)
     ax.set_ylim(-0.08,1.1)
-    ax.set_ylabel('y', fontsize=12)
-    ax.set_xlabel('x', fontsize=12)
-    ax.set_title('one variable plot')
+    ax.set_ylabel('Y', fontsize=20)
+    ax.set_xlabel('X', fontsize=20)
+    ax.set_title('Single-Variable plot', fontsize=22, fontweight="bold", y=1.05) # Increasing 'y' moves the title further up.
     ax.legend(fontsize='x-large')
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)
     plt.show()
     """
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
