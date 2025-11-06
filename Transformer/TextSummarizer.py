@@ -45,6 +45,9 @@ class TextSummarizer():
     _inputs: None
     _targets = None
     _dataset = None
+    _test_inputs: None
+    _test_targets = None
+    _test_dataset = None
     _learning_rate: float = None
     _tokenizer: Tokenizer = None
     # Define the model parameters
@@ -96,12 +99,13 @@ class TextSummarizer():
                 self._positional_encoding_length,
             )
         self._model.summary()
+
     def TrainModel(self, epochs:int, retrain:bool = False):
         print(f"\n=== {self.TrainModel.__name__} ===")
         if not self._saved_model or retrain:
             #self._learning_rate = CustomSchedule(embedding_dim)
             self._optimizer = Adam(self._learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
-            self._loss_object = SparseCategoricalCrossentropy(from_logits=True, reduction='none')
+            self._loss_object = SparseCategoricalCrossentropy(from_logits=False, reduction='none')
             self._train_loss = Mean(name='train_loss')
             self._losses = [] # Here you will store the losses, so you can later plot them
             index = self._document.str.len().idxmax()
@@ -118,7 +122,7 @@ class TextSummarizer():
                 # Take an example from the test set, to monitor it during training
                 print (f'Epoch {epoch+1}/{epochs} {(time.time() - start):.2f}s Loss: {self._train_loss.result():.4f}')
                 print(f"Document: {document}")
-                print(f"{bcolors.OKGREEN}Expected Summarization:")
+                print(f"{bcolors.OKGREEN}Expected summarization:")
                 print(f"  {true_summary}")
                 print(f"{bcolors.WARNING}Predicted summarization:")
                 print(f'  {self.Summarize(document)}{bcolors.DEFAULT}\n')
@@ -127,21 +131,21 @@ class TextSummarizer():
             plt.ylabel('Loss', fontsize=22)
             plt.xlabel('Epoch', fontsize=22)
             plt.show()
-            """
-            plot_model(
-                self._model,
-                to_file="output/TransformerSummarizer.png",
-                show_shapes=True,
-                show_dtype=True,
-                show_layer_names=True,
-                rankdir="TB",
-                expand_nested=True,
-                show_layer_activations=True)
-            """
             if self._model_path:
                 self._model.save(self._model_path) #https://github.com/tensorflow/tensorflow/issues/102475
                 print(f"Model saved to {self._model_path}.")
-
+        """
+        plot_model(
+            self._model,
+            to_file="output/TransformerSummarizer.png",
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+            rankdir="TB",
+            expand_nested=True,
+            show_layer_activations=True)
+        """
+        # self._model.evaluate(self._test_dataset) ValueError: You must call `compile()` before using the model.
     def Predict(self, text:str):
         print(f"\n=== {self.Predict.__name__} ===")
         # Take a random sentence as an input
@@ -206,6 +210,8 @@ class TextSummarizer():
         self._tokenizer.fit_on_texts(documents_and_summary)
         self._inputs = self._tokenizer.texts_to_sequences(self._document)
         self._targets = self._tokenizer.texts_to_sequences(self._summary)
+        self._test_inputs = self._tokenizer.texts_to_sequences(self._document_test)
+        self._test_targets = self._tokenizer.texts_to_sequences(self._summary_test)
         self._vocab_size = len(self._tokenizer.word_index) + 1
         print(f'Size of vocabulary: {self._vocab_size}')
 
@@ -218,6 +224,16 @@ class TextSummarizer():
 
         # Create the final training dataset.
         self._dataset = tf.data.Dataset.from_tensor_slices((self._inputs, self._targets)).shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+
+        # Pad the sequences.
+        self._test_inputs = pad_sequences(self._test_inputs, maxlen=self._encoder_maxlen, padding='post', truncating='post')
+        self._test_targets = pad_sequences(self._test_targets, maxlen=self._decoder_maxlen, padding='post', truncating='post')
+
+        self._test_inputs = tf.cast(self._test_inputs, dtype=tf.int32)
+        self._test_targets = tf.cast(self._test_targets, dtype=tf.int32)
+
+        # Create the final training dataset.
+        self._test_dataset = tf.data.Dataset.from_tensor_slices((self._test_inputs, self._test_targets)).shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
     def _Preprocess(self, input_data):
         # Define the custom preprocessing function

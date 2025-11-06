@@ -120,7 +120,7 @@ class QuestionAnswering():
             self._LoadSquadDataset()
             #self._learning_rate = CustomSchedule(embedding_dim)
             self._optimizer = Adam(self._learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9)
-            self._loss_object = SparseCategoricalCrossentropy(from_logits=True, reduction='none')
+            self._loss_object = SparseCategoricalCrossentropy(from_logits=False, reduction='none') # The label is a single integer representing the index of the correct class.
             self._train_loss = Mean(name='train_loss')
             self._losses = [] # Here you will store the losses, so you can later plot them
             for epoch in tqdm(range(epochs)):

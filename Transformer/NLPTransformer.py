@@ -62,7 +62,7 @@ class NLPTransformer(Model):
                                maximum_position_encoding=self._max_positional_encoding_target,
                                dropout_rate=self._dropout_rate,
                                layernorm_eps=self._layernorm_eps)
-        self._final_layer = Dense(self._target_vocab_size, kernel_regularizer=l2(0.1)) # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
+        self._final_layer = Dense(self._target_vocab_size, activation='softmax', kernel_regularizer=l2(0.1)) # Decrease to fix high bias; Increase to fix high variance. Densely connected, or fully connected
     
     def call(self, input_sentence, output_sentence, training, enc_padding_mask, look_ahead_mask, dec_padding_mask):
         """
