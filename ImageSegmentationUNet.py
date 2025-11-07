@@ -180,7 +180,7 @@ class ImageSegmentationUNet():
             self._model.summary()
             plot_model(
                 self._model,
-                dpi=100,
+                dpi=1000,
                 to_file="output/ImageSegmentationUNetModel.png",
                 show_shapes=True,
                 show_dtype=True,

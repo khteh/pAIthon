@@ -13,6 +13,9 @@ from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 from utils.GPU import InitializeGPU
 from utils.TermColour import bcolors
+from numpy.random import Generator, PCG64DXSM
+rng = Generator(PCG64DXSM())
+
 class SignsLanguageDigits():
     """
     A convolution NN which differentiates among 6 sign language digits.
@@ -143,8 +146,9 @@ class SignsLanguageDigits():
             if self._model_path:
                 self._model.save(self._model_path)
                 print(f"Model saved to {self._model_path}.")
-        self._model.evaluate(self._X_test, self._Y_test)
-        #self._model.evaluate(self._test_dataset)
+        #self._model.evaluate(self._X_test, self._Y_test)
+        self._model.evaluate(self._test_dataset)
+        self._Evaluate()
 
     def PredictSign(self, path:str, truth:int, grayscale:float = True):
         print(f"\n=== {self.PredictSign.__name__} ===")
@@ -158,10 +162,47 @@ class SignsLanguageDigits():
         x = self._PreprocessData(x)
         #print(f"Input image: {path}, shape: {x.shape} mean: {numpy.mean(x, axis=-1)}, min: {numpy.min(x, axis=-1)}, max: {numpy.max(x, axis=-1)}")
         prediction = self._model.predict(x)
-        print(f"Predictions: {prediction} sum: {numpy.sum(prediction)}")
+        #print(f"Predictions: {prediction} sum: {numpy.sum(prediction)}")
         prediction = numpy.argmax(prediction)
         color = bcolors.OKGREEN if truth == prediction else bcolors.FAIL
         print(f"{color}Truth: {truth}, Class: {prediction}{bcolors.DEFAULT}")
+
+    def _Evaluate(self):
+        """
+        Evaluate the model based on test dataset.
+        Caveat: The test dataset may have been proprocessed using framework-specific library. In this case, the preprocessed data needs to be reverse for matplotlib to show the original image.
+        """
+        print(f"\n=== {self._Evaluate.__name__} ===")
+        print(f"X_test: {self._X_test.shape}, Y_test: {self._Y_test.shape}")
+        # The following code compares the predictions vs the labels for a random sample of 64 digits. This takes a moment to run.
+        m = self._X_test.shape[0]
+
+        fig, axes = plt.subplots(5, 5, constrained_layout=True, figsize=(20, 20)) # figsize = (width, height)
+        # Use tight_layout with h_pad to adjust vertical padding
+        # Adjust h_pad for more/less vertical space
+        fig.tight_layout(pad=2.0, rect=[0, 0.03, 1, 0.95]) #[left, bottom, right, top]
+        for i, ax in enumerate(axes.flat):
+            # Select random indices
+            index = rng.integers(m, size=1)
+            image = self._X_test[index]
+
+            # Select rows corresponding to the random indices and
+            # reshape the image
+            image = image[index][0, :, :, :] # Remove the first dimension (batch)
+            #print(f"X: {numpy.mean(input)} [{numpy.min(input)}, {numpy.max(input)}]")
+            #print(f"X: {numpy.mean(input_reshaped)} [{numpy.min(input_reshaped)}, {numpy.max(input_reshaped)}]")
+            # Display the image
+            ax.imshow(self._UnProcessData(image))
+            
+            # Predict using the Neural Network
+            prediction = self._model.predict(image)
+            prediction = numpy.argmax(prediction)
+            truth = numpy.argmax(self._Y_test[index])
+            # Display the label above the image
+            ax.set_title(f"{truth}, {prediction}", fontsize=20, pad=0, color = "green" if truth == prediction else "red")
+            ax.set_axis_off()
+        fig.suptitle("Label vs Prediction", fontsize=22, fontweight="bold")
+        plt.show()
 
     def _PrepareData(self):
         print(f"\n=== {self._PrepareData.__name__} ===")
@@ -186,7 +227,7 @@ class SignsLanguageDigits():
         Y = numpy.load("data/SignsLanguage/Y.npy") # (2062, 10)
         X = X[..., numpy.newaxis] # Add a single grayacale channel
         if not self._grayscale and X.shape[-1] == 1:
-            X = numpy.asarray([self._convert_grayscale_to_rgb(tf.convert_to_tensor(i)) for i in X])
+            X = numpy.asarray([self._convert_grayscale_to_rgb(tf.convert_to_tensor(i)) for i in X]) * 255 # fit it again in the RGB scale , once it is done you can then directly apply the linear function
 
         # Add the 2 sources of dataset before splitting them up to 3 datases - train/validation/test
         X_dataset = self._PreprocessData(numpy.concatenate((numpy.concatenate((_X_train, X), axis=0), _X_test), axis=0))
@@ -218,22 +259,11 @@ class SignsLanguageDigits():
         print (f"X_test shape: {self._X_test.shape}")
         print (f"Y_test shape: {self._Y_test.shape}")
         print(f"Class#: {self._classes}")
-        #print(f"Y_train: {self._Y_train[:10]}")
-        #print(f"Y_cv: {self._Y_cv[:10]}")
-        #print(f"Y_test: {self._Y_test[:10]}")
-        """
-        images_iter = iter(self._X_train)
-        labels_iter = iter(self._Y_train)
-        plt.figure(figsize=(10, 10))
-        for i in range(25):
-            ax = plt.subplot(5, 5, i + 1)
-            plt.imshow(next(images_iter).astype("uint8"))
-            plt.title(next(labels_iter).astype("uint8"))
-            plt.axis("off")
-        plt.show()
-        """
 
     def _PreprocessData(self, data):
+        pass
+
+    def _UnProcessData(self, data):
         pass
 
     def _convert_grayscale_to_rgb(self, image):
@@ -259,17 +289,17 @@ def ExamineRGBDataset():
     #X_rgb = [] #numpy.asarray([tf.image.grayscale_to_rgb(i) for i in X]) # numpy.apply_along_axis(tf.image.grayscale_to_rgb, axis=0, arr = X)
     X_rgb = numpy.asarray([tf.image.grayscale_to_rgb(tf.convert_to_tensor(i)) for i in X])
 
-    _X_train1 = numpy.array(train_dataset["train_set_x"][:]) # (1080, 64, 64, 3)
-    _Y_train1 = numpy.array(train_dataset["train_set_y"][:]) # (1080,)
-    _X_test1 = numpy.array(test_dataset["test_set_x"][:]) # (120, 64, 64, 3)
-    _Y_test1 = numpy.array(test_dataset["test_set_y"][:]) # (120,)
-    # _X_train1: (1080, 64, 64, 3), Y_train1: (1080,), X_test1: (120, 64, 64, 3), Y_test1: (120,), X: (2062, 64, 64), Y: (2062, 10)
-    print(f"_X_train1: {_X_train1.shape}, Y_train1: {_Y_train1.shape}, X_test1: {_X_test1.shape}, Y_test1: {_Y_test1.shape}, X: {X.shape}, Y: {Y.shape}, X_rgb: {X_rgb.shape}")
-    _Y_train2 = numpy.eye(10)[_Y_train1.reshape(-1)]
-    _Y_test2 = numpy.eye(10)[_Y_test1.reshape(-1)]
+    _X_train = numpy.array(train_dataset["train_set_x"][:]) # (1080, 64, 64, 3)
+    _Y_train = numpy.array(train_dataset["train_set_y"][:]) # (1080,)
+    _X_test = numpy.array(test_dataset["test_set_x"][:]) # (120, 64, 64, 3)
+    _Y_test = numpy.array(test_dataset["test_set_y"][:]) # (120,)
+    # _X_train: (1080, 64, 64, 3), Y_train1: (1080,), X_test1: (120, 64, 64, 3), Y_test1: (120,), X: (2062, 64, 64), Y: (2062, 10)
+    print(f"_X_train: {_X_train.shape}, Y_train1: {_Y_train.shape}, X_test1: {_X_test.shape}, Y_test1: {_Y_test.shape}, X: {X.shape}, Y: {Y.shape}, X_rgb: {X_rgb.shape}")
+    _Y_train2 = numpy.eye(10)[_Y_train.reshape(-1)]
+    _Y_test2 = numpy.eye(10)[_Y_test.reshape(-1)]
     print(f"Y_train2: {_Y_train2.shape}, Y_test2: {_Y_test2.shape}") # Y_train2: (1080, 10), Y_test2: (120, 10)
     print("Y_train1[:10]:")
-    print(_Y_train1[:10])
+    print(_Y_train[:10])
     print("Y_train2[:10]:")
     print(_Y_train2[:10])
 
@@ -281,21 +311,42 @@ def ExamineGrayscaleDataset():
     Y = numpy.load("data/SignsLanguage/Y.npy") # (2062, 10)
     X = X[..., numpy.newaxis]
 
-    _X_train1 = numpy.array(train_dataset["train_set_x"][:]) # (1080, 64, 64, 3)
-    _Y_train1 = numpy.array(train_dataset["train_set_y"][:]) # (1080,)
-    _X_test1 = numpy.array(test_dataset["test_set_x"][:]) # (120, 64, 64, 3)
-    _Y_test1 = numpy.array(test_dataset["test_set_y"][:]) # (120,)
-    _X_train1 = numpy.asarray([tf.image.rgb_to_grayscale(tf.convert_to_tensor(i)) for i in _X_train1])
-    _X_test1 = numpy.asarray([tf.image.rgb_to_grayscale(tf.convert_to_tensor(i)) for i in _X_test1])
-    # _X_train1: (1080, 64, 64, 3), Y_train1: (1080,), X_test1: (120, 64, 64, 3), Y_test1: (120,), X: (2062, 64, 64), Y: (2062, 10)
-    print(f"_X_train1: {_X_train1.shape}, Y_train1: {_Y_train1.shape}, X_test1: {_X_test1.shape}, Y_test1: {_Y_test1.shape}, X: {X.shape}, Y: {Y.shape}")
-    _Y_train2 = numpy.eye(10)[_Y_train1.reshape(-1)]
-    _Y_test2 = numpy.eye(10)[_Y_test1.reshape(-1)]
+    _X_train = numpy.array(train_dataset["train_set_x"][:]) # (1080, 64, 64, 3)
+    _Y_train = numpy.array(train_dataset["train_set_y"][:]) # (1080,)
+    _X_test = numpy.array(test_dataset["test_set_x"][:]) # (120, 64, 64, 3)
+    _Y_test = numpy.array(test_dataset["test_set_y"][:]) # (120,)
+    _X_train = numpy.asarray([tf.image.rgb_to_grayscale(tf.convert_to_tensor(i)) for i in _X_train])
+    _X_test = numpy.asarray([tf.image.rgb_to_grayscale(tf.convert_to_tensor(i)) for i in _X_test])
+    # _X_train: (1080, 64, 64, 3), Y_train1: (1080,), X_test1: (120, 64, 64, 3), Y_test1: (120,), X: (2062, 64, 64), Y: (2062, 10)
+    print(f"_X_train: {_X_train.shape}, Y_train1: {_Y_train.shape}, X_test1: {_X_test.shape}, Y_test1: {_Y_test.shape}, X: {X.shape}, Y: {Y.shape}")
+    _Y_train2 = numpy.eye(10)[_Y_train.reshape(-1)]
+    _Y_test2 = numpy.eye(10)[_Y_test.reshape(-1)]
     print(f"Y_train2: {_Y_train2.shape}, Y_test2: {_Y_test2.shape}") # Y_train2: (1080, 10), Y_test2: (120, 10)
     print("Y_train1[:10]:")
-    print(_Y_train1[:10])
+    print(_Y_train[:10])
     print("Y_train2[:10]:")
     print(_Y_train2[:10])
+
+def ShowGrayscaleDataset():
+    print(f"\n=== {ShowGrayscaleDataset.__name__} ===")
+    X = numpy.load("data/SignsLanguage/X.npy") # (2062, 64, 64)
+    Y = numpy.load("data/SignsLanguage/Y.npy") # (2062, 10)
+    fig, axes = plt.subplots(5, 5, constrained_layout=True, figsize=(20, 20)) # figsize = (width, height)
+    # Use tight_layout with h_pad to adjust vertical padding
+    # Adjust h_pad for more/less vertical space
+    fig.tight_layout(h_pad=2.0, rect=[0, 0.03, 1, 0.92]) #[left, bottom, right, top]
+    for i, ax in enumerate(axes.flat):
+        # Select random indices
+        index = rng.integers(m, size=1)
+        input = X[index]
+
+        #print(f"X: {numpy.mean(input)} [{numpy.min(input)}, {numpy.max(input)}]")
+        #print(f"X: {numpy.mean(input_reshaped)} [{numpy.min(input_reshaped)}, {numpy.max(input_reshaped)}]")
+        # Display the image
+        ax.imshow(input)
+        ax.set_axis_off()
+    fig.suptitle("Grayscale Dataset", fontsize=22, fontweight="bold")
+    plt.show()
 
 if __name__ == "__main__":
     """
@@ -309,6 +360,7 @@ if __name__ == "__main__":
 
     ExamineRGBDataset()
     ExamineGrayscaleDataset()
+    ShowGrayscaleDataset()
     model = f"models/SignsLanguageDigits_{'grayscale' if args.grayscale else 'RGB'}.keras"
     print(f"model: {model}")
     signs = SignsLanguageDigits("SignsLanguageDigits", args.grayscale, model , (64, 64, 1 if args.grayscale else 3), 32, 0.0001)
