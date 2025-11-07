@@ -147,6 +147,7 @@ class SignsLanguageDigits():
         #self._model.evaluate(self._test_dataset)
 
     def PredictSign(self, path:str, truth:int, grayscale:float = True):
+        print(f"\n=== {self.PredictSign.__name__} ===")
         img = image.load_img(path, target_size=(64, 64))
         x = image.img_to_array(img)
         x = numpy.expand_dims(x, axis=0)
@@ -154,6 +155,7 @@ class SignsLanguageDigits():
             x = tf.image.rgb_to_grayscale(x)
         elif not grayscale and x.shape[-1] == 1:
             x = self._convert_grayscale_to_rgb(x)
+        x = self._PreprocessData(x)
         #print(f"Input image: {path}, shape: {x.shape} mean: {numpy.mean(x, axis=-1)}, min: {numpy.min(x, axis=-1)}, max: {numpy.max(x, axis=-1)}")
         prediction = self._model.predict(x)
         print(f"Predictions: {prediction} sum: {numpy.sum(prediction)}")
@@ -162,6 +164,7 @@ class SignsLanguageDigits():
         print(f"{color}Truth: {truth}, Class: {prediction}{bcolors.DEFAULT}")
 
     def _PrepareData(self):
+        print(f"\n=== {self._PrepareData.__name__} ===")
         self._classes = 10
 
         # This dataset only has 6 classes: [0:5] and is RGB. The Y is a single-value vector - SparseCategoricalCrossEntropy.
@@ -186,7 +189,7 @@ class SignsLanguageDigits():
             X = numpy.asarray([self._convert_grayscale_to_rgb(tf.convert_to_tensor(i)) for i in X])
 
         # Add the 2 sources of dataset before splitting them up to 3 datases - train/validation/test
-        X_dataset = numpy.concatenate((numpy.concatenate((_X_train, X), axis=0), _X_test), axis=0)
+        X_dataset = self._PreprocessData(numpy.concatenate((numpy.concatenate((_X_train, X), axis=0), _X_test), axis=0))
         Y_dataset = numpy.concatenate((numpy.concatenate((_Y_train, Y), axis=0), _Y_test), axis=0)
         # X1: (1080, 64, 64, 3), X2: (120, 64, 64, 3), X: (2062, 64, 64, 3), total: (3262, 64, 64, 3)
         print(f"X1: {_X_train.shape}, X2: {_X_test.shape}, X: {X.shape}, total: {X_dataset.shape}")
@@ -229,6 +232,10 @@ class SignsLanguageDigits():
             plt.axis("off")
         plt.show()
         """
+
+    def _PreprocessData(self, data):
+        pass
+
     def _convert_grayscale_to_rgb(self, image):
         # image is a 2D or 3D tensor (height, width, 1)
         # Replicate the single channel across 3 channels

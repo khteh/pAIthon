@@ -1,6 +1,7 @@
 import argparse
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.applications import ResNet152V2
+from tensorflow.keras.applications.resnet_v2 import preprocess_input
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Input, Add, Dense, Dropout, Activation, GlobalAveragePooling2D, Flatten, Conv2D, AveragePooling2D, MaxPooling2D, BatchNormalization, Normalization
 from tensorflow.keras.models import Model, load_model
@@ -165,7 +166,7 @@ class ResnetSignsLanguageDigits(SignsLanguageDigits):
                     optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
                     metrics=['accuracy']
                 )
-            self._model.summary()
+            #self._model.summary() Too long.
             plot_model(
                 self._model,
                 to_file=f"output/{self._name}.png",
@@ -175,9 +176,18 @@ class ResnetSignsLanguageDigits(SignsLanguageDigits):
                 rankdir="TB",
                 expand_nested=True,
                 show_layer_activations=True)
-            
+
     def TrainModel(self, epochs:int, retrain: bool = False):
         super().TrainModel(epochs, True, retrain)
+
+    def _PreprocessData(self, data):
+        """
+        Each Keras Application expects a specific kind of input preprocessing. 
+        For ResNet, call keras.applications.resnet_v2.preprocess_input on your inputs before passing them to the model. 
+        resnet_v2.preprocess_input will scale input pixels between -1 and 1.
+        """
+        print(f"\n=== {self._PreprocessData.__name__} ===")
+        return preprocess_input(data)
 
 if __name__ == "__main__":
     """
