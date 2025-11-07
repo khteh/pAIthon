@@ -10,6 +10,7 @@ from tensorflow.keras.utils import plot_model
 import matplotlib.pyplot as plt
 from utils.GPU import InitializeGPU
 from utils.TrainingMetricsPlot import PlotModelHistory
+from utils.TermColour import bcolors
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
 
@@ -141,7 +142,7 @@ class HandWrittenDigitsNN():
             prediction = self._model.predict(self._X[random_index].reshape(1,400))
             yhat = int(prediction.item() >= 0.5)
             # Display the label above the image
-            ax.set_title(f"{self._Y[random_index,0][0]},{yhat}", fontsize=20, pad=0)
+            ax.set_title(f"{self._Y[random_index,0][0]}, {yhat}", fontsize=20, pad=0, color = "green" if self._Y[random_index,0][0] == yhat else "red")
             ax.set_axis_off()
         fig.suptitle("Label vs Prediction", fontsize=22, fontweight="bold")
         plt.show()

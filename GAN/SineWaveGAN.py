@@ -234,17 +234,18 @@ class SineWaveGAN():
         # Notice `training` is set to False. This is so all layers forward in inference mode (batchnorm).
         #print(f"save_images data.shape: {data.shape}, ndim: {data.ndim}") # data.shape: (1, 1024, 2), ndim: 3
         plt.plot(data[0, :, 0], data[0, :, 1], ".", color="blue")
-        plt.suptitle(title)
+        plt.suptitle(title, fontsize=22, fontweight="bold")
         plt.savefig(f"output/SineWaveGAN/{filename}")
         plt.close()
 
     def _ShowSineWaves(self, data):
-        fig, axes = plt.subplots(3,3,figsize=(10,10))
+        fig, axes = plt.subplots(3,3, constrained_layout=True, figsize=(10,10))
+        fig.tight_layout(pad=5, rect=[0, 0.03, 1, 0.95]) #[left, bottom, right, top]
         for i, ax in enumerate(axes.flat):
             index = rng.choice(len(data))
             ax.plot(data[index, :, 0], data[index, :, 1], ".", color="blue")
             ax.set_axis_off()
-        fig.suptitle("Noisy Sine Waves")
+        fig.suptitle("Noisy Sine Waves", fontsize=22, fontweight="bold")
         plt.show()
 
     def PrepareTrainingData(self):

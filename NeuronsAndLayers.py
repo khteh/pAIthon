@@ -18,7 +18,8 @@ def LinearRegressionModel():
     # Data set
     X_train = numpy.array([[1.0], [2.0]], dtype=numpy.float32)           #(size in 1000 square feet)
     Y_train = numpy.array([[300.0], [500.0]], dtype=numpy.float32)       #(price in 1000s of dollars)
-    fig, ax = plt.subplots(1,1) # figsize = (width, height)
+    fig, ax = plt.subplots(1,1, constrained_layout=True, figsize=(10, 10)) # figsize = (width, height)
+    fig.tight_layout(pad=5, rect=[0, 0.03, 1, 0.95]) #[left, bottom, right, top]
     ax.scatter(X_train, Y_train, marker='x', c='r', label="Data Points")
     ax.legend(fontsize='x-large')
     ax.set_ylabel('Price (in 1000s of dollars)', fontsize='xx-large')

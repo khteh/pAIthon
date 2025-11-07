@@ -327,10 +327,11 @@ class MNISTGAN():
             plt.imshow(data[i, :, :, 0] * 127.5 + 127.5, cmap='gray') # The generator output shape is (, 28, 28, 1)
             plt.axis('off')
         #plt.legend()
-        plt.suptitle(title)
+        plt.suptitle(title, fontsize=22, fontweight="bold")
         plt.savefig(f"output/MNISTGAN/{filename}")
         #plt.show()
         plt.close()
+
     def restore_latest_checkpoint(self):
         """
         https://www.tensorflow.org/tutorials/generative/dcgan

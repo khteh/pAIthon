@@ -51,7 +51,8 @@ def Padding(data, pad: int):
     if pad > 1:
         assert (data_padded[0,1] == 0).all()
         print ("data_padded[2,2] =\n", data_padded[2, 2])
-    fig, ax = plt.subplots(1, 2)
+    fig, ax = plt.subplots(1, 2, constrained_layout=True, figsize=(10, 10)) # figsize = (width, height)
+    fig.tight_layout(pad=5, rect=[0, 0.03, 1, 0.95]) #[left, bottom, right, top]
     ax[0].set_title('data')
     ax[0].imshow(data[0, :, :, 0])
     ax[1].set_title('Padded data')

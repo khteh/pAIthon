@@ -506,13 +506,14 @@ def NoisySineWaveNoise(samples: int):
         # Display the label above the image
         ax.set_title(f"Multiplier: {multiplier}")
         ax.plot(x_values, y_values, '.')
-    fig.suptitle("Noise")
+    fig.suptitle("Noise", fontsize=22, fontweight="bold")
     plt.show()
 
 def NoisySineWaves(samples: int):
     print(f"\n=== {NoisySineWaves.__name__} ===")
     # Generate some random samples
-    fig, axes = plt.subplots(3, 3, figsize=(16,16)) # figsize = (width, height)
+    fig, axes = plt.subplots(3, 3, constrained_layout=True, figsize=(16,16)) # figsize = (width, height)
+    fig.tight_layout(pad=5, rect=[0, 0.03, 1, 0.95]) #[left, bottom, right, top]
     print(f"ax type: {type(axes)}, {axes.shape}")
     for i, ax in enumerate(axes.flat):
         x_values = rng.uniform(low=0, high=(2 * math.pi), size=samples)
@@ -521,7 +522,7 @@ def NoisySineWaves(samples: int):
         # Display the label above the image
         ax.set_title(f"Multiplier: {multiplier}")
         ax.plot(x_values, y_values, '.')
-    fig.suptitle("Noisy Sine Wave")
+    fig.suptitle("Noisy Sine Wave", fontsize=22, fontweight="bold")
     plt.show()
 
 def ShapeTests():
