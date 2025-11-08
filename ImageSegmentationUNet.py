@@ -225,7 +225,6 @@ class ImageSegmentationUNet():
     def show_predictions(self, image, mask, num=1):
         """
         Displays the first image of each of the num batches.
-        XXX: The predictions are all empty.
         """
         print(f"\n=== {self.show_predictions.__name__} ===")
         images = []
