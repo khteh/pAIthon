@@ -148,7 +148,7 @@ class SignsLanguageDigits():
                 print(f"Model saved to {self._model_path}.")
         #self._model.evaluate(self._X_test, self._Y_test)
         self._model.evaluate(self._test_dataset)
-        self._Evaluate()
+        self.Evaluate()
 
     def PredictSign(self, path:str, truth:int, grayscale:float = True):
         print(f"\n=== {self.PredictSign.__name__} ===")
@@ -167,36 +167,30 @@ class SignsLanguageDigits():
         color = bcolors.OKGREEN if truth == prediction else bcolors.FAIL
         print(f"{color}Truth: {truth}, Class: {prediction}{bcolors.DEFAULT}")
 
-    def _Evaluate(self):
+    def Evaluate(self):
         """
         Evaluate the model based on test dataset.
         Caveat: The test dataset may have been proprocessed using framework-specific library. In this case, the preprocessed data needs to be reverse for matplotlib to show the original image.
         """
-        print(f"\n=== {self._Evaluate.__name__} ===")
-        print(f"X_test: {self._X_test.shape}, Y_test: {self._Y_test.shape}")
-        # The following code compares the predictions vs the labels for a random sample of 64 digits. This takes a moment to run.
-        m = self._X_test.shape[0]
-
+        print(f"\n=== {self.Evaluate.__name__} ===")
+        #print(f"X_test: {self._X_test.shape}, Y_test: {self._Y_test.shape}")
         fig, axes = plt.subplots(5, 5, constrained_layout=True, figsize=(20, 20)) # figsize = (width, height)
         # Use tight_layout with h_pad to adjust vertical padding
         # Adjust h_pad for more/less vertical space
         fig.tight_layout(pad=2.0, rect=[0, 0.03, 1, 0.95]) #[left, bottom, right, top]
         for i, ax in enumerate(axes.flat):
             # Select random indices
-            index = rng.integers(m, size=1)
-            image = self._X_test[index]
-
-            # Select rows corresponding to the random indices and
-            # reshape the image
-            image = image[index][0, :, :, :] # Remove the first dimension (batch)
-            #print(f"X: {numpy.mean(input)} [{numpy.min(input)}, {numpy.max(input)}]")
-            #print(f"X: {numpy.mean(input_reshaped)} [{numpy.min(input_reshaped)}, {numpy.max(input_reshaped)}]")
+            index = rng.integers(self._X_test.shape[0], size=1)
+            image = self._X_test[index] #[0, :, :, :] # Remove the first dimension (batch)
+            #print(f"image {image.shape}: {numpy.mean(image)} [{numpy.min(image)}, {numpy.max(image)}]")
+            gray, rgb = self._UnProcessData(image)
+            #print(f"gray: {gray.shape}, gray mean: {numpy.mean(gray)}, [{numpy.min(gray)}, {numpy.max(gray)}]")
+            #print(f"rgb: {rgb.shape}, rgb mean: {numpy.mean(rgb)}, [{numpy.min(rgb)}, {numpy.max(rgb)}]")
             # Display the image
-            ax.imshow(self._UnProcessData(image))
+            ax.imshow(rgb[0, :, :, :])
             
             # Predict using the Neural Network
-            prediction = self._model.predict(image)
-            prediction = numpy.argmax(prediction)
+            prediction = numpy.argmax(self._model.predict(rgb))
             truth = numpy.argmax(self._Y_test[index])
             # Display the label above the image
             ax.set_title(f"{truth}, {prediction}", fontsize=20, pad=0, color = "green" if truth == prediction else "red")

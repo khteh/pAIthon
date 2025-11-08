@@ -180,7 +180,7 @@ class ResnetSignsLanguageDigits(SignsLanguageDigits):
                 show_layer_activations=True)
 
     def TrainModel(self, epochs:int, retrain: bool = False):
-        super().TrainModel(epochs, True, retrain)
+        super().TrainModel(epochs, False, retrain)
 
     def _PreprocessData(self, data):
         """
@@ -197,17 +197,17 @@ class ResnetSignsLanguageDigits(SignsLanguageDigits):
         assert 3 == data.shape[-1]
         return preprocess_input(data)
 
-    def undo_resnetv2_preprocess_np(self, data):
+    def _undo_resnetv2_preprocess_np(self, data):
         out = (data + 1.0) * 127.5
         return numpy.clip(out, 0, 255).astype(numpy.uint8)
 
-    def undo_grayscale_to_rgb_np(self, data_rgb):
+    def _undo_grayscale_to_rgb_np(self, data_rgb):
         gray = data_rgb[..., 0]   # works because R=G=B
         return numpy.expand_dims(gray, axis=-1)
 
     def _UnProcessData(self, data):
-        rgb = self.undo_resnetv2_preprocess_np(data)
-        gray = self.undo_grayscale_to_rgb_np(rgb)
+        rgb = self._undo_resnetv2_preprocess_np(data)
+        gray = self._undo_grayscale_to_rgb_np(rgb)
         return gray, rgb
     
     def ShowGrayscaleDataset(self):
@@ -354,6 +354,7 @@ if __name__ == "__main__":
     signs.BuildModel()
     #InitializeGPU()
     signs.TrainModel(400, args.retrain)
+    #signs.Evaluate()
     signs.PredictSign("images/my_handsign0.jpg", 2, args.grayscale)
     signs.PredictSign("images/my_handsign1.jpg", 1, args.grayscale)
     signs.PredictSign("images/my_handsign2.jpg", 3, args.grayscale)
