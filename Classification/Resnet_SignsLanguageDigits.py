@@ -163,6 +163,20 @@ class ResnetSignsLanguageDigits(SignsLanguageDigits):
             # Create model
             self._model = Model(base_model.input, outputs)
             self._model.name = self._name
+            self._model.trainable = True
+            # Let's take a look to see how many layers are in the base model
+
+            # Fine-tune from this layer onwards
+            # Where the final layers actually begin is a bit arbitrary, so feel free to play around with this number a bit. The important takeaway is that the later layers are the part of your network that contain the fine details (pointy ears, hairy tails) that are more specific to your problem.
+            NUM_LAYERS_TO_TUNE = 30
+            fine_tune_at = len(model.layers) - NUM_LAYERS_TO_TUNE
+
+            # Freeze all the layers before the `fine_tune_at` layer
+            for layer in self._model.layers[:fine_tune_at]:
+                layer.trainable = False
+
+            print(f"Layers to fine-tune: {[layer.name for layer in self._model.layers[fine_tune_at:]]}")
+
             self._model.compile(
                     loss=CategoricalCrossentropy(from_logits=False), # Logistic Loss: -ylog(f(X)) - (1 - y)log(1 - f(X)) Defaults to softmax activation which is typically used for multiclass classification
                     optimizer=Adam(learning_rate=self._learning_rate), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
@@ -353,7 +367,7 @@ if __name__ == "__main__":
     #DataProcessingTests()
     signs.BuildModel()
     #InitializeGPU()
-    signs.TrainModel(400, args.retrain)
+    signs.TrainModel(500, args.retrain)
     #signs.Evaluate()
     signs.PredictSign("images/my_handsign0.jpg", 2, args.grayscale)
     signs.PredictSign("images/my_handsign1.jpg", 1, args.grayscale)
