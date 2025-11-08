@@ -7,7 +7,6 @@ rng = Generator(PCG64DXSM())
 
 # https://github.com/evancchow/jazzml
 # https://github.com/jisungk/deepjazz
-
 def __parse_midi_details(data_fn):
     print(f"\n=== {__parse_midi_details.__name__} ===")
     # Parse the MIDI data for separate melody and accompaniment parts.
@@ -70,6 +69,8 @@ def __parse_midi_details(data_fn):
 def __parse_midi_part(data_fn, partIndex:int = None):
     print(f"\n=== {__parse_midi_part.__name__} ===")
     # Parse the MIDI data for separate melody and accompaniment parts.
+    # Part-Measure-Voice.
+    # melody_stream = midi_data[5]     # For Metheny piece, Melody is Part #5.
     midi_data = converter.parse(data_fn)
     assert len(midi_data.getElementsByClass(stream.Part)) == len(midi_data.parts)
     allnotes = []
@@ -94,7 +95,7 @@ def __parse_midi_part(data_fn, partIndex:int = None):
         if tmp:
             mmark = tmp
         idxVoice = 0
-        for voice in measure.getElementsByClass(stream.Voice):
+        for voice in measure.getElementsByClass(stream.Voice()):
             print(f"voice {idxVoice}: {voice.offset}, {voice}")
             voice.show("text")
             idxVoice += 1
@@ -590,9 +591,51 @@ def load_music_utils(file):
     X, Y, N_tones = data_processing(corpus, tones_indices, 60, 30)   
     return (X, Y, N_tones, indices_tones, chords)
 
+def separate_parts(midi_file_path):
+    # Parse the MIDI file into a music21 Stream (Score) object
+    score = converter.parse(midi_file_path)
+
+    # Use partitionByInstrument() to organize the score into parts based on instrument
+    # Note: This might not work perfectly if the original file doesn't have clear instrument definitions per track
+    parts = instrument.partitionByInstrument(score)
+
+    if parts:
+        # Iterate through the parts and identify them (e.g., as melody or accompaniment)
+        for i, part in enumerate(parts):
+            print(f"Part {i+1} Instrument: {part.getInstrument().instrumentName}")
+            # You can add logic here to determine which part is the melody/accompaniment
+            # based on the instrument name (e.g., "Flute", "Acoustic Guitar")
+            
+            # Example: Accessing notes in each part
+            notes_and_chords = part.flatten().notesAndRests
+            print(f"  Contains {len(notes_and_chords)} notes/rests.")
+            # Do further processing with the part data
+
+        # You can access specific parts by their index (e.g., first part is typically index 0)
+        # melody_part = parts[0]
+        # accompaniment_part = parts[1] # If you know the structure of your specific MIDI
+        return parts
+
+    else:
+        # If partitionByInstrument doesn't work, the MIDI file might have a single track
+        # or ambiguous instrument data. You would have to apply a custom logic (e.g., 
+        # filtering by pitch range or rhythmic complexity) to manually separate notes
+        print("Could not automatically partition by instrument. Accessing parts directly.")
+        all_parts = []
+        for part in score.parts:
+            all_parts.append(part)
+            print(f"Found part: {part[0].bestName()}") # prints the most likely instrument
+        return all_parts
+    
 if __name__ == "__main__":
-    __parse_midi_details('data/original_metheny.mid')
-    #__parse_midi_part('data/original_metheny.mid', 5) # AssertionError: 28 chords, 21 measures
+    #__parse_midi_details("data/original_metheny.mid")
+    #__parse_midi_part("data/original_metheny.mid", 5) # AssertionError: 28 chords, 21 measures
+    parts = separate_parts("data/original_metheny.mid")
+    # You can then perform analysis or write the parts to separate MIDI files
+    # if needed:
+    if parts:
+        melody = parts[0] # assuming the first part is melody
+        melody.write('midi', 'melody.mid') # $ fluidsynth melody.mid
     """
     X, Y, n_values, indices_values, chords = load_music_utils('data/original_metheny.mid') # AssertionError: 28 chords, 21 measures
     print('number of training examples:', X.shape[0])
