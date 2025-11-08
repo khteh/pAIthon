@@ -102,9 +102,15 @@ Python AI, ML, DL, NLP and GAN exploration playground.
 
 - Encoder-Decoder Transformer architecture
 
-## Image Segmentation UNet
+## Semantic Image Segmentation UNet
 
-![Image Segmentation UNet](images/ImageSegmentationUNet.png?raw=true "Image Segmentation UNet")
+### Architecture:
+
+![Image Segmentation UNet](images/ImageSegmentationUNetModel.png?raw=true "Image Segmentation UNet")
+
+### Predictions:
+
+![Image Segmentation Predictions](images/ImageSegmentationUNet.png?raw=true "Image Segmentation Predictions")
 
 ## MNIST GAN
 

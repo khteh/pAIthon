@@ -17,6 +17,12 @@ data too large to keep in git:
 507M	CameraRGB
 """
 class ImageSegmentationUNet():
+    """
+    U-Net, a type of CNN designed for quick, precise image segmentation, and using it to predict a label for every single pixel in an image - in this case, an image from a self-driving car dataset. 
+    This type of image classification is called semantic image segmentation. It's similar to object detection in that both ask the question: "What objects are in this image and where in the image are those objects located?," 
+    but where object detection labels objects with bounding boxes that may include pixels that aren't part of the object, semantic image segmentation allows you to predict a precise mask for each object in the image by labeling each pixel in the image with its corresponding class. 
+    The word “semantic” here refers to what's being shown, so for example the “Car” class is indicated below by the dark blue mask, and "Person" is indicated with a red mask:
+    """
     _path:str = None
     _input_shape = None
     _n_filters: int = None
@@ -38,7 +44,7 @@ class ImageSegmentationUNet():
         self._batch_size = batch_size
         self._learning_rate = learning_rate
         self._normalization = Normalization(axis=-1)
-        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 5)
+        self._circuit_breaker = CreateCircuitBreakerCallback("val_accuracy", "max", 7)
         self._PrepareData()
         if self._path and len(self._path) and Path(self._path).exists() and Path(self._path).is_file():
             print(f"Using saved model {self._path}...")
@@ -174,7 +180,7 @@ class ImageSegmentationUNet():
             self._model = tf.keras.Model(inputs=inputs, outputs=conv10)
             # In semantic segmentation, you need as many masks as you have object classes. In the dataset you're using, each pixel in every mask has been assigned a single integer probability that it belongs to a certain class, from 0 to num_classes-1. The correct class is the layer with the higher probability.
             # This is different from categorical crossentropy, where the labels should be one-hot encoded (just 0s and 1s). Here, you'll use sparse categorical crossentropy as your loss function, to perform pixel-wise multiclass prediction. Sparse categorical crossentropy is more efficient than other loss functions when you're dealing with lots of classes.
-            self._model.compile(optimizer=Adam(self._learning_rate),
+            self._model.compile(optimizer=Adam(self._learning_rate, clipnorm=1.0),
                         loss=SparseCategoricalCrossentropy(from_logits=True),
                         metrics=['accuracy'])
             self._model.summary()
@@ -244,14 +250,20 @@ class ImageSegmentationUNet():
         masks_filenames = tf.constant(mask_list)
         training_dataset = tf.data.Dataset.from_tensor_slices((image_filenames[:-100], masks_filenames[:-100]))
         validation_dataset = tf.data.Dataset.from_tensor_slices((image_filenames[-100:], masks_filenames[-100:]))
+
         training_image_ds = training_dataset.map(self._process_path)
         processed_training_image_ds = training_image_ds.map(self._preprocess)
-        validation_image_ds = training_dataset.map(self._process_path)
-        processed_validation_image_ds = training_image_ds.map(self._preprocess)
+
+        validation_image_ds = validation_dataset.map(self._process_path)
+        processed_validation_image_ds = validation_image_ds.map(self._preprocess)
+        
         print(f"processed_training_image_ds: {processed_training_image_ds.element_spec}, processed_validation_image_ds: {processed_validation_image_ds.element_spec}")
         self._train_dataset = processed_training_image_ds.shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
-        self._normalization.adapt(self._train_dataset.map(lambda x, y: x))
-        self._val_dataset = processed_training_image_ds.shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        self._val_dataset = processed_validation_image_ds.shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        concatenated_dataset = self._train_dataset.concatenate(self._val_dataset)
+        self._normalization.adapt(concatenated_dataset.map(lambda x, y: x))
+
+        print(f"Training dataset: {self._train_dataset.element_spec}, validation dataset: {self._val_dataset.element_spec}")
         #mask = np.array([max(mask[i, j]) for i in range(mask.shape[0]) for j in range(mask.shape[1])]).reshape(img.shape[0], img.shape[1])
         """
         N = 2
@@ -289,7 +301,7 @@ if __name__ == "__main__":
     img_height = 96
     img_width = 128
     num_channels = 3
-    EPOCHS = 30
+    EPOCHS = 100
     BUFFER_SIZE = 500
     BATCH_SIZE = 32
     CLASSES = 23
