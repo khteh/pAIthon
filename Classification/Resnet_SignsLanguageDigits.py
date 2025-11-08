@@ -363,11 +363,11 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--grayscale', action='store_true', help='Use grayscale model')
     args = parser.parse_args()
     model = f"models/ResnetSignsLanguageDigits_{'grayscale' if args.grayscale else 'RGB'}.keras"
-    signs = ResnetSignsLanguageDigits("ResnetSignsLanguageDigits", args.grayscale, model, (64, 64, 1 if args.grayscale else 3), 32, 0.0001)
+    signs = ResnetSignsLanguageDigits("ResnetSignsLanguageDigits", args.grayscale, model, (64, 64, 1 if args.grayscale else 3), 32, 0.00001)
     #DataProcessingTests()
     signs.BuildModel()
     #InitializeGPU()
-    signs.TrainModel(500, args.retrain)
+    signs.TrainModel(1000, args.retrain)
     #signs.Evaluate()
     signs.PredictSign("images/my_handsign0.jpg", 2, args.grayscale)
     signs.PredictSign("images/my_handsign1.jpg", 1, args.grayscale)
