@@ -2075,6 +2075,8 @@ Accuracy = Sensitivity * P(disease) + Specificity * (1 - P(disease))
 PPV (Positive Predictive Value) = P(disease|+) = Precision
 NPV (Negative Predictive Value) = P(normal|-)
 
+PPV = Sensitivity * Prevalence / (Sensitivity * Prevalence + (1 - Specificity) * (1 - Prevalence))
+
 Confidence Level:
 - In repeated sampling, it produces confidence intervals that include the population accuracy in about x% of samples. The x is called the confidence level.
 
@@ -2082,3 +2084,10 @@ Confidence Interval (CI):
 - The width of the interval is affected by the sample size.
 - The lareger the sample size, the narrower is the interval and hence, the better estimate of wehere the population accuracy lies.
 - Useful to express the range in which the population accuracy lies with a certain confidence level by using test result on a sample even when we can't run the model on a whole population.
+
+3D U-Net Image Segmentation:
+Soft Dice loss function:
+- Popular loss function for segmentation models.
+- Advantage: Works well with imbalanced datasets. Ex: a small fraction of the brain MRI is tumour region.
+- 1 - 2 ^ sum(y^ * y) / (sum(y ** 2) + sum(Y^ ** 2))
+-     2 ^ sum(y^ * y) / (sum(y ** 2) + sum(Y^ ** 2)) is overlap between truth and prediction and bigger is better.
