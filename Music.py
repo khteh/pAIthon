@@ -592,7 +592,10 @@ def load_music_utils(file):
     return (X, Y, N_tones, indices_tones, chords)
 
 def separate_parts(midi_file_path):
-    # Parse the MIDI file into a music21 Stream (Score) object
+    """
+    Parse the MIDI file into a music21 Stream (Score) object.
+    Google search phrase: music21 Parse the MIDI data for separate melody and accompaniment parts.
+    """
     score = converter.parse(midi_file_path)
 
     # Use partitionByInstrument() to organize the score into parts based on instrument
