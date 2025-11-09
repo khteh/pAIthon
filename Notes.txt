@@ -2080,5 +2080,5 @@ Confidence Level:
 
 Confidence Interval (CI):
 - The width of the interval is affected by the sample size.
-- The lareger the sample size, the narrower is the interval and hence, the better estimae of wehere the population accuracy lies.
+- The lareger the sample size, the narrower is the interval and hence, the better estimate of wehere the population accuracy lies.
 - Useful to express the range in which the population accuracy lies with a certain confidence level by using test result on a sample even when we can't run the model on a whole population.
