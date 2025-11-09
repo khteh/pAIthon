@@ -2047,3 +2047,38 @@ Generator (2x):
 Discriminator (2x):
 - PatchGAN
 - Loss = sum(generated**2) + sum((real - 1)**2)
+======================================================================================================================================================================================================
+Challenges on training AI on medical images:
+(1) Class Imbalance
+    - Use weighted loss function.
+    - Re-sampling
+(2) Multi-Tasks
+    - Use one model to predict multiple classes to leverage feature sharing and making good use of the same dataset.
+    - Use multi-label / multi-task loss function.
+    - Each label of classes is a binary classification by itself. Each prediction of classes is the probability of '1'.
+(3) Dataset Size
+    - Transfer Learning + Data Augmentation
+Patient Overlap in datasets - Data Leakage:
+- The DCNN could inadvertently learn and remember specific features of patients which could result in overly optimistic result when the data of the same patient appears in the test dataset.
+- Solution: Split dataset by patients so that the same data from the same patients only appear in one of training / validation / test dataset but not in multiple datasets.
+Set Sampling:
+- Minority class sampling:
+  - Sample a certain percentage of minority class data in both the test and validation datasets.
+  - The remaining data goes into the training dataset.
+
+Accuracy:
+Sensitivity = True positive rate = Recall
+Specificity = True negative rate
+Prevalence = P(disease)
+Accuracy = Sensitivity * P(disease) + Specificity * (1 - P(disease))
+
+PPV (Positive Predictive Value) = P(disease|+) = Precision
+NPV (Negative Predictive Value) = P(normal|-)
+
+Confidence Level:
+- In repeated sampling, it produces confidence intervals that include the population accuracy in about x% of samples. The x is called the confidence level.
+
+Confidence Interval (CI):
+- The width of the interval is affected by the sample size.
+- The lareger the sample size, the narrower is the interval and hence, the better estimae of wehere the population accuracy lies.
+- Useful to express the range in which the population accuracy lies with a certain confidence level by using test result on a sample even when we can't run the model on a whole population.
