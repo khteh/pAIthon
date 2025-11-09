@@ -638,7 +638,7 @@ if __name__ == "__main__":
     # if needed:
     if parts:
         melody = parts[0] # assuming the first part is melody
-        melody.write('midi', 'melody.mid') # $ fluidsynth melody.mid
+        melody.write('midi', 'output/melody.mid') # $ fluidsynth melody.mid
     """
     X, Y, n_values, indices_values, chords = load_music_utils('data/original_metheny.mid') # AssertionError: 28 chords, 21 measures
     print('number of training examples:', X.shape[0])
