@@ -122,8 +122,6 @@ def compute_style_cost(style_image_output, generated_image_output, STYLE_LAYERS=
 
     return J_style
 
-# UNQ_C4
-# GRADED FUNCTION: total_cost
 @tf.function()
 def total_cost(J_content, J_style, alpha = 10, beta = 40):
     """

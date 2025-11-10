@@ -91,8 +91,6 @@ def conv_single_step():
     assert (type(Z) == numpy.float64), "You must cast the output to numpy float 64"
     #assert numpy.isclose(Z, -6.999089450680221), "Wrong value" This needs numpy.random.seed(). Otherwise it will fail as every run will have a random value
 
-# GRADED FUNCTION: conv_forward
-
 def conv_forward(A_prev, W, b, hparams):
     """
     Implements the forward propagation for a convolution function

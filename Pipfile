@@ -38,6 +38,7 @@ seqeval = "*"
 transformers = "*"
 datasets = "*"
 music21 = "*"
+nibabel = "*"
 
 [dev-packages]
 check50 = "*"
