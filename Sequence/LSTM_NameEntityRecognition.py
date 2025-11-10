@@ -256,6 +256,7 @@ class LSTM_NameEntityRecognition():
         sentences_ids = sentence_vectorizer(sentences)
         labels_ids = self._label_vectorizer(labels, tag_map = self._tag_map)
         dataset = tf.data.Dataset.from_tensor_slices((sentences_ids, labels_ids))
+        print(f"_tag_map: {self._tag_map.shape}, labels_ids: {labels_ids.shape}")
         return dataset
     
     def _get_sentence_vectorizer(self, sentences):
