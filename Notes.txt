@@ -664,6 +664,8 @@ Use appropriate scale for fair random search.
 (2) With joblib module
 =========================================================================================================================================================================================================================================
 Decision Tree Learning:
+- Can model non-linear associations.
+- Boundaries are always vertical or horizontal
 Decision 1: How to choose what feature to split on at each node?
             Goal: Maximize purity / Minimize impurity - decision which gives fastest path to leave nodes.
 Decision 2: When do you stop splitting?
@@ -689,6 +691,9 @@ Regression Tree: Decision Tree which predicts a number.
 - Use variance of the sample labels to decide which features to split on.
 - Split on feature which gives highest reduction in variance (highest information gain)
 Information Gain = V(p1root) - (wl * V(p1l) + wr * V(p1r))
+
+Decision Tree Classifier:
+- Partitioning the input feature space into regions.
 
 Any single decision tree is highly sensitive to small change in the data. Solution is to use tree ensemble to let multiple trees vote on the final prediction.
 (1) Use sampling with replacement to build data for tree ensemble. This is called "bagged" decision tree (https://medium.com/data-science/understanding-sampling-with-and-without-replacement-python-7aff8f47ebe4)
