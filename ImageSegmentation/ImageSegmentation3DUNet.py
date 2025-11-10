@@ -526,7 +526,7 @@ if __name__ == "__main__":
     img_width = 160
     img_length = 16
     num_channels = 4
-    EPOCHS = 100
+    EPOCHS = 1000
     BUFFER_SIZE = 500
     BATCH_SIZE = 3
     CLASSES = 3

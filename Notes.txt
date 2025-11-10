@@ -2091,3 +2091,13 @@ Soft Dice loss function:
 - Advantage: Works well with imbalanced datasets. Ex: a small fraction of the brain MRI is tumour region.
 - 1 - 2 ^ sum(y^ * y) / (sum(y ** 2) + sum(Y^ ** 2))
 -     2 ^ sum(y^ * y) / (sum(y ** 2) + sum(Y^ ** 2)) is overlap between truth and prediction and bigger is better.
+
+Using natural log of feature values is common when there is reason to believe there is linear relationship between the ln of the feature and the target/label.
+
+Prognosis:
+Risk model:
+- Concordant pairs: Patient/person with the worst outcome is given highest risk score by the model.
+- Only consider pairs where the outcomes are different (permissible pair)
+C-index = (#concordance + 0.5 * #risk_ties) / #permissible
+- The C-index measures the discriminatory power of a risk score.
+- Intuitively, a higher c-index indicates that the model's prediction is in agreement with the actual outcomes of a pair of patients.

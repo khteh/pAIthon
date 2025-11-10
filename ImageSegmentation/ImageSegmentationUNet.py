@@ -262,8 +262,7 @@ class ImageSegmentationUNet():
         print(f"processed_training_image_ds: {processed_training_image_ds.element_spec}, processed_validation_image_ds: {processed_validation_image_ds.element_spec}")
         self._train_dataset = processed_training_image_ds.shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
         self._val_dataset = processed_validation_image_ds.shuffle(self._buffer_size, reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
-        concatenated_dataset = self._train_dataset.concatenate(self._val_dataset)
-        self._normalization.adapt(concatenated_dataset.map(lambda x, y: x))
+        self._normalization.adapt(self._train_dataset.map(lambda x, y: x)) # https://sebastianraschka.com/faq/docs/scale-training-test.html
 
         print(f"Training dataset: {self._train_dataset.element_spec}, validation dataset: {self._val_dataset.element_spec}")
         #mask = np.array([max(mask[i, j]) for i in range(mask.shape[0]) for j in range(mask.shape[1])]).reshape(img.shape[0], img.shape[1])
