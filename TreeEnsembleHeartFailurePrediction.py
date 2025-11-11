@@ -1,17 +1,19 @@
-import numpy as np
-import pandas as pd
+import pandas as pd, pydotplus, io
+import matplotlib.image as mpimg
+from sklearn.tree import export_graphviz
+from six import StringIO
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from xgboost import XGBClassifier
 import matplotlib.pyplot as plt
-#plt.style.use('./data/deeplearning.mplstyle')
 
 RANDOM_STATE = 55 ## We will pass it to every sklearn call so we ensure reproducibility
 
 # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
 class HeartFailurePrediction():
+    _features = None
     _X_train = None
     _X_val = None
     _Y_train = None
@@ -20,9 +22,9 @@ class HeartFailurePrediction():
     _rf: RandomForestClassifier = None
     _xgb: XGBClassifier = None
     def __init__(self, path):
-        self._prepare_data(path)
+        self._PrepareData(path)
 
-    def _prepare_data(self, path:str):
+    def _PrepareData(self, path:str):
         """
         Remove the binary variables, because one-hot encoding them would do nothing to them. To achieve this we will just count how many different values there are in each categorical variable and consider only the variables with 3 or more values.
         one-hot encoding aims to transform a categorical variable with n outputs into n binary variables.
@@ -33,6 +35,7 @@ class HeartFailurePrediction():
         prefix: A list with prefixes, so we know which value we are dealing with
         columns: the list of columns that will be one-hot encoded. 'prefix' and 'columns' must have the same length.
         """
+        print(f"\n=== {self._PrepareData.__name__} ===")
         # Load the dataset using pandas
         df = pd.read_csv(path)
         cat_variables = ['Sex',
@@ -43,9 +46,10 @@ class HeartFailurePrediction():
         ]
         # This will replace the columns with the one-hot encoded ones and keep the columns outside 'columns' argument as it is.
         df = pd.get_dummies(data = df, prefix = cat_variables, columns = cat_variables)
-        features = [x for x in df.columns if x not in 'HeartDisease'] ## Removing our target variable
+        self._features = [x for x in df.columns if x not in 'HeartDisease'] ## Removing our target variable
+        print(f"features: {self._features}")
         # We will keep the shuffle = True since our dataset has not any time dependency.    
-        self._X_train, self._X_val, self._Y_train, self._Y_val = train_test_split(df[features], df['HeartDisease'], train_size = 0.8, random_state = RANDOM_STATE)
+        self._X_train, self._X_val, self._Y_train, self._Y_val = train_test_split(df[self._features], df['HeartDisease'], train_size = 0.8, random_state = RANDOM_STATE)
         print(f'train samples: {len(self._X_train)}')
         print(f'validation samples: {len(self._X_val)}')
         print(f'target proportion: {sum(self._Y_train)/len(self._Y_train):.4f}')
@@ -65,6 +69,7 @@ class HeartFailurePrediction():
         (1) perform feature selection
         (2) hyperparameter tuning
         """
+        print(f"\n=== {self.BuildDecisionTreeModel.__name__} ===")
         min_samples_split_list = [2,10, 30, 50, 100, 200, 300, 700] ## If the number is an integer, then it is the actual quantity of samples,
         max_depth_list = [1,2, 3, 4, 8, 16, 32, 64, None] # None means that there is no depth limit.
         accuracy_list_train = []
@@ -86,6 +91,7 @@ class HeartFailurePrediction():
         plt.plot(accuracy_list_train)
         plt.plot(accuracy_list_val)
         plt.legend(['Train','Validation'], fontsize='x-large')
+        plt.savefig(f"output/DecisionTree_samples_split.png")
 
         accuracy_list_train = []
         accuracy_list_val = []
@@ -106,12 +112,35 @@ class HeartFailurePrediction():
         plt.plot(accuracy_list_train)
         plt.plot(accuracy_list_val)
         plt.legend(['Train','Validation'], fontsize='x-large')
+        plt.savefig(f"output/DecisionTree_max_depth.png")
         # Choose min_samples_split and max_depth based on the plots above which yield highest accuracy and lowest variance / overfitting, i.e., training and test accuracy should be as close to one another as possible
         self._dt = DecisionTreeClassifier(min_samples_split = 50,
                                              max_depth = 3,
                                              random_state = RANDOM_STATE).fit(self._X_train, self._Y_train)
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._dt.predict(self._X_train), self._Y_train):.4f}")
         print(f"Metrics validation:\n\tAccuracy score: {accuracy_score(self._dt.predict(self._X_val), self._Y_val):.4f}")
+        dot_data = StringIO()
+        export_graphviz(self._dt, feature_names=self._features, out_file=dot_data,  
+                        filled=True, rounded=True, proportion=True, special_characters=True,
+                        impurity=False, class_names=['neg', 'pos'], precision=2)
+        graph = pydotplus.graph_from_dot_data(dot_data.getvalue())  
+        # Render the graph to a PNG byte string
+        if isinstance(graph, list):
+            png_str = graph[0].create_png()
+        else:
+            png_str = graph.create_png()
+        # Treat the DOT output as an image file in memory
+        sio = io.BytesIO(png_str)
+        img = mpimg.imread(sio)
+        # Clear the current axes and plot new data
+        plt.cla()
+        plt.clf()
+        # Plot the image using Matplotlib
+        plt.figure(figsize=(20, 10), constrained_layout=True)
+        plt.imshow(img, aspect='equal')
+        plt.axis('off') # Hide axis
+        plt.savefig(f"output/HeartDiseasePredictionDecisionTree.png")
+        plt.show()        
 
     def BuildRandomForestModel(self):
         """
@@ -128,6 +157,7 @@ class HeartFailurePrediction():
         So setting n_jobs higher will increase how many CPU cores it will use. Note that the numbers very close to the maximum cores of your CPU may impact on the overall performance of your PC and even lead to freezes.
         Changing this parameter does not impact on the final result but can reduce the training time.        
         """
+        print(f"\n=== {self.BuildRandomForestModel.__name__} ===")
         min_samples_split_list = [2,10, 30, 50, 100, 200, 300, 700]  ## If the number is an integer, then it is the actual quantity of samples,
                                                     ## If it is a float, then it is the percentage of the dataset
         max_depth_list = [2, 4, 8, 16, 32, 64, None]
@@ -152,6 +182,7 @@ class HeartFailurePrediction():
         plt.plot(accuracy_list_train)
         plt.plot(accuracy_list_val)
         plt.legend(['Train','Validation'], fontsize='x-large')
+        plt.savefig(f"output/RandomForest_min_samples.png")
         # Choose min_samples_split and max_depth based on the plots above which yield highest accuracy and lowest variance / overfitting, i.e., training and test accuracy should be as close to one another as possible
         self._rf = RandomForestClassifier(n_estimators = 100,
                                              max_depth = 16, 
@@ -172,6 +203,7 @@ class HeartFailurePrediction():
         More iterations lead to more estimators, and more estimators can result in overfitting.
         By stopping once the validation metric no longer improves, we can limit the number of estimators created, and reduce overfitting.        
         """
+        print(f"\n=== {self.BuildXGBoost.__name__} ===")
         # define a subset of our training set (we should not use the test set here).
         n = int(len(self._X_train)*0.8) ## Let's use 80% to train and 20% to eval
         X_train_fit, X_train_eval, y_train_fit, y_train_eval = self._X_train[:n], self._X_train[n:], self._Y_train[:n], self._Y_train[n:]

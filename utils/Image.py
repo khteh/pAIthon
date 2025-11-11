@@ -1,5 +1,31 @@
 import glob, matplotlib.pyplot as plt, imageio, imageio.v3 as iio
 from .TermColour import bcolors
+#import tkinter as tk
+from tkinter import *
+from PIL import Image as PILImage, ImageTk
+import io    
+
+def show_graph(graph, title: str):
+    root = Tk()
+    root.title(title)
+    
+    # Get the image in memory buffer
+    img_bytes = graph.get_graph().draw_mermaid_png()
+    img_buffer = io.BytesIO()
+    img_buffer.write(img_bytes)
+    # graph.get_graph().draw_mermaid_png(img_buffer)
+
+    img_buffer.seek(0)
+    
+    img = PILImage.open(img_buffer)
+    #img.show() This does NOT block
+    img = ImageTk.PhotoImage(img)
+    panel = Label(root, image=img)
+    panel.pack(side="bottom", fill="both", expand="yes")
+    # Save the PNG data to a file
+    with open(f"output/{title}.png", "wb") as f:
+        f.write(img_bytes)
+    root.mainloop()# This blocks
 
 def ShowImage(path: int):
   image = iio.imread(path)

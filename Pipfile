@@ -39,6 +39,7 @@ transformers = "*"
 datasets = "*"
 music21 = "*"
 nibabel = "*"
+pydotplus = "*"
 
 [dev-packages]
 check50 = "*"

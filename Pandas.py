@@ -513,6 +513,21 @@ def DataFrameGroupBy():
     t2 = timeit.Timer(lambda: groupby_vectorization(data))
     print(f"Lambda: {t1.timeit(number=10)}s, Vectorization: {t2.timeit(number=10)}s")
 
+def OneHotEncoding():
+    print(f"\n=== {OneHotEncoding.__name__} ===")
+    data = pd.DataFrame({'ascites': [0,1,0,1],
+                   'edema': [0.5,0,1,0.5],
+                   'stage': [3,4,3,4],
+                   'cholesterol': [200.5,180.2,190.5,210.3]
+                  })
+    data = pd.get_dummies(data=data, columns=['stage'], drop_first=True, dtype=numpy.float64)
+    print(f"data ({id(data)}), ndim: {data.ndim}, size: {data.size}, shape: {data.shape}")
+    print("\ndata.describe():")
+    print(data.describe())
+    print("\ndata.info():")
+    data.info()
+    print(data)
+
 if __name__ == "__main__":
     numpy_dataframe()
     DataFrameAttributes()
@@ -526,3 +541,4 @@ if __name__ == "__main__":
     DataFrameTimeSeries()
     DataFramePlotting()
     DataFrameGroupBy()
+    OneHotEncoding()

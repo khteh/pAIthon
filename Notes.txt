@@ -2106,3 +2106,73 @@ Risk model:
 C-index = (#concordance + 0.5 * #risk_ties) / #permissible
 - The C-index measures the discriminatory power of a risk score.
 - Intuitively, a higher c-index indicates that the model's prediction is in agreement with the actual outcomes of a pair of patients.
+
+Missing data:
+Why?
+(1) Missing completely at random.
+    Example: Throw dice to decide to drop the recording of a patient's data.
+(2) Missing at random. 
+    Example: Make informed decision at a particular point and then throw dice to decide to drop the recording of a patient's data.
+    - Ex: If a patient's age is below certain threshold, selectively do not record the blood pressure.
+    - Reason for this missing data is known and maybe recorded as part of the dataset.
+(3) Missing not at random.
+    Example: Drop recording of a patient's data when the queue is long.
+    - Reason for this missing data is not known and there is no record of why the data was not recorded at all.
+How?
+(1) Drop it: Affects the model performance - high bias and/or variance.
+(2) Imputation:
+    - Mean: Not recommended especially when the data is imbalanced with some in the very low value range and some very high range.
+    - Median: Better than mean.
+    - Regression: Y = mX + c
+
+Survival Probability:
+S(t) = Pr(T > t)
+- Probability of survical to time t (days or months or years).
+
+Survival Function:
+S(u) <= S(v) if u >= v
+Example: u = 80, v = 20 (Age)
+
+Censoring:
+(1) End-of-study Censoring
+(2) Loss-to-follow-up censoring.
+
+How to estimate probability of survival past t with censored observations?
+- Use chain rule of conditional probability.
+S(t) = Pr(T > t) = Pr (T >= t+1) = Pr(T >= t+1, T >= t, T >= t-1, ...)
+     = Pr(T >= t+1|T >= t)Pr(T>=t|T >= t-1)...Pr(T>=1|T>=0)Pr(T>=0)
+Pr(T >= t|T >= t-1) = Pr(T > t-1|T >= t-1) = 1 - Pr(T=t-1|T >= t-1)
+Pr(T=t-1|T >= t-1) = #died at t-1 / #known to survive to t-1 = di / ni
+S(t) = multiply(1 - Pr(T=i|T>=i)) for all i = [0, t]
+     = multiply(1 - di/ni)
+     = Kaplan Meier Estimate of survival function of a population.
+
+Hazard:
+What is the a patient's immediate risk of death if they make it to time t?
+lambda(t) = Pr(T=t|T >= t) = risk of death if aged t
+Survival function in terms of the hazard function is S(t) = exp(-sum(hazard)) = exp(-H(t))
+
+Cox Proportional Hazards Model:
+- Individual profiled hazards model.
+- lambda(t,p) = lambda(t,0) * exp(linear regression) where lambda(t,0) is a baseline hazard (of a population, for instance)
+- Example of linear regression: 0.08 * is_smoker + 0.01 * age.
+- exp(weight) risk factor increase for unit increase in variable. For example 50->51 (age), 0->1 (non-smoker to smoker). "weight" is the weight associated with the feature in the linear regression.
+2 disadvantages:
+(1) exp(linear) is not able to capture non-linear characteristics of a feature. For example young is riskier than middle-aged and old is riskier than middel-aged.
+(2) lambda(t,p) between in dividuals is always linearly proportional to each other.
+
+Survival Tree:
+- Risk at every point in time which can be represented as either lambda or cumulative lambda or S(t).
+- Survival time.
+- Nelson Aalen Estimator: sum(di / ni)
+Mortality Score:
+- Use cummulative lambda plots from the Survival tree.
+- Compare cumulative hazard at the times where we observe deaths in the population.
+- sum(cummulative lambda) at all the event times = motality score of a patient.
+
+Harrell's C-index:
+- Evaluate Survival model.
+Survival data:
+Permissible Pairs:
+(1) If neither patient was censored.
+(2) If the censored patient's T is >= uncensored patient's T.

@@ -135,16 +135,18 @@ class LogisticRegressionDeepNN():
         y -- true labels
         p -- predictions
         """
+        print(f"\n=== {self._print_mislabeled_images.__name__} ===")
         a = p + self._Y_test
         mislabeled_indices = numpy.asarray(numpy.where(a == 1))
-        plt.rcParams['figure.figsize'] = (40.0, 40.0) # set default size of plots
+        plt.figure(figsize=(40, 10), constrained_layout=True)
+        #fig.tight_layout(pad=5, rect=[0, 0.03, 1, 0.95]) #[left, bottom, right, top]
         num_images = len(mislabeled_indices[0])
         for i in range(num_images):
             index = mislabeled_indices[1][i]
             plt.subplot(2, num_images, i + 1)
             plt.imshow(self._X_test[:,index].reshape(64,64,3), interpolation='nearest')
             plt.axis('off')
-            plt.title("Prediction: " + self._classes[int(p[0,index])].decode("utf-8") + " \n Class: " + self._classes[self._Y_test[0,index]].decode("utf-8"))
+            plt.title("Prediction: " + self._classes[int(p[0,index])].decode("utf-8") + " \n Class: " + self._classes[self._Y_test[0,index]].decode("utf-8"), fontsize=18)
         plt.show()
         
     def _L_model_forward(self, X, parameters):
@@ -241,10 +243,13 @@ class LogisticRegressionDeepNN():
         return cost
 
     def _plot_costs(self):
+        plt.figure(figsize=(10, 10), constrained_layout=True)
         plt.plot(numpy.squeeze(self._costs))
-        plt.ylabel('cost')
-        plt.xlabel('iterations (per hundreds)')
-        plt.title(f"Learning rate = {self._learning_rate}")
+        plt.ylabel('cost', fontsize=20)
+        plt.xlabel('iterations (per hundreds)', fontsize=20)
+        plt.xticks(fontsize=18)
+        plt.yticks(fontsize=18)
+        plt.title(f"Learning rate = {self._learning_rate}", fontsize=22, fontweight="bold")
         plt.show()
 
     def _linear_forward(self, A, W, b):
