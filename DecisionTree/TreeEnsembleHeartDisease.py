@@ -1,4 +1,4 @@
-import pandas as pd, matplotlib.pyplot as plt
+import pandas as pd, matplotlib.pyplot as plt, shap
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -15,6 +15,7 @@ class HeartDisease():
     _X_val = None
     _Y_train = None
     _Y_val = None
+    _X_test_risk = None
     _dt: DecisionTreeClassifier = None
     _rf: RandomForestClassifier = None
     _xgb: XGBClassifier = None
@@ -51,6 +52,8 @@ class HeartDisease():
         print(f'validation samples: {len(self._X_val)}')
         print(f'target proportion: {sum(self._Y_train)/len(self._Y_train):.4f}')
         print(f"Y: shape: {self._Y_train.shape}, {self._Y_train[:10]}")
+        print(f"X:")
+        print(self._X_train.head())
 
     def BuildDecisionTreeModel(self):
         """
@@ -199,14 +202,49 @@ class HeartDisease():
         The model is returned at its last state when training terminated, not its state during the best round. For example, if the model stops at round 26, but the best round was 16, the model's training state at round 26 is returned, not round 16.
         Note that this is different from returning the model's "best" state (from when the evaluation metric was the lowest).
         """
-        self._xgb = XGBClassifier(n_estimators = 500, learning_rate = 0.1,verbosity = 1, random_state = RANDOM_STATE, early_stopping_rounds = 10)
+        self._xgb = XGBClassifier(n_estimators = 500, learning_rate = 0.1, verbosity = 1, random_state = RANDOM_STATE, early_stopping_rounds = 10)
         self._xgb.fit(X_train_fit,y_train_fit, eval_set = [(X_train_eval,y_train_eval)])
         print(f"Best iteration with lowest evaluation metric: {self._xgb.best_iteration}")
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_val), self._Y_val):.4f}")
         #PlotDecisionTree(self._xgb, self._features, ['neg', 'pos'], "XGBoostHeartDiseasePrediction") AttributeError: 'XGBClassifier' object has no attribute 'tree_'
+
+    def ExplainModelPrediction(self):
+        """
+        You choose to apply **SHAP (SHapley Additive exPlanations)**, a cutting edge method that explains predictions made by black-box machine learning models (i.e. models which are too complex to be understandable by humans as is).
+        Given a prediction made by a machine learning model, SHAP values explain the prediction by quantifying the additive importance of each feature to the prediction. SHAP values have their roots in cooperative game theory, where Shapley values are used to quantify the contribution of each player to the game.
+        Although it is computationally expensive to compute SHAP values for general black-box models, in the case of trees and forests there exists a fast polynomial-time algorithm. For more details, see the [TreeShap paper](https://arxiv.org/pdf/1802.03888.pdf).
+        Use the [shap library](https://github.com/slundberg/shap) to do this for our random forest model.
+
+        How to read this chart:
+        - The red sections on the left are features which push the model towards the final prediction in the positive direction (i.e. a higher Age increases the predicted risk).
+        - The blue sections on the right are features that push the model towards the final prediction in the negative direction (if an increase in a feature leads to a lower risk, it will be shown in blue).
+        - Note that the exact output of your chart will differ depending on the hyper-parameters that you choose for your model.
+        """
+        print(f"\n=== {self.ExplainModelPrediction.__name__} ===")
+        # features: ['Age', 'RestingBP', 'Cholesterol', 'FastingBS', 'MaxHR', 'Oldpeak', 'Sex_F', 'Sex_M', 'ChestPainType_ASY', 'ChestPainType_ATA', 'ChestPainType_NAP', 'ChestPainType_TA', 'RestingECG_LVH', 'RestingECG_Normal', 'RestingECG_ST', 'ExerciseAngina_N', 'ExerciseAngina_Y', 'ST_Slope_Down', 'ST_Slope_Flat', 'ST_Slope_Up']
+        i = 0
+        if not self._X_test_risk:
+            self._X_test_risk = self._X_val.copy(deep=True)
+            self._X_test_risk.loc[:, 'risk'] = self._rf.predict_proba(self._X_test_risk)[:, 1]
+            self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
+            #print(self._X_test_risk.head())
+        print(f"self._X_test_risk.index[i]: {self._X_test_risk.index[i]}")
+        print(self._X_test_risk.head())
+        self._shap = shap.TreeExplainer(self._rf)
+        shap_values = self._shap.shap_values(self._X_val.loc[self._X_test_risk.index[i], :])
+        shap_value = shap_values[:,1]
+        print(f"shap_values: {shap_values.shape}, {shap_values}")
+        print(f"shap_value: {shap_value.shape}, {shap_value}")
+        shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_val.columns, matplotlib=True, figsize=(20, 10))
+        shap_values = self._shap.shap_values(self._X_val)[:,:,1] # (992, 18, 2),
+        print(f"shap_values: {shap_values.shape}, {shap_values}")
+        shap.summary_plot(shap_values, self._X_val)
+        shap.dependence_plot('Age', shap_values, self._X_val, interaction_index='Sex_F')
+        shap.dependence_plot('Age', shap_values, self._X_val, interaction_index='Sex_M')
 
 if __name__ == "__main__":
     heart = HeartDisease("data/heart.csv") # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
     heart.BuildDecisionTreeModel()
     heart.BuildRandomForestModel()
     heart.BuildXGBoost()
+    heart.ExplainModelPrediction()

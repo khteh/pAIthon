@@ -16,6 +16,7 @@ class RandomForestRiskModel():
     _X_train = None
     _X_val = None
     _X_test = None
+    _X_test_risk = None
     _Y_train = None
     _Y_val = None
     _Y_test = None
@@ -24,6 +25,7 @@ class RandomForestRiskModel():
     _imputer: IterativeImputer = None
     _rf: RandomForestClassifier = None
     _xgb: XGBClassifier = None
+    _shap = None
     def __init__(self, path:str, threshold:float, imputer_iterations:int):
         self._path = path
         self._imputer_iterations = imputer_iterations
@@ -33,6 +35,7 @@ class RandomForestRiskModel():
             print(f"Using saved model {self._path}...")
             with open(self._path, 'rb') as file:
                 self._rf = pickle.load(file)
+                self._shap = shap.TreeExplainer(self._rf)
             self._trained = True
 
     def BuildRandomForestModel(self):
@@ -53,6 +56,7 @@ class RandomForestRiskModel():
         print(f"\n=== {self.BuildRandomForestModel.__name__} ===")
         if not self._rf:
             self._random_forest_grid_search()
+            self._shap = shap.TreeExplainer(self._rf)
         # Best hyperparameters:
         #{'n_estimators': 456, 'max_depth': 13, 'min_samples_leaf': 5, 'random_state': 10}
         #Train C-Index: 0.9582820140564089
@@ -65,6 +69,38 @@ class RandomForestRiskModel():
         cindex, subgroup = self._bad_subset(self._X_test, self._Y_test)
         print(f"Test dataset Subgroup size: {subgroup}, C-Index: {cindex}")
         #PlotDecisionTree(self._rf, self._X_test.columns, ['neg', 'pos'], "HeartDiseasePredictionDecisionTree") # AttributeError: 'RandomForestClassifier' object has no attribute 'tree_'
+
+    def ExplainModelPrediction(self):
+        """
+        You choose to apply **SHAP (SHapley Additive exPlanations)**, a cutting edge method that explains predictions made by black-box machine learning models (i.e. models which are too complex to be understandable by humans as is).
+        Given a prediction made by a machine learning model, SHAP values explain the prediction by quantifying the additive importance of each feature to the prediction. SHAP values have their roots in cooperative game theory, where Shapley values are used to quantify the contribution of each player to the game.
+        Although it is computationally expensive to compute SHAP values for general black-box models, in the case of trees and forests there exists a fast polynomial-time algorithm. For more details, see the [TreeShap paper](https://arxiv.org/pdf/1802.03888.pdf).
+        Use the [shap library](https://github.com/slundberg/shap) to do this for our random forest model.
+
+        How to read this chart:
+        - The red sections on the left are features which push the model towards the final prediction in the positive direction (i.e. a higher Age increases the predicted risk).
+        - The blue sections on the right are features that push the model towards the final prediction in the negative direction (if an increase in a feature leads to a lower risk, it will be shown in blue).
+        - Note that the exact output of your chart will differ depending on the hyper-parameters that you choose for your model.
+
+        """
+        print(f"\n=== {self.ExplainModelPrediction.__name__} ===")
+        i = 0
+        if not self._X_test_risk:
+            self._X_test_risk = self._X_test.copy(deep=True)
+            self._X_test_risk.loc[:, 'risk'] = self._rf.predict_proba(self._X_test_risk)[:, 1]
+            self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
+            #print(self._X_test_risk.head())
+        print(f"self._X_test_risk.index[i]: {self._X_test_risk.index[i]}")
+        shap_values = self._shap.shap_values(self._X_test.loc[self._X_test_risk.index[i], :])
+        shap_value = shap_values[:,1]
+        print(f"shap_values: {shap_values.shape}, {shap_values}")
+        print(f"shap_value: {shap_value.shape}, {shap_value}")
+        shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
+        shap_values = self._shap.shap_values(self._X_test)[:,:,1] # (992, 18, 2),
+        print(f"shap_values: {shap_values.shape}, {shap_values}")
+        shap.summary_plot(shap_values, self._X_test)
+        shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex')
+        shap.dependence_plot('Poverty index', shap_values, self._X_test, interaction_index='Age')
 
     def _random_forest_grid_search(self):
         print(f"\n=== {self._random_forest_grid_search.__name__} ===")
@@ -255,3 +291,4 @@ if __name__ == "__main__":
 
     risk = RandomForestRiskModel(f"models/RandomForestRiskModel.pkl", 10, 10)
     risk.BuildRandomForestModel()
+    risk.ExplainModelPrediction()

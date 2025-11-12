@@ -112,6 +112,18 @@ Python AI, ML, DL, NLP and GAN exploration playground.
 
 ![Image Segmentation Predictions](images/ImageSegmentationUNet.png?raw=true "Image Segmentation Predictions")
 
+## Heart Disease Decision Tree Model
+
+```
+classes: [0 1]
+Metrics train:
+	Accuracy score: 0.8583
+Metrics validation:
+	Accuracy score: 0.8641
+```
+
+![Heart Disease Decision Tree Model](images/HeartDiseasePredictionDecisionTree.png?raw=true "Heart Disease Decision Tree Model")
+
 ## MNIST GAN
 
 ![MNIST GAN](images/mnist_gan.gif?raw=true "MNIST GAN")
