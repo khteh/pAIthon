@@ -40,6 +40,7 @@ datasets = "*"
 music21 = "*"
 nibabel = "*"
 pydotplus = "*"
+shap = "*"
 
 [dev-packages]
 check50 = "*"

@@ -1,0 +1,50 @@
+[project]
+name = "paithon"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pygame",
+    "scikit-learn",
+    "opencv-python",
+    "nltk",
+    "numpy",
+    "matplotlib",
+    "natsort",
+    "pandas",
+    "polars[numpy,pandas]",
+    "requests",
+    "pillow",
+    "keras-preprocessing",
+    "tensorflow[and-cuda]",
+    "spacy",
+    "python-magic",
+    "tf-keras",
+    "tabulate",
+    "networkx",
+    "pydot",
+    "statsmodels",
+    "imageio",
+    "pyvirtualdisplay",
+    "xgboost",
+    "seaborn",
+    "tqdm",
+    "emoji",
+    "faker",
+    "babel",
+    "pydub",
+    "audioop-lts",
+    "seqeval",
+    "transformers",
+    "datasets",
+    "music21",
+    "nibabel",
+    "pydotplus",
+    "shap",
+]
+
+[dependency-groups]
+dev = [
+    "check50",
+]
