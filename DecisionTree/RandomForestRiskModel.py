@@ -9,34 +9,45 @@ from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer, SimpleImputer
 from xgboost import XGBClassifier
 from utils.DecisionTree import PlotDecisionTree
-
-class RandomForestRiskModel():
+from .DecisionTree import DecisionTree
+class RandomForestRiskModel(DecisionTree):
+    """
+    Tree based models by predicting the 10-year risk of death of individuals from the NHANES | epidemiology dataset (https://wwwn.cdc.gov/nchs/nhanes/nhefs/default.aspx/)
+    """
     _threshold:float = None
-    _path:str = None
-    _X_train = None
-    _X_val = None
-    _X_test = None
-    _X_test_risk = None
-    _Y_train = None
-    _Y_val = None
-    _Y_test = None
-    _best_hyperparams = None
     _imputer_iterations: int = None
     _imputer: IterativeImputer = None
     _rf: RandomForestClassifier = None
     _xgb: XGBClassifier = None
     _shap = None
     def __init__(self, path:str, threshold:float, imputer_iterations:int):
-        self._path = path
+        hyperparams = {
+            
+            # how many trees should be in the forest (int)
+            'n_estimators': [456, 789],
+
+            # the maximum depth of trees in the forest (int)
+            'max_depth': [11,13,15],
+            
+            # the minimum number of samples in a leaf as a fraction
+            # of the total number of samples in the training set
+            # Can be int (in which case that is the minimum number)
+            # or float (in which case the minimum is that fraction of the
+            # number of training set samples)
+            'min_samples_leaf': [3,5,7,9],
+        }
+        fixed_hyperparams = {
+            'random_state': 10,
+        }
+        super().__init__(path, hyperparams, fixed_hyperparams)
         self._imputer_iterations = imputer_iterations
         self._threshold = threshold
         self._PrepareData()
-        if self._path and len(self._path) and Path(self._path).exists() and Path(self._path).is_file():
-            print(f"Using saved model {self._path}...")
-            with open(self._path, 'rb') as file:
+        if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
+            print(f"Using saved model {self._model_path}...")
+            with open(self._model_path, 'rb') as file:
                 self._rf = pickle.load(file)
                 self._shap = shap.TreeExplainer(self._rf)
-            self._trained = True
 
     def BuildRandomForestModel(self):
         """
@@ -55,8 +66,14 @@ class RandomForestRiskModel():
         """
         print(f"\n=== {self.BuildRandomForestModel.__name__} ===")
         if not self._rf:
-            self._random_forest_grid_search()
+            self._rf = self._random_forest_grid_search(RandomForestClassifier)
             self._shap = shap.TreeExplainer(self._rf)
+        print(f"Best hyperparameters:\n{self._best_hyperparams}")
+        y_train_best = self._rf.predict_proba(self._X_train)[:, 1]
+        print(f"Train C-Index: {self._cindex(self._Y_train, y_train_best)}")
+
+        y_val_best = self._rf.predict_proba(self._X_val)[:, 1]
+        print(f"Val C-Index: {self._cindex(self._Y_val, y_val_best)}")
         # Best hyperparameters:
         #{'n_estimators': 456, 'max_depth': 13, 'min_samples_leaf': 5, 'random_state': 10}
         #Train C-Index: 0.9582820140564089
@@ -101,121 +118,10 @@ class RandomForestRiskModel():
         shap.summary_plot(shap_values, self._X_test)
         shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex')
         shap.dependence_plot('Poverty index', shap_values, self._X_test, interaction_index='Age')
-
-    def _random_forest_grid_search(self):
-        print(f"\n=== {self._random_forest_grid_search.__name__} ===")
-        # Define ranges for the chosen random forest hyperparameters 
-        hyperparams = {
-            
-            # how many trees should be in the forest (int)
-            'n_estimators': [456, 789],
-
-            # the maximum depth of trees in the forest (int)
-            'max_depth': [11,13,15],
-            
-            # the minimum number of samples in a leaf as a fraction
-            # of the total number of samples in the training set
-            # Can be int (in which case that is the minimum number)
-            # or float (in which case the minimum is that fraction of the
-            # number of training set samples)
-            'min_samples_leaf': [3,5,7,9],
-        }
-        fixed_hyperparams = {
-            'random_state': 10,
-        }
-        rf = RandomForestClassifier
-        best_rf, best_hyperparams = self._holdout_grid_search(rf, self._X_train, self._Y_train,
-                                                        self._X_val, self._Y_val, hyperparams,
-                                                        fixed_hyperparams)
-        print(f"Best hyperparameters:\n{best_hyperparams}")
-        y_train_best = best_rf.predict_proba(self._X_train)[:, 1]
-        print(f"Train C-Index: {self._cindex(self._Y_train, y_train_best)}")
-
-        y_val_best = best_rf.predict_proba(self._X_val)[:, 1]
-        print(f"Val C-Index: {self._cindex(self._Y_val, y_val_best)}")
-        
-        # add fixed hyperparamters to best combination of variable hyperparameters
-        best_hyperparams.update(fixed_hyperparams)
-        self._rf = best_rf
-        self._best_hyperparams = best_hyperparams
-        if self._path:
-            with open(self._path, 'wb') as f:
-                pickle.dump(self._rf, f)
-            print(f"Model saved to {self._path}.")
-
-    def _holdout_grid_search(self, rf, X_train_hp, y_train_hp, X_val_hp, y_val_hp, hyperparams, fixed_hyperparams={}):
-        '''
-        Conduct hyperparameter grid search on hold out validation set. Use holdout validation.
-        Hyperparameters are input as a dictionary mapping each hyperparameter name to the
-        range of values they should iterate over. Use the cindex function as your evaluation
-        function.
-
-        Input:
-            clf: sklearn classifier
-            X_train_hp (dataframe): dataframe for training set input variables
-            y_train_hp (dataframe): dataframe for training set targets
-            X_val_hp (dataframe): dataframe for validation set input variables
-            y_val_hp (dataframe): dataframe for validation set targets
-            hyperparams (dict): hyperparameter dictionary mapping hyperparameter
-                                names to range of values for grid search
-            fixed_hyperparams (dict): dictionary of fixed hyperparameters that
-                                    are not included in the grid search
-
-        Output:
-            best_estimator (sklearn classifier): fitted sklearn classifier with best performance on
-                                                validation set
-            best_hyperparams (dict): hyperparameter dictionary mapping hyperparameter
-                                    names to values in best_estimator
-        '''
-        best_estimator = None
-        best_hyperparams = {}
-        
-        # hold best running score
-        best_score = 0.0
-
-        # get list of param values
-        lists = hyperparams.values()
-        
-        # get all param combinations
-        param_combinations = list(itertools.product(*lists))
-        total_param_combinations = len(param_combinations)
-
-        # iterate through param combinations
-        for i, params in enumerate(param_combinations, 1):
-            # fill param dict with params
-            param_dict = {}
-            for param_index, param_name in enumerate(hyperparams):
-                param_dict[param_name] = params[param_index]
-                
-            # create estimator with specified params
-            estimator = rf(**param_dict, **fixed_hyperparams)
-
-            # fit estimator
-            estimator.fit(X_train_hp, y_train_hp)
-            
-            # get predictions on validation set
-            preds = estimator.predict_proba(X_val_hp)
-            #print(f"prediction: shape: {preds.shape} {preds}") # Matches with self._rf.classes_: [probablity of NOT dying within 10 years, probablity of dying within 10 years]
-            # compute cindex for predictions
-            estimator_score = self._cindex(y_val_hp, preds[:,1])
-
-            print(f'[{i}/{total_param_combinations}] {param_dict}')
-            print(f'Val C-Index: {estimator_score}\n')
-
-            # if new high score, update high score, best estimator
-            # and best params 
-            if estimator_score >= best_score:
-                    best_score = estimator_score
-                    best_estimator = estimator
-                    best_hyperparams = param_dict
-
-        # add fixed hyperparamters to best combination of variable hyperparameters
-        best_hyperparams.update(fixed_hyperparams)
-        return best_estimator, best_hyperparams
-    
+   
     def _PrepareData(self):
         """
-        NHANES I epidemiology dataset. This dataset contains various features of hospital patients as well as their outcomes, i.e. whether or not they died within 10 years (self._threshold).
+        NHANES | epidemiology dataset. This dataset contains various features of hospital patients as well as their outcomes, i.e. whether or not they died within 10 years (self._threshold).
         """
         print(f"\n=== {self._PrepareData.__name__} ===")
         X = pd.read_csv("data/NHANESI_subset_X.csv") # (9932, 19)
@@ -268,6 +174,9 @@ class RandomForestRiskModel():
         performance = self._cindex(y_subgroup.values, y_subgroup_preds)
         return performance, subgroup_size
     
+    def _Evaluate(self, predictions):
+        return self._cindex(self._Y_val if self._Y_val is not None and len(self._Y_val) > 0 else self._Y_test, predictions[:,1])
+    
     def _cindex(self, y_true, scores):
         """
         C-index = (#concordance + 0.5 * #risk_ties) / #permissible
@@ -284,7 +193,7 @@ if __name__ == "__main__":
     https://docs.python.org/3/library/argparse.html
     'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
     """
-    parser = argparse.ArgumentParser(description='Resnet Signs Language multi-class classifier')
+    parser = argparse.ArgumentParser(description='Random Forest Risk Model')
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     parser.add_argument('-g', '--grayscale', action='store_true', help='Use grayscale model')
     args = parser.parse_args()

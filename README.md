@@ -124,6 +124,14 @@ Metrics validation:
 
 ![Heart Disease Decision Tree Model](images/HeartDiseasePredictionDecisionTree.png?raw=true "Heart Disease Decision Tree Model")
 
+## NHANES / epidemiology risk analysis
+
+- Predicting the 10-year risk of death of individuals from the NHANES I epidemiology dataset.
+- Model: Random Forest
+- Dataset consists of `Age, Diastolic BP, Poverty index, Race, Red blood cells, Sedimentation rate, Serum Albumin, Serum Cholesterol, Serum Iron, Serum Magnesium, Serum Protein, Sex, Systolic BP, TIBC, TS, White blood cells, BMI, Pulse pressure`
+- Model explaination of contributing factors to 10-year risk of death:
+  ![NHANES / epidemiology risk analysis](images/NHANESEpidemiologyDeathFactors.png?raw=true "NHANES / epidemiology risk analysis")
+
 ## MNIST GAN
 
 ![MNIST GAN](images/mnist_gan.gif?raw=true "MNIST GAN")
