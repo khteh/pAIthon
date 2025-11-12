@@ -1,26 +1,25 @@
-import pandas as pd, matplotlib.pyplot as plt, shap
+import argparse, pandas as pd, matplotlib.pyplot as plt, shap
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from xgboost import XGBClassifier
 from utils.DecisionTree import PlotDecisionTree
-
-RANDOM_STATE = 55 ## We will pass it to every sklearn call so we ensure reproducibility
+from .DecisionTree import DecisionTree
 
 # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
-class HeartDisease():
+class HeartDisease(DecisionTree):
     _features = None
-    _X_train = None
-    _X_val = None
-    _Y_train = None
-    _Y_val = None
     _X_test_risk = None
     _dt: DecisionTreeClassifier = None
     _rf: RandomForestClassifier = None
     _xgb: XGBClassifier = None
+    _shap = None
     def __init__(self, path):
         self._PrepareData(path)
+        self._rf = self._LoadModel()
+        if self._rf is not None:
+            self._shap = shap.TreeExplainer(self._rf)
 
     def _PrepareData(self, path:str):
         """
@@ -78,7 +77,7 @@ class HeartDisease():
         for min_samples_split in min_samples_split_list:
             # You can fit the model at the same time you define it, because the fit function returns the fitted estimator.
             self._dt = DecisionTreeClassifier(min_samples_split = min_samples_split,
-                                        random_state = RANDOM_STATE).fit(self._X_train, self._Y_train) 
+                                        random_state = 11).fit(self._X_train, self._Y_train) 
             predictions_train = self._dt.predict(self._X_train) ## The predicted values for the train dataset
             predictions_val = self._dt.predict(self._X_val) ## The predicted values for the test dataset
             accuracy_train = accuracy_score(predictions_train, self._Y_train)
@@ -99,7 +98,7 @@ class HeartDisease():
         for max_depth in max_depth_list:
             # You can fit the model at the same time you define it, because the fit function returns the fitted estimator.
             self._dt = DecisionTreeClassifier(max_depth = max_depth,
-                                        random_state = RANDOM_STATE).fit(self._X_train, self._Y_train) 
+                                        random_state = 11).fit(self._X_train, self._Y_train) 
             predictions_train = self._dt.predict(self._X_train) ## The predicted values for the train dataset
             predictions_val = self._dt.predict(self._X_val) ## The predicted values for the test dataset
             accuracy_train = accuracy_score(predictions_train, self._Y_train)
@@ -117,13 +116,13 @@ class HeartDisease():
         # Choose min_samples_split and max_depth based on the plots above which yield highest accuracy and lowest variance / overfitting, i.e., training and test accuracy should be as close to one another as possible
         self._dt = DecisionTreeClassifier(min_samples_split = 50,
                                              max_depth = 3,
-                                             random_state = RANDOM_STATE).fit(self._X_train, self._Y_train)
+                                             random_state = 11).fit(self._X_train, self._Y_train)
         print(f"classes: {self._dt.classes_}") # classes: [False  True]
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._dt.predict(self._X_train), self._Y_train):.4f}")
         print(f"Metrics validation:\n\tAccuracy score: {accuracy_score(self._dt.predict(self._X_val), self._Y_val):.4f}")
         PlotDecisionTree(self._dt, self._features, ['neg', 'pos'], "HeartDiseasePredictionDecisionTree") # Matches with self._dt.classes_
 
-    def BuildRandomForestModel(self):
+    def BuildRandomForestModel(self, retrain:bool = False):
         """
         All of the hyperparameters found in the decision tree model will also exist in this algorithm, since a random forest is an ensemble of many Decision Trees.
         One additional hyperparameter for Random Forest is called n_estimators (default=100) which is the number of Decision Trees that make up the Random Forest.
@@ -139,35 +138,27 @@ class HeartDisease():
         Changing this parameter does not impact on the final result but can reduce the training time.        
         """
         print(f"\n=== {self.BuildRandomForestModel.__name__} ===")
-        min_samples_split_list = [2,10, 30, 50, 100, 200, 300, 700]  ## If the number is an integer, then it is the actual quantity of samples,
-                                                    ## If it is a float, then it is the percentage of the dataset
-        max_depth_list = [2, 4, 8, 16, 32, 64, None]
-        n_estimators_list = [10,50,100,500]
-        accuracy_list_train = []
-        accuracy_list_val = []
-        for min_samples_split in min_samples_split_list:
-            # You can fit the model at the same time you define it, because the fit function returns the fitted estimator.
-            self._rf = RandomForestClassifier(min_samples_split = min_samples_split,
-                                        random_state = RANDOM_STATE).fit(self._X_train, self._Y_train) 
-            predictions_train = self._rf.predict(self._X_train) ## The predicted values for the train dataset
-            predictions_val = self._rf.predict(self._X_val) ## The predicted values for the test dataset
-            accuracy_train = accuracy_score(predictions_train, self._Y_train)
-            accuracy_val = accuracy_score(predictions_val, self._Y_val)
-            accuracy_list_train.append(accuracy_train)
-            accuracy_list_val.append(accuracy_val)
+        if not self._rf or retrain:
+            hyperparams = {
+                
+                # how many trees should be in the forest (int)
+                'n_estimators': [456, 789],
 
-        plt.title('Train x Validation metrics')
-        plt.xlabel('min_samples_split')
-        plt.ylabel('accuracy')
-        plt.xticks(ticks = range(len(min_samples_split_list )),labels=min_samples_split_list) 
-        plt.plot(accuracy_list_train)
-        plt.plot(accuracy_list_val)
-        plt.legend(['Train','Validation'], fontsize='x-large')
-        plt.savefig(f"output/RandomForest_min_samples.png")
-        # Choose min_samples_split and max_depth based on the plots above which yield highest accuracy and lowest variance / overfitting, i.e., training and test accuracy should be as close to one another as possible
-        self._rf = RandomForestClassifier(n_estimators = 100,
-                                             max_depth = 16, 
-                                             min_samples_split = 10).fit(self._X_train, self._Y_train)
+                # the maximum depth of trees in the forest (int)
+                'max_depth': [11,13,15],
+                
+                # the minimum number of samples in a leaf as a fraction
+                # of the total number of samples in the training set
+                # Can be int (in which case that is the minimum number)
+                # or float (in which case the minimum is that fraction of the
+                # number of training set samples)
+                'min_samples_leaf': [3,5,7,9],
+            }
+            fixed_hyperparams = {
+                'random_state': 11,
+            }
+            self._rf = self._random_forest_grid_search(RandomForestClassifier, hyperparams, fixed_hyperparams)
+            self._shap = shap.TreeExplainer(self._rf)
         print(f"classes: {self._rf.classes_}") # classes: [False  True]
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._rf.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._rf.predict(self._X_val), self._Y_val):.4f}")
         #PlotDecisionTree(self._rf, self._features, ['neg', 'pos'], "RandomForestHeartDiseasePrediction") AttributeError: 'RandomForestClassifier' object has no attribute 'tree_'
@@ -243,6 +234,15 @@ class HeartDisease():
         shap.dependence_plot('Age', shap_values, self._X_val, interaction_index='Sex_M')
 
 if __name__ == "__main__":
+    """
+    https://docs.python.org/3/library/argparse.html
+    'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
+    """
+    parser = argparse.ArgumentParser(description='Heart Disease Prediction Tree Ensemble')
+    parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
+    parser.add_argument('-g', '--grayscale', action='store_true', help='Use grayscale model')
+    args = parser.parse_args()
+
     heart = HeartDisease("data/heart.csv") # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
     heart.BuildDecisionTreeModel()
     heart.BuildRandomForestModel()

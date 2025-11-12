@@ -1,7 +1,7 @@
 import pickle, itertools
 from abc import ABC
 from tqdm import tqdm
-
+from pathlib import Path
 class DecisionTree(ABC):
     _model_path:str = None
     _X_train = None
@@ -11,29 +11,30 @@ class DecisionTree(ABC):
     _Y_train = None
     _Y_val = None
     _Y_test = None
-    _hyperparams:dict = None
-    _fixed_hyperparams:dict = None
     _best_hyperparams = None
-
-    def __init__(self, path:str, hyperparams:dict, fixed_hyperparams:dict):
-        self._fixed_hyperparams = fixed_hyperparams
-        self._hyperparams = hyperparams
+    def __init__(self, path:str):
         self._model_path = path
 
-    def _random_forest_grid_search(self, model):
+    def _LoadModel(self):
+        if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
+            print(f"Using saved model {self._model_path}...")
+            with open(self._model_path, 'rb') as file:
+                return pickle.load(file)
+
+    def _random_forest_grid_search(self, model, hyperparams:dict, fixed_hyperparams:dict):
         print(f"\n=== {self._random_forest_grid_search.__name__} ===")
         # Define ranges for the chosen random forest hyperparameters 
-        best_model, self._best_hyperparams = self._holdout_grid_search(model)
+        best_model, self._best_hyperparams = self._holdout_grid_search(model, hyperparams, fixed_hyperparams)
                
         # add fixed hyperparamters to best combination of variable hyperparameters
-        self._best_hyperparams.update(self._fixed_hyperparams)
+        self._best_hyperparams.update(fixed_hyperparams)
         if self._model_path:
             with open(self._model_path, 'wb') as f:
-                pickle.dump(self._rf, f)
+                pickle.dump(best_model, f)
             print(f"Model saved to {self._model_path}.")
         return best_model
 
-    def _holdout_grid_search(self, rf):
+    def _holdout_grid_search(self, rf, hyperparams:dict, fixed_hyperparams:dict):
         '''
         Conduct hyperparameter grid search on hold out validation set. Use holdout validation.
         Hyperparameters are input as a dictionary mapping each hyperparameter name to the
@@ -64,7 +65,7 @@ class DecisionTree(ABC):
         best_score = 0.0
 
         # get list of param values
-        lists = self._hyperparams.values()
+        lists = hyperparams.values()
         
         # get all param combinations
         param_combinations = list(itertools.product(*lists))
@@ -74,11 +75,11 @@ class DecisionTree(ABC):
         for i, params in enumerate(tqdm(param_combinations), 1):
             # fill param dict with params
             param_dict = {}
-            for param_index, param_name in enumerate(self._hyperparams):
+            for param_index, param_name in enumerate(hyperparams):
                 param_dict[param_name] = params[param_index]
                 
             # create estimator with specified params
-            estimator = rf(**param_dict, **self._fixed_hyperparams)
+            estimator = rf(**param_dict, **fixed_hyperparams)
 
             # fit estimator
             estimator.fit(self._X_train, self._Y_train)
@@ -100,5 +101,5 @@ class DecisionTree(ABC):
                     best_hyperparams = param_dict
 
         # add fixed hyperparamters to best combination of variable hyperparameters
-        best_hyperparams.update(self._fixed_hyperparams)
+        best_hyperparams.update(fixed_hyperparams)
         return best_estimator, best_hyperparams

@@ -21,35 +21,15 @@ class RandomForestRiskModel(DecisionTree):
     _xgb: XGBClassifier = None
     _shap = None
     def __init__(self, path:str, threshold:float, imputer_iterations:int):
-        hyperparams = {
-            
-            # how many trees should be in the forest (int)
-            'n_estimators': [456, 789],
-
-            # the maximum depth of trees in the forest (int)
-            'max_depth': [11,13,15],
-            
-            # the minimum number of samples in a leaf as a fraction
-            # of the total number of samples in the training set
-            # Can be int (in which case that is the minimum number)
-            # or float (in which case the minimum is that fraction of the
-            # number of training set samples)
-            'min_samples_leaf': [3,5,7,9],
-        }
-        fixed_hyperparams = {
-            'random_state': 10,
-        }
-        super().__init__(path, hyperparams, fixed_hyperparams)
+        super().__init__(path)
         self._imputer_iterations = imputer_iterations
         self._threshold = threshold
         self._PrepareData()
-        if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file():
-            print(f"Using saved model {self._model_path}...")
-            with open(self._model_path, 'rb') as file:
-                self._rf = pickle.load(file)
-                self._shap = shap.TreeExplainer(self._rf)
+        self._rf = self._LoadModel()
+        if self._rf is not None:
+            self._shap = shap.TreeExplainer(self._rf)
 
-    def BuildRandomForestModel(self):
+    def BuildRandomForestModel(self, retrain:bool = False):
         """
         All of the hyperparameters found in the decision tree model will also exist in this algorithm, since a random forest is an ensemble of many Decision Trees.
         One additional hyperparameter for Random Forest is called n_estimators (default=100) which is the number of Decision Trees that make up the Random Forest.
@@ -65,8 +45,26 @@ class RandomForestRiskModel(DecisionTree):
         Changing this parameter does not impact on the final result but can reduce the training time.        
         """
         print(f"\n=== {self.BuildRandomForestModel.__name__} ===")
-        if not self._rf:
-            self._rf = self._random_forest_grid_search(RandomForestClassifier)
+        if not self._rf or retrain:
+            hyperparams = {
+                
+                # how many trees should be in the forest (int)
+                'n_estimators': [456, 789],
+
+                # the maximum depth of trees in the forest (int)
+                'max_depth': [11,13,15],
+                
+                # the minimum number of samples in a leaf as a fraction
+                # of the total number of samples in the training set
+                # Can be int (in which case that is the minimum number)
+                # or float (in which case the minimum is that fraction of the
+                # number of training set samples)
+                'min_samples_leaf': [3,5,7,9],
+            }
+            fixed_hyperparams = {
+                'random_state': 10,
+            }
+            self._rf = self._random_forest_grid_search(RandomForestClassifier, hyperparams, fixed_hyperparams)
             self._shap = shap.TreeExplainer(self._rf)
         print(f"Best hyperparameters:\n{self._best_hyperparams}")
         y_train_best = self._rf.predict_proba(self._X_train)[:, 1]
@@ -199,5 +197,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     risk = RandomForestRiskModel(f"models/RandomForestRiskModel.pkl", 10, 10)
-    risk.BuildRandomForestModel()
+    risk.BuildRandomForestModel(args.retrain)
     risk.ExplainModelPrediction()
