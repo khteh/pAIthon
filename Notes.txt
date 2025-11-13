@@ -664,7 +664,7 @@ Use appropriate scale for fair random search.
 (2) With joblib module
 =========================================================================================================================================================================================================================================
 Decision Tree Learning:
-- Can model non-linear associations.
+- Can model non-linear associations / capture non-linear relationships in data.
 - Boundaries are always vertical or horizontal
 Decision 1: How to choose what feature to split on at each node?
             Goal: Maximize purity / Minimize impurity - decision which gives fastest path to leave nodes.
@@ -1418,6 +1418,14 @@ Negative Sampling:
 
 GloVe (Global vectors for word representation)
 - Not used as much as SKip-grams and Negative Sampling.
+
+Non-contextualized word embeddings:
+(1) Word2Vec
+(2) GloVe
+
+Contextualized word embeddings:
+(1) ELMo
+(2) BERT
 
 Language Model:
 - a[0] : zero vector
@@ -2176,3 +2184,56 @@ Survival data:
 Permissible Pairs:
 (1) If neither patient was censored.
 (2) If the censored patient's T is >= uncensored patient's T.
+
+Randomized Control Trial:
+- Randomly assign subjects to one or another group for observation to reduce bias.
+
+Absolute Risk Reduction (ARR) = difference between absolute risk of treatment group and control group.
+Number needed to Treat (NNT) = 1 / ARR. It tells us #people to receive the treatment in order to benefit one of them.
+p-value: 
+- There is less than p% probability that we would observe a difference risk of ARR or mroe if the treatment has zero effect. 
+- If the p-value is small, the result is statistically significant.
+- A function of #patients in each group.
+
+Neyman-Rubin causal model:
+Yi(1) - Outcome with treatment. 0: bad outcome does NOT happen, 1: bad outcome does happen
+Yi(0) - Outcome without treatment. 0: bad outcome does NOT happen, 1: bad outcome does happen
+mean(Yi(1)) - mean(Yi(0)) = Average Treatment Effect.
+- Can be estimated only in Randomized Control Trial data.
+- negative: benefit; positive: harm; zero: No effect of treatment.
+
+ATE = -ARR
+
+Conditional Average Treatment Effect:
+- Individual Treatment Estimate (ITE)
+- Use ML model to lean the relationships between the conditional features and the outcome, Yi (have or doesn't have the disease).
+- Base learners. Decision Tree, linear regression, etc.
+Two-Tree method (T-learner)
+- miu1(x): Prognostic model for Yi(1)
+- miu0(x): Prognostic model for Yi(0)
+- miu1 - miu0
+- Disadvantage: Splitting the dataset to 2 - Yi(1) and Yi(0) results in less data to learn for both trees.
+Single-Tree method (S-learner)
+- miu(x, w): w:0 for control group, w:1 for treatment group.
+- miu(x, 1) - miu(x, 0)
+- Disadvantage: 
+  (1) May learn to NOT use the treatment feature at all.
+  (2) Might produce estimate of 0 for everyone.
+
+To evaluate ITE:
+- Use data from subjects in the opposite group with similarity in either:
+  (1) Features
+  (2) ITE estimate.
+- For the matched pair, calculate:
+  (1) Y(1) - Y(0)
+  (2) Average ITE.
+
+c-for-benefit:
+Permissible:
+- Different outcomes.
+Concordant:
+- Higher ITE estimate has higher outcome.
+Tie:
+- Same ITE estiame with diff outcomes.
+Compare the c-for-benefit results between T-learner and S-learner:
+- P(TEa > TEb | YDa > YDb), YD = Y(1) - Y(0)

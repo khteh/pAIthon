@@ -52,6 +52,8 @@ def DataFrameAccess():
          - Slicing on .loc includes the end of range. Ex: .loc[:3] will include entry with index key '3'. This is == .head(4)
     .iloc refers to 0-based array index.
     .crosstab(col1, col2) is great for comparing 2 columns
+    .loc[row, col]: specify the row and column
+    .loc[3:4,:]: Index (row) 3 to 4(inclusive).
     """
     print(f"\n=== {DataFrameAccess.__name__} ===")
     data = {
@@ -67,8 +69,14 @@ def DataFrameAccess():
     print(data.describe())
     print("\ndata.info():")
     data.info()
-    print("\nCities:")
+    print("\nCities (dot notation):")
+    print(data.City)
+    print("\nCities (bracket notation):")
     print(data['City']) # pandas.core.series.Series data type. Each item in the Series has an index.
+    print("\nCities (.loc notation):")
+    print(data.loc[:, "City"])
+    assert data.City.equals(data["City"])
+    assert data.City.equals(data.loc[:,"City"])
     print("\nRow 104 accessed by index key / row label:")
     print(data.loc[104])# pandas.core.series.Series data type. Each item in the Series has an index.
     print("\nRow 104 accessed by 0-based index counter:")
@@ -91,6 +99,8 @@ def DataFrameAccess():
     print(data.at[104, 'City'])
     print("Row 104 City accessed using index counter:")
     print(data.iat[3, 1])
+    # Use dot notation to access a column
+    # Use .loc to get all rows using ":", for column City
     print("\nData before modification:")
     print(data)
     print("\nModify the row[1:5) Python column (axis-1) with evenly-spaced values between 0 and 100:")
