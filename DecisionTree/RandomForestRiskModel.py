@@ -17,6 +17,7 @@ class RandomForestRiskModel(DecisionTree):
     _threshold:float = None
     _imputer_iterations: int = None
     _imputer: IterativeImputer = None
+    _best_hyperparams = None
     _rf: RandomForestClassifier = None
     _xgb: XGBClassifier = None
     _shap = None
@@ -51,31 +52,32 @@ class RandomForestRiskModel(DecisionTree):
                 # how many trees should be in the forest (int)
                 'n_estimators': [456, 789],
 
-                # the maximum depth of trees in the forest (int)
-                'max_depth': [11,13,15],
+                # the maximum depth of trees in the forest (int). If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.
+                'max_depth': [11,13,15, None],
                 
                 # the minimum number of samples in a leaf as a fraction
                 # of the total number of samples in the training set
                 # Can be int (in which case that is the minimum number)
                 # or float (in which case the minimum is that fraction of the
                 # number of training set samples)
-                'min_samples_leaf': [3,5,7,9],
+                'min_samples_leaf': [1,3,5,7,9],
             }
             fixed_hyperparams = {
                 'random_state': 10,
             }
-            self._rf = self._random_forest_grid_search(RandomForestClassifier, hyperparams, fixed_hyperparams)
+            self._rf, self._best_hyperparams = self._random_forest_grid_search(RandomForestClassifier, self._X_train, self._Y_train, self._X_val, self._Y_val, hyperparams, fixed_hyperparams)
             self._shap = shap.TreeExplainer(self._rf)
+        # Best hyperparameters:
+        # {'n_estimators': 456, 'max_depth': None, 'min_samples_leaf': 5, 'random_state': 10}
+        # Train C-Index: 0.9872592913256227
+        # Val C-Index: 0.7800695629347684
+        # classes: [False  True]
         print(f"Best hyperparameters:\n{self._best_hyperparams}")
         y_train_best = self._rf.predict_proba(self._X_train)[:, 1]
         print(f"Train C-Index: {self._cindex(self._Y_train, y_train_best)}")
 
         y_val_best = self._rf.predict_proba(self._X_val)[:, 1]
         print(f"Val C-Index: {self._cindex(self._Y_val, y_val_best)}")
-        # Best hyperparameters:
-        #{'n_estimators': 456, 'max_depth': 13, 'min_samples_leaf': 5, 'random_state': 10}
-        #Train C-Index: 0.9582820140564089
-        #Val C-Index: 0.7794067462921643
         print(f"classes: {self._rf.classes_}") # classes: [False  True]
         cindex, subgroup = self._bad_subset(self._X_train, self._Y_train)
         print(f"Train dataset Subgroup size: {subgroup}, C-Index: {cindex}")
@@ -172,8 +174,8 @@ class RandomForestRiskModel(DecisionTree):
         performance = self._cindex(y_subgroup.values, y_subgroup_preds)
         return performance, subgroup_size
     
-    def _Evaluate(self, predictions):
-        return self._cindex(self._Y_val if self._Y_val is not None and len(self._Y_val) > 0 else self._Y_test, predictions[:,1])
+    def _Evaluate(self, Y, predictions):
+        return self._cindex(Y, predictions[:,1])
     
     def _cindex(self, y_true, scores):
         """
@@ -196,6 +198,6 @@ if __name__ == "__main__":
     parser.add_argument('-g', '--grayscale', action='store_true', help='Use grayscale model')
     args = parser.parse_args()
 
-    risk = RandomForestRiskModel(f"models/RandomForestRiskModel.pkl", 10, 10)
+    risk = RandomForestRiskModel("models/RandomForestRiskModel.pkl", 10, 10)
     risk.BuildRandomForestModel(args.retrain)
     risk.ExplainModelPrediction()
