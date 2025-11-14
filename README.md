@@ -132,8 +132,8 @@ Metrics validation:
 - Model explaination of contributing factors to 10-year risk of death:
   - Red colors contribute positively and blue colors contribute negatively to the 10-year risk of death.
     ![NHANES / epidemiology risk force plot](images/NHANESEpidemiologyDeathFactors_force_plot.png?raw=true "NHANES / epidemiology risk force plot")
-    ![NHANES / epidemiology risk analysis](images/NHANESEpidemiologyDeathFactors.png?raw=true "NHANES / epidemiology risk analysis")
-    ![NHANES / epidemiology risk analysis](images/NHANESEpidemiologyDeathFactors_age_sex.png?raw=true "NHANES / epidemiology risk analysis")
+    ![NHANES / epidemiology risk summary plot](images/NHANESEpidemiologyDeathFactors_summary_plot.png?raw=true "NHANES / epidemiology risk summary plot")
+    ![NHANES / epidemiology risk age-sex dependence plot](images/NHANESEpidemiologyDeathFactors_age_sex.png?raw=true "NHANES / epidemiology risk age-sex dependence plot")
 
 ## MNIST GAN
 
