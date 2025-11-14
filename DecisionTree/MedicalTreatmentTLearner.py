@@ -468,6 +468,7 @@ class MedicalTreatmentTLearner(DecisionTree):
                     if pred_benefit[i] == pred_benefit[j]: #change to check for risk ties
                         risk_tie_count += 1
         # compute c-statistic-for-benefit
+        # The behaviour when permissible_count is zero is undefined or N/A.
         cstat = (concordant_count + 0.5 * risk_tie_count) / permissible_count
         return cstat    
 
