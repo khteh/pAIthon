@@ -131,7 +131,7 @@ Metrics validation:
 - Dataset consists of `Age, Diastolic BP, Poverty index, Race, Red blood cells, Sedimentation rate, Serum Albumin, Serum Cholesterol, Serum Iron, Serum Magnesium, Serum Protein, Sex, Systolic BP, TIBC, TS, White blood cells, BMI, Pulse pressure`
 - Model explaination of contributing factors to 10-year risk of death:
   - Red colors contribute positively and blue colors contribute negatively to the 10-year risk of death.
-    ![NHANES / epidemiology risk analysis](images/NHANESEpidemiologyDeathFactors1.png?raw=true "NHANES / epidemiology risk analysis")
+    ![NHANES / epidemiology risk force plot](images/NHANESEpidemiologyDeathFactors_force_plot.png?raw=true "NHANES / epidemiology risk force plot")
     ![NHANES / epidemiology risk analysis](images/NHANESEpidemiologyDeathFactors.png?raw=true "NHANES / epidemiology risk analysis")
     ![NHANES / epidemiology risk analysis](images/NHANESEpidemiologyDeathFactors_age_sex.png?raw=true "NHANES / epidemiology risk analysis")
 

@@ -2237,3 +2237,18 @@ Tie:
 - Same ITE estiame with diff outcomes.
 Compare the c-for-benefit results between T-learner and S-learner:
 - P(TEa > TEb | YDa > YDb), YD = Y(1) - Y(0)
+
+Feature Importance Evaluation of a model:
+(1) Drop-column method.
+    - Train models with the same training dataset with a column drop for each model and compare them.
+    - Check the models' performance diff with the original model. Higher diff means the dropped column/feature is more important.
+(2) Permutation:
+    - During evaluation using the cross-validation dataset, shuffle the column of interest.
+    - Check the model's performance drop. Higher drop means the indicate higher importance of the feature/column.
+
+Feature Importance Evaluation of a prediction on individual:
+(1) Drop-column method - Same as the evaluation of a model but instead of using the model performance index, it uses the prediction value on an individual's profile data.
+    - Does NOT work in the presence of correlated features / covariance. For example, [age, SBP, dBP] and the diff in predictions using this method is almost identical.
+(2) Shapley Values:
+    - Work well with correlated features.
+    - Shapley values sum up to the risk prediction with the full model minus the base risk in the population.
