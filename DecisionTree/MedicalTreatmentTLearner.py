@@ -476,7 +476,7 @@ if __name__ == "__main__":
     https://docs.python.org/3/library/argparse.html
     'store_true' and 'store_false' - These are special cases of 'store_const' used for storing the values True and False respectively. In addition, they create default values of False and True respectively:
     """
-    parser = argparse.ArgumentParser(description='Medical Treatment T-Learner')
+    parser = argparse.ArgumentParser(description='Random Forest Medical Treatment')
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     parser.add_argument('-g', '--grayscale', action='store_true', help='Use grayscale model')
     args = parser.parse_args()
