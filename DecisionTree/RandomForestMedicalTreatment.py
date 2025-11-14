@@ -50,8 +50,8 @@ class MedicalTreatmentTLearner(DecisionTree):
     def BuildRandomForestModel(self, retrain:bool = False):
         """
         Two-Tree method (T-learner)
-        - miu1(x): Prognostic model for Yi(1)
-        - miu0(x): Prognostic model for Yi(0)
+        - miu1(x): Prognostic model for Yi(1) - with treatment
+        - miu0(x): Prognostic model for Yi(0) - without treatment
         - miu1 - miu0
 
         All of the hyperparameters found in the decision tree model will also exist in this algorithm, since a random forest is an ensemble of many Decision Trees.
