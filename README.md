@@ -133,6 +133,7 @@ Metrics validation:
   - Red colors contribute positively and blue colors contribute negatively to the 10-year risk of death.
     ![NHANES / epidemiology risk analysis](images/NHANESEpidemiologyDeathFactors1.png?raw=true "NHANES / epidemiology risk analysis")
     ![NHANES / epidemiology risk analysis](images/NHANESEpidemiologyDeathFactors.png?raw=true "NHANES / epidemiology risk analysis")
+    ![NHANES / epidemiology risk analysis](images/NHANESEpidemiologyDeathFactors_age_sex.png?raw=true "NHANES / epidemiology risk analysis")
 
 ## MNIST GAN
 

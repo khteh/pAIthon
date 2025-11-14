@@ -1,6 +1,7 @@
 import argparse, pandas as pd, matplotlib.pyplot as plt, shap
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from xgboost import XGBClassifier
@@ -17,9 +18,6 @@ class HeartDisease(DecisionTree):
     _shap = None
     def __init__(self, path):
         self._PrepareData(path)
-        self._rf = self._LoadModel()
-        if self._rf is not None:
-            self._shap = shap.TreeExplainer(self._rf)
 
     def _PrepareData(self, path:str):
         """
@@ -46,7 +44,7 @@ class HeartDisease(DecisionTree):
         self._features = [x for x in df.columns if x not in 'HeartDisease'] ## Removing our target variable
         print(f"features: {self._features}")
         # We will keep the shuffle = True since our dataset has not any time dependency.    
-        self._X_train, self._X_val, self._Y_train, self._Y_val = train_test_split(df[self._features], df['HeartDisease'], train_size = 0.8, random_state = RANDOM_STATE)
+        self._X_train, self._X_val, self._Y_train, self._Y_val = train_test_split(df[self._features], df['HeartDisease'], train_size = 0.8)
         print(f'train samples: {len(self._X_train)}')
         print(f'validation samples: {len(self._X_val)}')
         print(f'target proportion: {sum(self._Y_train)/len(self._Y_train):.4f}')
@@ -122,7 +120,7 @@ class HeartDisease(DecisionTree):
         print(f"Metrics validation:\n\tAccuracy score: {accuracy_score(self._dt.predict(self._X_val), self._Y_val):.4f}")
         PlotDecisionTree(self._dt, self._features, ['neg', 'pos'], "HeartDiseasePredictionDecisionTree") # Matches with self._dt.classes_
 
-    def BuildRandomForestModel(self, retrain:bool = False):
+    def BuildRandomForestModel(self, model_path:str, retrain:bool = False):
         """
         All of the hyperparameters found in the decision tree model will also exist in this algorithm, since a random forest is an ensemble of many Decision Trees.
         One additional hyperparameter for Random Forest is called n_estimators (default=100) which is the number of Decision Trees that make up the Random Forest.
@@ -138,14 +136,18 @@ class HeartDisease(DecisionTree):
         Changing this parameter does not impact on the final result but can reduce the training time.        
         """
         print(f"\n=== {self.BuildRandomForestModel.__name__} ===")
+        self._model_path = model_path
+        self._rf = self._LoadModel()
+        if self._rf is not None:
+            self._shap = shap.TreeExplainer(self._rf)
         if not self._rf or retrain:
             hyperparams = {
                 
                 # how many trees should be in the forest (int)
                 'n_estimators': [456, 789],
 
-                # the maximum depth of trees in the forest (int)
-                'max_depth': [11,13,15],
+                # the maximum depth of trees in the forest (int). If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.
+                'max_depth': [11,13,15, None],
                 
                 # the minimum number of samples in a leaf as a fraction
                 # of the total number of samples in the training set
@@ -193,7 +195,7 @@ class HeartDisease(DecisionTree):
         The model is returned at its last state when training terminated, not its state during the best round. For example, if the model stops at round 26, but the best round was 16, the model's training state at round 26 is returned, not round 16.
         Note that this is different from returning the model's "best" state (from when the evaluation metric was the lowest).
         """
-        self._xgb = XGBClassifier(n_estimators = 500, learning_rate = 0.1, verbosity = 1, random_state = RANDOM_STATE, early_stopping_rounds = 10)
+        self._xgb = XGBClassifier(n_estimators = 500, learning_rate = 0.1, verbosity = 1, random_state = 11, early_stopping_rounds = 10)
         self._xgb.fit(X_train_fit,y_train_fit, eval_set = [(X_train_eval,y_train_eval)])
         print(f"Best iteration with lowest evaluation metric: {self._xgb.best_iteration}")
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_val), self._Y_val):.4f}")
@@ -232,6 +234,9 @@ class HeartDisease(DecisionTree):
         shap.summary_plot(shap_values, self._X_val)
         shap.dependence_plot('Age', shap_values, self._X_val, interaction_index='Sex_F')
         shap.dependence_plot('Age', shap_values, self._X_val, interaction_index='Sex_M')
+    
+    def _Evaluate(self, predictions):
+        accuracy = accuracy_score(y_test, y_pred)
 
 if __name__ == "__main__":
     """
@@ -245,6 +250,6 @@ if __name__ == "__main__":
 
     heart = HeartDisease("data/heart.csv") # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
     heart.BuildDecisionTreeModel()
-    heart.BuildRandomForestModel()
+    heart.BuildRandomForestModel("models/RandomForestHeartDisease.pkl", args.retrain)
     heart.BuildXGBoost()
     heart.ExplainModelPrediction()

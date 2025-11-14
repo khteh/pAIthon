@@ -1,7 +1,7 @@
 [project]
 name = "paithon"
 version = "1.0.0"
-description = "Add your description here"
+description = "Python AI, ML, DL, NLP and GAN exploration playground"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
