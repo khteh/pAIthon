@@ -2251,4 +2251,7 @@ Feature Importance Evaluation of a prediction on individual:
     - Does NOT work in the presence of correlated features / covariance. For example, [age, SBP, dBP] and the diff in predictions using this method is almost identical.
 (2) Shapley Values:
     - Work well with correlated features.
+    - Shapley value = importance of the particular feature.
+    - Empty set: Use the expected value of the outcome in the dataset. Example, if 10% of the population actually have the event, set f of the empty set to be 0.1
     - Shapley values sum up to the risk prediction with the full model minus the base risk in the population.
+    - Use SHAP library.
