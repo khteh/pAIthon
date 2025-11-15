@@ -1,5 +1,4 @@
 import argparse, shap, sklearn, itertools, lifelines, pydotplus, numpy, pandas as pd, seaborn as sb, matplotlib.pyplot as plt, pickle, random
-from lifelines.utils import concordance_index
 from pathlib import Path
 from pandas import DataFrame
 from sklearn.tree import export_graphviz
@@ -12,6 +11,7 @@ from sklearn.impute import IterativeImputer, SimpleImputer
 from xgboost import XGBClassifier
 from utils.DecisionTree import PlotDecisionTree
 from .DecisionTree import DecisionTree
+from utils.CIndex import cindex
 class MedicalTreatmentTLearner(DecisionTree):
     """
     Examine data from an RCT (Randomized Control Trial), measuring the effect of a particular drug combination on colon cancer. 
@@ -316,7 +316,7 @@ class MedicalTreatmentTLearner(DecisionTree):
 
     def _Evaluate(self, Y, predictions):
         # Evaluate the model's performance using the regular concordance index
-        return concordance_index(Y, predictions[:, 1])
+        return cindex(Y, predictions[:, 1])
 
     def _event_rate(self):
         '''

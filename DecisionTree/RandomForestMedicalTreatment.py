@@ -1,5 +1,5 @@
 import argparse, shap, sklearn, itertools, lifelines, pydotplus, numpy, pandas as pd, seaborn as sb, matplotlib.pyplot as plt, pickle, random
-from lifelines.utils import concordance_index
+from utils.CIndex import cindex
 from pathlib import Path
 from pandas import DataFrame
 from sklearn.tree import export_graphviz
@@ -316,7 +316,7 @@ class MedicalTreatmentTLearner(DecisionTree):
 
     def _Evaluate(self, Y, predictions):
         # Evaluate the model's performance using the regular concordance index
-        return concordance_index(Y, predictions[:, 1])
+        return cindex(Y, predictions[:, 1])
 
     def _event_rate(self):
         '''

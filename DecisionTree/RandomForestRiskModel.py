@@ -10,6 +10,7 @@ from sklearn.impute import IterativeImputer, SimpleImputer
 from xgboost import XGBClassifier
 from utils.DecisionTree import PlotDecisionTree
 from .DecisionTree import DecisionTree
+from utils.CIndex import cindex
 class RandomForestRiskModel(DecisionTree):
     """
     Tree based models by predicting the 10-year risk of death of individuals from the NHANES | epidemiology dataset (https://wwwn.cdc.gov/nchs/nhanes/nhefs/default.aspx/)
@@ -175,16 +176,8 @@ class RandomForestRiskModel(DecisionTree):
         return performance, subgroup_size
     
     def _Evaluate(self, Y, predictions):
-        return self._cindex(Y, predictions[:,1])
+        return cindex(Y, predictions[:,1])
     
-    def _cindex(self, y_true, scores):
-        """
-        C-index = (#concordance + 0.5 * #risk_ties) / #permissible
-        - The C-index measures the discriminatory power of a risk score.
-        - Intuitively, a higher c-index indicates that the model's prediction is in agreement with the actual outcomes of a pair of patients.
-        """
-        return lifelines.utils.concordance_index(y_true, scores)
-
     def _prob_drop(self, age):
         return 1 - (numpy.exp(0.25 * age - 5) / (1 + numpy.exp(0.25 * age - 5)))
 
