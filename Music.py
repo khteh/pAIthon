@@ -547,43 +547,6 @@ def __get_abstract_grammars(measures, chords):
         abstract_grammars.append(parsed)
     return abstract_grammars
 
-''' Get musical data from a MIDI file '''
-def get_musical_data(data_fn):
-    print(f"\n=== {get_musical_data.__name__} ===")
-    measures, chords = __parse_midi(data_fn)
-    abstract_grammars = __get_abstract_grammars(measures, chords)
-    print(f"{len(measures)} measures, {len(chords)} chords, {len(abstract_grammars)} abstract_grammars")
-    return chords, abstract_grammars
-
-''' Get corpus data from grammatical data '''
-def get_corpus_data(abstract_grammars):
-    corpus = [x for sublist in abstract_grammars for x in sublist.split(' ')]
-    values = set(corpus)
-    val_indices = dict((v, i) for i, v in enumerate(values))
-    indices_val = dict((i, v) for i, v in enumerate(values))
-
-    return corpus, values, val_indices, indices_val
-
-def data_processing(corpus, values_indices, m = 60, Tx = 30):
-    # cut the corpus into semi-redundant sequences of Tx values
-    Tx = Tx 
-    N_values = len(set(corpus))
-    X = numpy.zeros((m, Tx, N_values), dtype=numpy.bool)
-    Y = numpy.zeros((m, Tx, N_values), dtype=numpy.bool)
-    for i in range(m):
-#         for t in range(1, Tx):
-        random_idx = rng.choice(len(corpus) - Tx)[0]
-        corp_data = corpus[random_idx:(random_idx + Tx)]
-        for j in range(Tx):
-            idx = values_indices[corp_data[j]]
-            if j != 0:
-                X[i, j, idx] = 1
-                Y[i, j-1, idx] = 1
-    
-    Y = numpy.swapaxes(Y,0,1)
-    Y = Y.tolist()
-    return numpy.asarray(X), numpy.asarray(Y), N_values 
-
 def load_music_utils(file):
     chords, abstract_grammars = get_musical_data(file)
     corpus, tones, tones_indices, indices_tones = get_corpus_data(abstract_grammars)
@@ -591,6 +554,248 @@ def load_music_utils(file):
     X, Y, N_tones = data_processing(corpus, tones_indices, 60, 30)   
     return (X, Y, N_tones, indices_tones, chords)
 
+def separate_part(midi_file_path, part: int):
+    score = converter.parse(midi_file_path)
+    melody_stream = score[5]     # For Metheny piece, Melody is Part #5.
+    print(f"{melody_stream.show('text')}")
+    #print(f"Melody Parts: {len(melody_stream.parts)}")
+    #print(f"Melody Voice: {len(melody_stream.getElementsByClass(stream.Voice))}")
+    #print(f"Melody Voice: {len(melody_stream.getElementsByClass(stream.Part)[0].getElementsByClass(stream.Voice))}")
+    for el in melody_stream.recurse():
+        print(el.offset, el, el.activeSite)
+
+    melody1, melody2 =  melody_stream.recurse().getElementsByClass(stream.Voice)
+    for j in melody2:
+        melody1.insert(j.offset, j)
+    melody_voice = melody1
+
+    for i in melody_voice:
+        if i.quarterLength == 0.0:
+            i.quarterLength = 0.25
+
+    # Change key signature to adhere to comp_stream (1 sharp, mode = major).
+    # Also add Electric Guitar. 
+    melody_voice.insert(0, instrument.ElectricGuitar())
+    melody_voice.insert(0, key.KeySignature(sharps=1))
+
+    # The accompaniment parts. Take only the best subset of parts from
+    # the original data. Maybe add more parts, hand-add valid instruments.
+    # Should add least add a string part (for sparse solos).
+    # Verified are good parts: 0, 1, 6, 7 '''
+    partIndices = [0, 1, 6, 7]
+    comp_stream = stream.Voice()
+    comp_stream.append([j.flat for i, j in enumerate(midi_data) 
+        if i in partIndices])
+
+    # Full stream containing both the melody and the accompaniment. 
+    # All parts are flattened. 
+    full_stream = stream.Voice()
+    for i in range(len(comp_stream)):
+        full_stream.append(comp_stream[i])
+    full_stream.append(melody_voice)
+
+    print(f"\nfull_stream: {len(full_stream)}")
+    #full_stream.show("text")
+    # Extract solo stream, assuming you know the positions ..ByOffset(i, j).
+    # Note that for different instruments (with stream.flat), you NEED to use
+    # stream.Part(), not stream.Voice().
+    # Accompanied solo is in range [478, 548)
+    solo_stream = stream.Voice()
+    for part in full_stream:
+        print(f"\npart: {part}")
+        #part.show("text")
+        curr_part = stream.Part()
+        if isinstance(part, stream.Part):
+            print(f"\ninstrument.Instrument:")
+            for i in part.getElementsByClass(instrument.Piano):
+                print(f"instrument: {i}")
+                i.show("text")
+                curr_part.append(i)
+            print(f"\ntempo.MetronomeMark:")
+            for i in part.getElementsByClass(tempo.MetronomeMark):
+                print(f"MetronomeMark: {i}")
+                i.show("text")
+                curr_part.append(i)
+            print(f"\nkey.KeySignature:")
+            for i in part.getElementsByClass(key.KeySignature):
+                print(f"KeySignature: {i}")
+                i.show("text")
+                curr_part.append(i)
+            print(f"\nmeter.TimeSignature:")
+            for i in part.getElementsByClass(meter.TimeSignature):
+                print(f"TimeSignature: {i}")
+                i.show("text")
+                curr_part.append(i)
+            print(f"\nmeter.getElementsByOffset:")
+            for i in part.getElementsByOffset(476, 548, includeEndBoundary=True):
+                print(f"offset: {i}")
+                i.show("text")
+                curr_part.append(i)
+            cp = curr_part.flatten()
+            solo_stream.insert(cp)
+
+    # Group by measure so you can classify. 
+    # Note that measure 0 is for the time signature, metronome, etc. which have
+    # an offset of 0.0.
+    melody_stream = solo_stream[-1]
+    measures = OrderedDict()
+    offsetTuples = [(int(n.offset / 4), n) for n in melody_stream]
+    measureNum = 0 # for now, don't use real m. nums (119, 120)
+    for key_x, group in groupby(offsetTuples, lambda x: x[0]):
+        measures[measureNum] = [n[1] for n in group]
+        measureNum += 1
+
+    # Get the stream of chords.
+    # offsetTuples_chords: group chords by measure number.
+    chordStream = solo_stream[0]
+    chordStream.removeByClass(note.Rest)
+    chordStream.removeByClass(note.Note)
+    offsetTuples_chords = [(int(n.offset / 4), n) for n in chordStream]
+
+    # Generate the chord structure. Use just track 1 (piano) since it is
+    # the only instrument that has chords. 
+    # Group into 4s, just like before. 
+    chords = OrderedDict()
+    measureNum = 0
+    for key_x, group in groupby(offsetTuples_chords, lambda x: x[0]):
+        chords[measureNum] = [n[1] for n in group]
+        measureNum += 1
+
+    # Fix for the below problem.
+    #   1) Find out why len(measures) != len(chords).
+    #   ANSWER: resolves at end but melody ends 1/16 before last measure so doesn't
+    #           actually show up, while the accompaniment's beat 1 right after does.
+    #           Actually on second thought: melody/comp start on Ab, and resolve to
+    #           the same key (Ab) so could actually just cut out last measure to loop.
+    #           Decided: just cut out the last measure. 
+    del chords[len(chords) - 1]
+    assert len(chords) == len(measures)
+    return measures, chords
+
+def separate_parts_from_midi(midi_file_path):
+    """
+    Parses a MIDI file and separates it into individual parts.
+    Prints instrument names and returns the list of parts.
+    """
+    #try:
+    # Parse the MIDI file into a score stream
+    score = converter.parse(midi_file_path)
+
+    # Access individual parts
+    parts = score.parts
+    
+    if not parts:
+        print("The MIDI file might be Type 0 (single track) or has no distinct parts.")
+        # If it's a single track, you might need to use more complex methods 
+        # to algorithmically separate melody from accompaniment within that track.
+        return [score] # Return the whole score as a single part list
+
+    print(f"Found {len(parts)} parts in the MIDI file:")
+
+    separated_parts = []
+    for i, part in enumerate(parts):
+        # Get the instrument name for identification
+        inst = part.getInstrument()
+        print(f"Part {i+1}: {inst.instrumentName}")
+        separated_parts.append(part)
+        
+        # Example: Assign the first part as melody, the rest as accompaniment
+        if i == 0:
+            melody_part = part
+        else:
+            # You might need to combine other parts into an accompaniment stream
+            pass
+
+    # You can now work with individual part streams, for example:
+    if melody_part:
+        melody_part.show('text')
+        accompaniment_stream = stream.Stream(separated_parts[1:]) # Combine others
+        # Full stream containing both the melody and the accompaniment. 
+        # All parts are flattened. 
+        full_stream = stream.Voice()
+        full_stream.append(accompaniment_stream)
+        full_stream.append(melody_part)
+        # Extract solo stream, assuming you know the positions ..ByOffset(i, j).
+        # Note that for different instruments (with stream.flat), you NEED to use
+        # stream.Part(), not stream.Voice().
+        # Accompanied solo is in range [478, 548)
+        solo_stream = stream.Voice()
+        for part in full_stream:
+            print(f"\npart: {part}")
+            #part.show("text")
+            curr_part = stream.Part()
+            if isinstance(part, stream.Part):
+                print(f"\ninstrument.Instrument:")
+                for i in part.getElementsByClass(instrument.Piano):
+                    print(f"instrument: {i}")
+                    i.show("text")
+                    curr_part.append(i)
+                print(f"\ntempo.MetronomeMark:")
+                for i in part.getElementsByClass(tempo.MetronomeMark):
+                    print(f"MetronomeMark: {i}")
+                    i.show("text")
+                    curr_part.append(i)
+                print(f"\nkey.KeySignature:")
+                for i in part.getElementsByClass(key.KeySignature):
+                    print(f"KeySignature: {i}")
+                    i.show("text")
+                    curr_part.append(i)
+                print(f"\nmeter.TimeSignature:")
+                for i in part.getElementsByClass(meter.TimeSignature):
+                    print(f"TimeSignature: {i}")
+                    i.show("text")
+                    curr_part.append(i)
+                print(f"\nmeter.getElementsByOffset:")
+                for i in part.getElementsByOffset(476, 548, includeEndBoundary=True):
+                    print(f"offset: {i}")
+                    i.show("text")
+                    curr_part.append(i)
+                cp = curr_part.flatten()
+                solo_stream.insert(cp)
+
+        # Group by measure so you can classify. 
+        # Note that measure 0 is for the time signature, metronome, etc. which have
+        # an offset of 0.0.
+        melody_stream = solo_stream[-1]
+        measures = OrderedDict()
+        offsetTuples = [(int(n.offset / 4), n) for n in melody_stream]
+        measureNum = 0 # for now, don't use real m. nums (119, 120)
+        for key_x, group in groupby(offsetTuples, lambda x: x[0]):
+            measures[measureNum] = [n[1] for n in group]
+            measureNum += 1
+
+        # Get the stream of chords.
+        # offsetTuples_chords: group chords by measure number.
+        chordStream = solo_stream[0]
+        chordStream.removeByClass(note.Rest)
+        chordStream.removeByClass(note.Note)
+        offsetTuples_chords = [(int(n.offset / 4), n) for n in chordStream]
+
+        # Generate the chord structure. Use just track 1 (piano) since it is
+        # the only instrument that has chords. 
+        # Group into 4s, just like before. 
+        chords = OrderedDict()
+        measureNum = 0
+        for key_x, group in groupby(offsetTuples_chords, lambda x: x[0]):
+            chords[measureNum] = [n[1] for n in group]
+            measureNum += 1
+
+        # Fix for the below problem.
+        #   1) Find out why len(measures) != len(chords).
+        #   ANSWER: resolves at end but melody ends 1/16 before last measure so doesn't
+        #           actually show up, while the accompaniment's beat 1 right after does.
+        #           Actually on second thought: melody/comp start on Ab, and resolve to
+        #           the same key (Ab) so could actually just cut out last measure to loop.
+        #           Decided: just cut out the last measure. 
+        #del chords[len(chords) - 1]
+        print(f"{len(chords)} chords, {len(measures)} measures")
+        assert len(chords) == len(measures)
+        return measures, chords
+    return None, None
+    #except Exception as e:
+    #    print(f"Error parsing MIDI file: {e}")
+    #    return None, None
+    
 def separate_parts(midi_file_path):
     """
     Parse the MIDI file into a music21 Stream (Score) object.
@@ -629,7 +834,49 @@ def separate_parts(midi_file_path):
             all_parts.append(part)
             print(f"Found part: {part[0].bestName()}") # prints the most likely instrument
         return all_parts
-    
+
+''' Get musical data from a MIDI file '''
+def get_musical_data(data_fn):
+    print(f"\n=== {get_musical_data.__name__} ===")
+    measures, chords = separate_parts_from_midi(data_fn) #__parse_midi(data_fn)
+    abstract_grammars = __get_abstract_grammars(measures, chords)
+    print(f"{len(measures)} measures, {len(chords)} chords, {len(abstract_grammars)} abstract_grammars")
+    return chords, abstract_grammars
+
+''' Get corpus data from grammatical data '''
+def get_corpus_data(abstract_grammars):
+    corpus = [x for sublist in abstract_grammars for x in sublist.split(' ')]
+    values = set(corpus)
+    val_indices = dict((v, i) for i, v in enumerate(values))
+    indices_val = dict((i, v) for i, v in enumerate(values))
+
+    return corpus, values, val_indices, indices_val
+
+def data_processing(corpus, values_indices, m = 60, Tx = 30):
+    # cut the corpus into semi-redundant sequences of Tx values
+    Tx = Tx 
+    N_values = len(set(corpus))
+    X = numpy.zeros((m, Tx, N_values), dtype=numpy.bool)
+    Y = numpy.zeros((m, Tx, N_values), dtype=numpy.bool)
+    for i in range(m):
+#         for t in range(1, Tx):
+        random_idx = rng.choice(len(corpus) - Tx)
+        corp_data = corpus[random_idx:(random_idx + Tx)]
+        for j in range(Tx):
+            idx = values_indices[corp_data[j]]
+            if j != 0:
+                X[i, j, idx] = 1
+                Y[i, j-1, idx] = 1
+    Y = numpy.swapaxes(Y,0,1)
+    Y = Y.tolist()
+    return numpy.asarray(X), numpy.asarray(Y), N_values 
+
+def load_music_utils(file):
+    chords, abstract_grammars = get_musical_data(file)
+    corpus, tones, tones_indices, indices_tones = get_corpus_data(abstract_grammars)
+    X, Y, N_tones = data_processing(corpus, tones_indices, 60, 30)   
+    return (X, Y, N_tones, indices_tones, chords)
+
 if __name__ == "__main__":
     #__parse_midi_details("data/original_metheny.mid")
     #__parse_midi_part("data/original_metheny.mid", 5) # AssertionError: 28 chords, 21 measures
@@ -639,6 +886,13 @@ if __name__ == "__main__":
     if parts:
         melody = parts[0] # assuming the first part is melody
         melody.write('midi', 'output/melody.mid') # $ fluidsynth melody.mid
+    X, Y, n_values, indices_values, chords = load_music_utils("data/original_metheny.mid")
+    print('number of training examples:', X.shape[0])
+    print('Tx (length of sequence):', X.shape[1])
+    print('total # of unique values:', n_values)
+    print('shape of X:', X.shape)
+    print('Shape of Y:', Y.shape)
+    print('Number of chords', len(chords))    
     """
     X, Y, n_values, indices_values, chords = load_music_utils('data/original_metheny.mid') # AssertionError: 28 chords, 21 measures
     print('number of training examples:', X.shape[0])

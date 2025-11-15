@@ -1,5 +1,6 @@
 import argparse, numpy, logging, warnings, pickle
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from pathlib import Path
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Input
@@ -7,7 +8,6 @@ from tensorflow.keras.losses import MeanSquaredError, BinaryCrossentropy
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import plot_model
-import matplotlib.pyplot as plt
 from utils.GPU import InitializeGPU
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.TermColour import bcolors
