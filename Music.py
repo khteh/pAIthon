@@ -999,6 +999,7 @@ def ExtractMelody(midi_file_path):
     # Try to find a part named 'Melody' or similar, or the first non-drum track
     for part in score.parts:
         # Check part's instrument or name
+        print(f"partName: {part.partName}")
         if 'melody' in part.partName.lower() or 'voice' in part.partName.lower():
             melody = part
             break
