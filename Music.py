@@ -990,11 +990,69 @@ def separate_parts_from_midi2(midi_file_path):
     assert len(chords) == len(measures)
     return measures, chords
 
+def ExtractMelody(midi_file_path):
+    #  Google search phrase: music21 get chords and abstract grammars from melody part of a midi file
+    print(f"\n=== {ExtractMelody.__name__} ===")
+    # Load the MIDI file
+    score = converter.parse(midi_file_path)
+    melody = None
+    # Try to find a part named 'Melody' or similar, or the first non-drum track
+    for part in score.parts:
+        # Check part's instrument or name
+        if 'melody' in part.partName.lower() or 'voice' in part.partName.lower():
+            melody = part
+            break
+    # If not found, return the first part as a fallback
+    if not melody:
+        melody = score.parts[0] 
+    # Analyze the key of the piece first for better chord inference
+    key = score.analyze('key')
+    print(f"Detected key: {key.name}")
+
+    # A simple approach to infer chords: aggregate notes by measure
+    inferred_chords = stream.Part()
+    #inferred_chords.append(key) # Add the key to the new part
+    measures = stream.Part()
+    for measure in melody.getElementsByClass('Measure'):
+        # Aggregate all notes in the measure
+        # chordStream.removeByClass(note.Rest)
+        # chordStream.removeByClass(note.Note)
+        notes_in_measure = measure.notes
+        if notes_in_measure:
+            # Create a chord from the notes, or use a more sophisticated analysis
+            # A simple method is to use the most prominent notes (e.g., first note, long notes)
+            # or aggregate all unique pitches in the measure.
+            # This example aggregates all unique pitches
+            pitch_classes = set(n.pitch.pitchClass for n in notes_in_measure if isinstance(n, note.Note))
+            if len(pitch_classes) >= 2:
+                new_chord = chord.Chord(list(pitch_classes))
+                new_chord.duration = measure.duration
+                inferred_chords.append(new_chord)
+                measures.append(measure)
+            elif len(pitch_classes) == 1:
+                new_note = note.Note(list(pitch_classes)[0])
+                new_note.duration = measure.duration
+                inferred_chords.append(new_note)
+                measures.append(measure)
+        else:
+            measures.append(measure)
+            inferred_chords.append(note.Rest(duration=measure.duration))
+    # Example: Extracting the interval grammar (sequence of intervals)
+    melody_notes = melody.flatten().notes
+    print(f"{len(melody_notes)} melody notes, {len(inferred_chords)} inferred_chords, {len(measures)} measures")
+    #intervals = []
+    #for i in range(len(melody_notes) - 1):
+    #    interval = interval.Interval(noteStart=melody_notes[i], noteEnd=melody_notes[i+1])
+    #    intervals.append(interval.name) # e.g., 'm2', 'M3', 'P4'
+    #print(f"Melodic interval sequence: {intervals[:20]}...")
+    return measures, inferred_chords
+
 def separate_parts_original(midi_file_path):
     """
     Parse the MIDI file into a music21 Stream (Score) object.
     Google search phrase: music21 Parse the MIDI data for separate melody and accompaniment parts.
     """
+    print(f"\n=== {separate_parts_original.__name__} ===")
     score = converter.parse(midi_file_path)
     # Use partitionByInstrument() to organize the score into parts based on instrument
     # Note: This might not work perfectly if the original file doesn't have clear instrument definitions per track
@@ -1061,3 +1119,4 @@ if __name__ == "__main__":
     print('Shape of Y:', Y.shape)
     print('Number of chords', len(chords))
     #separate_parts_from_midi1("data/original_metheny.mid")
+    ExtractMelody("data/original_metheny.mid")
