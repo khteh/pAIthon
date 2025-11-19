@@ -800,6 +800,7 @@ def separate_parts_from_midi(midi_file_path: str, melody_index: int):
     # Note that measure 0 is for the time signature, metronome, etc. which have
     # an offset of 0.0.
     melody_stream = solo_stream[-1]
+    print(f"\n{len(melody_stream)} melody_stream: {melody_stream}") # 140
     #melody_stream = melody_part Line 459 will error
     measures = OrderedDict()
     offsetTuples = [(int(n.offset / 4), n) for n in melody_stream]
@@ -807,15 +808,15 @@ def separate_parts_from_midi(midi_file_path: str, melody_index: int):
     for key_x, group in groupby(offsetTuples, lambda x: x[0]):
         measures[measureNum] = [n[1] for n in group]
         measureNum += 1
-
+    print(f"{len(measures)} measures")
     # Get the stream of chords.
     # offsetTuples_chords: group chords by measure number.
     chordStream = solo_stream[0]
     #chordStream = melody_part
-    print(f"{len(chordStream)} chordStream")
+    print(f"{len(chordStream)} chordStream") # 140
     chordStream.removeByClass(note.Rest)
     chordStream.removeByClass(note.Note)
-    print(f"{len(chordStream)} chordStream")
+    print(f"{len(chordStream)} chordStream") # 48
     offsetTuples_chords = [(int(n.offset / 4), n) for n in chordStream]
 
     # Generate the chord structure. Use just track 1 (piano) since it is
@@ -826,7 +827,7 @@ def separate_parts_from_midi(midi_file_path: str, melody_index: int):
     for key_x, group in groupby(offsetTuples_chords, lambda x: x[0]):
         chords[measureNum] = [n[1] for n in group]
         measureNum += 1
-
+    print(f"{len(chords)} chords")
     # Fix for the below problem.
     #   1) Find out why len(measures) != len(chords).
     #   ANSWER: resolves at end but melody ends 1/16 before last measure so doesn't
@@ -1046,7 +1047,7 @@ def ExtractMelody(midi_file_path):
     #    interval = interval.Interval(noteStart=melody_notes[i], noteEnd=melody_notes[i+1])
     #    intervals.append(interval.name) # e.g., 'm2', 'M3', 'P4'
     #print(f"Melodic interval sequence: {intervals[:20]}...")
-    return measures, inferred_chords
+    return measures, inferred_chords # 647 melody notes, 141 inferred_chords, 141 measures
 
 def separate_parts_original(midi_file_path):
     """
