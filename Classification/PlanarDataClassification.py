@@ -106,7 +106,7 @@ class PlanarDataClassification():
         n_y = self._Y.shape[0]
         self._epochs = epochs
         for i, n_h in enumerate(sizes):
-            plt.subplot(5, 2, i+1)
+            plt.subplot(5, 2, i+1) # (nrows, ncols, index): 5 rows, 2 columns, index
             plt.title('Hidden Layer of size %d' % n_h)
             self._n_h = n_h
             self._W1 = rng.standard_normal((self._n_h, n_x)) * numpy.sqrt(2/n_x) # He initialization. n_x is #features.

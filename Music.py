@@ -1107,7 +1107,7 @@ if __name__ == "__main__":
     """
     #__parse_midi_details("data/original_metheny.mid")
     #__parse_midi_part("data/original_metheny.mid", 5) # AssertionError: 28 chords, 21 measures
-    parts = separate_parts_original("data/original_metheny.mid")
+    parts = separate_parts_original("data/original_metheny.mid") # 'And Then I Knew' by Pat Metheny 
     # You can then perform analysis or write the parts to separate MIDI files
     # if needed:
     if parts:

@@ -39,8 +39,8 @@ def generate_split_viz(node_indices, left_indices, right_indices, feature):
     G.add_edge(0,1)
     G.add_edge(0,2)
     pos = graphviz_layout(G, prog="dot")
-    fig=plt.figure()
-    ax=plt.subplot(111)
+    fig = plt.figure(figsize=(14, 10))
+    ax = plt.subplot(111)  # (nrows, ncols, index): 1 rows, 1 columns, index
     ax.set_aspect('equal')
     nx.draw_networkx_edges(G,pos,ax=ax, arrows=True, arrowsize=40)
     
@@ -87,8 +87,8 @@ def generate_tree_viz(root_indices, y, tree):
     
     node_names = decision_names + leaf_names
     pos = graphviz_layout(G, prog="dot")
-    fig=plt.figure(figsize=(14, 10))
-    ax=plt.subplot(111)
+    fig = plt.figure(figsize=(14, 10))
+    ax = plt.subplot(111)  # (nrows, ncols, index): 1 rows, 1 columns, index
     ax.set_aspect('equal')
     nx.draw_networkx_edges(G,pos,ax=ax, arrows=True, arrowsize=40)
     trans=ax.transData.transform

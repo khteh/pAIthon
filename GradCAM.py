@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt, pandas as pd, numpy, cv2, shap, tensorflow as tf
-import tensorflow.keras.backend as K
+from pathlib import Path
 from keras.preprocessing import image
 from tensorflow.keras import Model
 from tensorflow.keras.applications.densenet import DenseNet121
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.optimizers import Adam
-
+from utils.TermColour import bcolors
 class GradCAM():
     """
     Grad-CAM, a powerful technique for interpreting Convolutional Neural Networks. Grad-CAM stands for Gradient-weighted Class Activation Mapping.
@@ -21,6 +21,9 @@ class GradCAM():
     _neg_weights = None
     _mean = None
     _std = None
+    _conv_layer = None
+    _model: Model = None
+    _grad_model: Model = None
     def __init__(self, path:str):
         self._path = path
         self._PrepareData()
@@ -36,8 +39,15 @@ class GradCAM():
         predictions = Dense(len(self._labels), activation="sigmoid")(x)
         print("Added layers")
 
-        self._model = Model(inputs=base_model.input, outputs=predictions)
-
+        self._conv_layer = base_model.get_layer('conv5_block16_concat')
+        self._model = Model(inputs=base_model.input, outputs=[self._conv_layer.output, predictions])
+        self._grad_model = Model(
+                                inputs=self._model.input,
+                                outputs=[
+                                    self._conv_layer.output,
+                                    self._model.output
+                                ]
+                            )
         def get_weighted_loss(neg_weights, pos_weights, epsilon=1e-7):
             def weighted_loss(y_true, y_pred):
                 # L(X, y) = −w * y log p(Y = 1|X) − w *  (1 − y) log p(Y = 0|X)
@@ -54,13 +64,14 @@ class GradCAM():
             optimizer=Adam(), # Intelligent gradient descent which automatically adjusts the learning rate (alpha) depending on the direction of the gradient descent.
         )
         self._model.load_weights("models/pretrained_model.h5")
-        self._model.summary()
+        #self._model.summary()
 
     def compute_gradcam(self, img, selected_labels):
         """
         Compute GradCAM for many specified labels for an image. 
         This method will use the `grad_cam` function.
-        
+        https://keras.io/examples/vision/grad_cam/
+
         Args:
             model (Keras.model): Model to compute GradCAM for
             img (string): Image name we want to compute GradCAM for.
@@ -74,45 +85,89 @@ class GradCAM():
         """
         print(f"\n=== {self.compute_gradcam.__name__} ===")
         img_path = f"{self._path}/images-small/{img}"
+        image = self._load_image(img_path, self._train_df, preprocess=False)
         preprocessed_input = self._load_image_normalize(img_path, self._mean, self._std)
-        layer_name='conv5_block16_concat'
-        with tf.GradientTape() as tape:
-            predictions = self._model.predict(preprocessed_input)
-            spatial_map_layer = self._model.get_layer(layer_name).output
-            # Watch the intermediate layer's output
-            tape.watch(spatial_map_layer) # https://github.com/tensorflow/tensorflow/issues/104521
-
-        print("Ground Truth: ", ", ".join(numpy.take(self._labels, numpy.nonzero(self._train_df[self._train_df["Image"] == img][self._labels].values[0]))[0]))
-
-        plt.figure(figsize=(15, 10))
-        plt.subplot(151)
-        plt.title("Original")
-        plt.axis('off')
-        plt.imshow(self._load_image(img_path, self._train_df, preprocess=False), cmap='gray')
+        truth = numpy.nonzero(self._train_df[self._train_df["Image"] == img][self._labels].values[0])[0][0]
+        truth_str = numpy.take(self._labels, numpy.nonzero(self._train_df[self._train_df["Image"] == img][self._labels].values[0]))[0]
+        print(f"Image: {img} Ground Truth: {truth}, {', '.join(truth_str)}")
+        fig, ax = plt.subplots(1, 4, constrained_layout=True, figsize=(15, 10)) # figsize = (width, height)
+        # rect=[0, 0, 1, 0.98] tells tight_layout to arrange the subplots within the bottom 98% of the figure's height, leaving the top 2% some space for the suptitle, for instance.
+        fig.tight_layout(pad=0.1,rect=[0, 0, 1, 0.98]) #[left, bottom, right, top] Decrease the top boundary if the suptitle overlaps with the plots
+        ax[0].set_title('Original', fontsize=22)
+        ax[0].imshow(image, cmap='gray')
+        ax[0].axis("off")
         j = 1
         # Loop through all labels
-        for i in range(len(self._labels)): # complete this line
+        for category in range(len(self._labels)): # complete this line
             # Compute CAM and show plots for each selected label.
-            
             # Check if the label is one of the selected labels
-            if self._labels[i] in selected_labels: # complete this line
-                
+            if self._labels[category] in selected_labels: # complete this line
+                with tf.GradientTape() as tape:
+                    """
+                    https://keras.io/getting_started/faq/#whats-the-difference-between-model-methods-predict-and-call
+                    This means that predict() calls can scale to very large arrays. Meanwhile, model(x) happens in-memory and doesn't scale. On the other hand, predict() is not differentiable: you cannot retrieve its gradient if you call it in a GradientTape scope.
+                    You should use model(x) when you need to retrieve the gradients of the model call, and you should use predict() if you just need the output value. In other words, always use predict() unless you're in the middle of writing a low-level gradient descent loop (as we are now).
+                    """
+                    conv_outputs, predictions = self._model(preprocessed_input)
+
+                    # Remove the batch dimension
+                    # Retrieve only the disease category at the given category index
+                    y_c = predictions[0][category]
+
+                    # 2. Get gradients of last layer with respect to output
+                    #print(f"Predictions: {predictions.shape} {predictions}, conv_output: {conv_outputs.shape} {conv_outputs}, y_c: {y_c}")
+
+                # get the gradients of y_c with respect to the spatial map layer (it's a list of length 1)
+                gradients = tape.gradient(y_c, conv_outputs)
+                #print(f"gradients: {gradients}")
+                # Get the gradient at index 0 of the list
+
                 # Use the grad_cam function to calculate gradcam
                 # def grad_cam(input_model, image, category_index, layer_name):
-                gradcam = self._grad_cam(preprocessed_input, i, tape)
-                
-                print("Generating gradcam for class %s (p=%2.2f)" % (self._labels[i], round(predictions[0][i], 3)))
-                plt.subplot(151 + j)
-                plt.title(self._labels[i] + ": " + str(round(predictions[0][i], 3)))
-                plt.axis('off')
-                plt.imshow(self._load_image(img_path, self._train_df, preprocess=False), cmap='gray')
-                plt.imshow(gradcam, cmap='magma', alpha=min(0.5, predictions[0][i]))
-                j +=1
+                # This is a vector where each entry is the mean intensity of the gradient
+                # over a specific feature map channel
+                pooled_grads = tf.reduce_mean(gradients, axis=(0, 1, 2))
+
+                # We multiply each channel in the feature map array
+                # by "how important this channel is" with regard to the top predicted class
+                # then sum all the channels to obtain the heatmap class activation
+                last_conv_layer_output = conv_outputs[0]
+                heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis] # heatmap: EagerTensor
+                heatmap = tf.squeeze(heatmap)
+
+                # For visualization purpose, we will also normalize the heatmap between 0 & 1
+                H, W = preprocessed_input.shape[1], preprocessed_input.shape[2]
+                heatmap = tf.maximum(heatmap, 0) # ReLU so we only get positive importance
+                #print(f"heatmap: {type(heatmap)}")
+                heatmap = cv2.resize(heatmap.numpy(), (W, H), cv2.INTER_NEAREST)
+                heatmap = heatmap / heatmap.max()
+
+                pred_index = tf.argmax(predictions[0])
+                colour = "black"
+                termcolour = bcolors.DEFAULT
+                if self._labels[category] == self._labels[pred_index]:
+                    if pred_index == truth:
+                        colour = "green" 
+                        termcolour = bcolors.OKGREEN
+                    else:
+                        colour = "red"
+                        termcolour = bcolors.FAIL
+                print(f"{termcolour}Generating heatmap for class {self._labels[category]} (p={tf.math.round(predictions[0][category], 3):2.2f})")
+                #print(f"truth: {truth}, pred_index: {pred_index}")
+                ax[j].set_title(f"{self._labels[category]}: {tf.math.round(predictions[0][category], 3)}", fontsize=22, color=colour)
+                ax[j].axis('off')
+                ax[j].imshow(image, cmap='gray')
+                alpha = min(0.5, predictions[0][category].numpy())
+                ax[j].imshow(heatmap, cmap='magma', alpha=min(0.5, predictions[0][category].numpy()))
+                j += 1
+        fig.suptitle(img, y=0.9, fontsize=22, fontweight="bold")
+        plt.savefig(f"output/{Path(img).stem}_heatmap.png")
 
     def _PrepareData(self):
         print(f"\n=== {self._PrepareData.__name__} ===")
         self._labels = ['Cardiomegaly', 'Emphysema', 'Effusion', 'Hernia', 'Infiltration', 'Mass', 'Nodule', 'Atelectasis',
                 'Pneumothorax', 'Pleural_Thickening', 'Pneumonia', 'Fibrosis', 'Edema', 'Consolidation']
+        print(f"{len(self._labels)} labels: {self._labels}")
         self._train_df = pd.read_csv(f"{self._path}/train-small.csv")
         self._valid_df = pd.read_csv(f"{self._path}/valid-small.csv")
         self._test_df = pd.read_csv(f"{self._path}/test.csv")
@@ -124,77 +179,6 @@ class GradCAM():
 
         self._pos_weights = class_pos / class_total
         self._neg_weights = class_neg / class_total
-
-    def _grad_cam(self, image, category_index, tape):
-        """
-        GradCAM method for visualizing input saliency.
-        
-        Args:
-            self._model (Keras.model): model to compute cam for
-            image (tensor): input to model, shape (1, H, W, 3), where H (int) is height W (int) is width
-            category_index (int): class to compute cam with respect to
-            layer_name (str): relevant layer in model
-        Return:
-            cam ()
-        """
-        layer_name='conv5_block16_concat'
-        cam = None
-        
-        # 1. Get placeholders for class output and last layer
-        # Get the model's output
-        output_with_batch_dim = self._model.output
-        
-        # Remove the batch dimension
-        output_all_categories = output_with_batch_dim[0]
-        
-        # Retrieve only the disease category at the given category index
-        y_c = output_all_categories[category_index]
-        
-        # Get the input model's layer specified by layer_name, and retrive the layer's output tensor
-        spatial_map_layer = self._model.get_layer(layer_name).output
-
-        # 2. Get gradients of last layer with respect to output
-
-        # get the gradients of y_c with respect to the spatial map layer (it's a list of length 1)
-        #grads_l = K.gradients(y_c, spatial_map_layer)
-        gradients = tape.gradient(y_c, spatial_map_layer)
-        
-        # Get the gradient at index 0 of the list
-        grads = gradients[0]
-            
-        # 3. Get hook for the selected layer and its gradient, based on given model's input
-        # Hint: Use the variables produced by the previous two lines of code
-        spatial_map_and_gradient_function = K.function([self._model.input], [spatial_map_layer, grads])
-        
-        # Put in the image to calculate the values of the spatial_maps (selected layer) and values of the gradients
-        spatial_map_all_dims, grads_val_all_dims = spatial_map_and_gradient_function([image])
-
-        # Reshape activations and gradient to remove the batch dimension
-        # Shape goes from (B, H, W, C) to (H, W, C)
-        # B: Batch. H: Height. W: Width. C: Channel    
-        # Reshape spatial map output to remove the batch dimension
-        spatial_map_val = spatial_map_all_dims[0]
-        
-        # Reshape gradients to remove the batch dimension
-        grads_val = grads_val_all_dims[0]
-        
-        # 4. Compute weights using global average pooling on gradient 
-        # grads_val has shape (Height, Width, Channels) (H,W,C)
-        # Take the mean across the height and also width, for each channel
-        # Make sure weights have shape (C)
-        weights = numpy.mean(grads_val, axis=(0,1))
-        print(f"weights: {weights.shape}")
-        # 5. Compute dot product of spatial map values with the weights
-        cam = spatial_map_val @ weights
-        print(f"cam: {type(cam)}, {cam.shape}")
-        
-        # We'll take care of the postprocessing.
-        H, W = image.shape[1], image.shape[2]
-        cam = numpy.maximum(cam, 0) # ReLU so we only get positive importance
-        cam = cv2.resize(cam, (W, H), cv2.INTER_NEAREST)
-        cam = cam / cam.max()
-        print(f"cam: {type(cam)}, {cam.shape}")
-        return cam
 
     def _load_image_normalize(self, path, mean, std, H=320, W=320):
         x = image.load_img(path, target_size=(H, W))

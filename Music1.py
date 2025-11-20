@@ -23,15 +23,14 @@ def __parse_midi(path:str):
     melody_stream = score[5]     # For Metheny piece, Melody is Part #5.
     print(f"{melody_stream.show('text')}")
     melody_voice = stream.Voice()
-    #for voice in melody_stream.recurse().getElementsByClass(stream.Voice):
-    #    melody_voice.insert(voice.offset, voice)
-    #melody = stream.Voice()
     for part in score.parts:
         # Check part's instrument or name
         print(f"partName: {part.partName}")
         for measure in part.getElementsByClass('Measure'):
             for voice in measure.getElementsByClass('Voice'):
                 #print(el.offset, el, el.activeSite)
+                if voice.quarterLength == 0.0:
+                    voice.quarterLength = 0.25
                 melody_voice.insert(voice.offset, voice)
     # Change key signature to adhere to comp_stream (1 sharp, mode = major).
     # Also add Electric Guitar. 
@@ -46,9 +45,6 @@ def __parse_midi(path:str):
     #for el in melody_stream.recurse():
     #    print(el.offset, el, el.activeSite)
     melody = melody_voice
-    for i in melody:
-        if i.quarterLength == 0.0:
-            i.quarterLength = 0.25
 
     print(f"{len(melody)} melody") # 516 melody
     # The accompaniment parts. Take only the best subset of parts from
@@ -140,4 +136,4 @@ if __name__ == "__main__":
     Shape of Y: (30, 60, 90)
     Number of chords 19    
     """
-    measures, chords = __parse_midi("data/original_metheny.mid")
+    measures, chords = __parse_midi("data/original_metheny.mid")  # 'And Then I Knew' by Pat Metheny 

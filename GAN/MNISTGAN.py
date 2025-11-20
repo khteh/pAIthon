@@ -323,7 +323,7 @@ class MNISTGAN():
         fig = plt.figure(figsize=dimension)
         #print(f"_save_images data.shape: {data.shape}, ndim: {data.ndim}") # data.shape: (16, 28, 28, 1), ndim: 4
         for i in range(data.shape[0]): # data.shape: (16, 28, 28, 1), ndim: 4
-            plt.subplot(4, 4, i+1)
+            plt.subplot(4, 4, i+1) # (nrows, ncols, index): 4 rows, 4 columns, index
             plt.imshow(data[i, :, :, 0] * 127.5 + 127.5, cmap='gray') # The generator output shape is (, 28, 28, 1)
             plt.axis('off')
         #plt.legend()

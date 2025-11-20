@@ -281,7 +281,7 @@ class TrigerWordDetection():
         print(f"Dev set accuracy = {acc}")
 
     def detect_triggerword(self, filename):
-        plt.subplot(2, 1, 1)
+        plt.subplot(2, 1, 1) # (nrows, ncols, index): 2 rows, 1 columns, index
         
         # Correct the amplitude of the input file before prediction 
         audio_clip = AudioSegment.from_wav(filename)
@@ -295,7 +295,7 @@ class TrigerWordDetection():
         x = numpy.expand_dims(x, axis=0)
         predictions = self._model.predict(x)
         
-        plt.subplot(2, 1, 2)
+        plt.subplot(2, 1, 2) # (nrows, ncols, index): 2 rows, 1 column, index
         plt.plot(predictions[0,:,0])
         plt.ylabel('probability')
         plt.show()

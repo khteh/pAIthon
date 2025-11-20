@@ -143,7 +143,7 @@ class LogisticRegressionDeepNN():
         num_images = len(mislabeled_indices[0])
         for i in range(num_images):
             index = mislabeled_indices[1][i]
-            plt.subplot(2, num_images, i + 1)
+            plt.subplot(2, num_images, i + 1) # (nrows, ncols, index): 2 rows, #num_images columns, index
             plt.imshow(self._X_test[:,index].reshape(64,64,3), interpolation='nearest')
             plt.axis('off')
             plt.title("Prediction: " + self._classes[int(p[0,index])].decode("utf-8") + " \n Class: " + self._classes[self._Y_test[0,index]].decode("utf-8"), fontsize=18)
