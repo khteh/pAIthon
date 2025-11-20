@@ -137,7 +137,6 @@ Metrics validation:
 
 ## GradCAM (Gradient-weighted Class Activation Mapping)
 
-- Interpret deep CNN model, DenseNet121 in this case with a pretrained model,
 - Visualize the impact of each region of an image on a specific output for a Convolutional Neural Network model, DenseNet121 in this case with a pretrained model.
 - Generate a heatmap by computing gradients of the specific class scores we are interested in visualizing.
 - Example:
