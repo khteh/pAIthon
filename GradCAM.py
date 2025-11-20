@@ -14,6 +14,8 @@ class GradCAM():
     """
     _path:str = None
     _labels = None
+    _width:int = None
+    _height:int = None
     _train_df = None
     _valid_df = None
     _test_df = None
@@ -24,8 +26,10 @@ class GradCAM():
     _conv_layer = None
     _model: Model = None
     _grad_model: Model = None
-    def __init__(self, path:str):
+    def __init__(self, path:str, width:int, height:int):
         self._path = path
+        self._width = width
+        self._height = height
         self._PrepareData()
 
     def BuildModel(self):
@@ -85,14 +89,14 @@ class GradCAM():
         """
         print(f"\n=== {self.compute_gradcam.__name__} ===")
         img_path = f"{self._path}/images-small/{img}"
-        image = self._load_image(img_path, self._train_df, preprocess=False)
-        preprocessed_input = self._load_image_normalize(img_path, self._mean, self._std)
+        image = self._load_image(img_path, preprocess=False)
+        image_normalized = self._load_image(img_path, preprocess=True)
         truth = numpy.nonzero(self._train_df[self._train_df["Image"] == img][self._labels].values[0])[0][0]
-        truth_str = numpy.take(self._labels, numpy.nonzero(self._train_df[self._train_df["Image"] == img][self._labels].values[0]))[0]
-        print(f"Image: {img} Ground Truth: {truth}, {', '.join(truth_str)}")
+        truth_str = numpy.take(self._labels, numpy.nonzero(self._train_df[self._train_df["Image"] == img][self._labels].values[0]))[0][0]
+        print(f"Image: {img} Ground Truth: {truth}, {truth_str}")
         fig, ax = plt.subplots(1, 4, constrained_layout=True, figsize=(15, 10)) # figsize = (width, height)
         # rect=[0, 0, 1, 0.98] tells tight_layout to arrange the subplots within the bottom 98% of the figure's height, leaving the top 2% some space for the suptitle, for instance.
-        fig.tight_layout(pad=0.1,rect=[0, 0, 1, 0.98]) #[left, bottom, right, top] Decrease the top boundary if the suptitle overlaps with the plots
+        fig.tight_layout(rect=[0, 0, 1, 0.98]) #[left, bottom, right, top] Decrease the top boundary if the suptitle overlaps with the plots
         ax[0].set_title('Original', fontsize=22)
         ax[0].imshow(image, cmap='gray')
         ax[0].axis("off")
@@ -108,7 +112,7 @@ class GradCAM():
                     This means that predict() calls can scale to very large arrays. Meanwhile, model(x) happens in-memory and doesn't scale. On the other hand, predict() is not differentiable: you cannot retrieve its gradient if you call it in a GradientTape scope.
                     You should use model(x) when you need to retrieve the gradients of the model call, and you should use predict() if you just need the output value. In other words, always use predict() unless you're in the middle of writing a low-level gradient descent loop (as we are now).
                     """
-                    conv_outputs, predictions = self._model(preprocessed_input)
+                    conv_outputs, predictions = self._model(image_normalized)
 
                     # Remove the batch dimension
                     # Retrieve only the disease category at the given category index
@@ -136,7 +140,7 @@ class GradCAM():
                 heatmap = tf.squeeze(heatmap)
 
                 # For visualization purpose, we will also normalize the heatmap between 0 & 1
-                H, W = preprocessed_input.shape[1], preprocessed_input.shape[2]
+                H, W = image_normalized.shape[1], image_normalized.shape[2]
                 heatmap = tf.maximum(heatmap, 0) # ReLU so we only get positive importance
                 #print(f"heatmap: {type(heatmap)}")
                 heatmap = cv2.resize(heatmap.numpy(), (W, H), cv2.INTER_NEAREST)
@@ -147,20 +151,23 @@ class GradCAM():
                 termcolour = bcolors.DEFAULT
                 if self._labels[category] == self._labels[pred_index]:
                     if pred_index == truth:
-                        colour = "green" 
+                        colour = "green"
                         termcolour = bcolors.OKGREEN
                     else:
                         colour = "red"
                         termcolour = bcolors.FAIL
-                print(f"{termcolour}Generating heatmap for class {self._labels[category]} (p={tf.math.round(predictions[0][category], 3):2.2f})")
+                else:
+                    #colour = "red"
+                    termcolour = bcolors.FAIL
+                    #print(f"{bcolors.FAIL} category: {category} {self._labels[category]}, prediction: {pred_index} {self._labels[pred_index]} {predictions[0]} {bcolors.DEFAULT}")
+                print(f"{termcolour}Generating heatmap for class {self._labels[category]}, prediction: {self._labels[pred_index]} (p={predictions[0][category]:.4f}){bcolors.DEFAULT}")
                 #print(f"truth: {truth}, pred_index: {pred_index}")
-                ax[j].set_title(f"{self._labels[category]}: {tf.math.round(predictions[0][category], 3)}", fontsize=22, color=colour)
+                ax[j].set_title(f"{self._labels[category]} ({predictions[0][category]:.4f})", fontsize=22, color=colour)
                 ax[j].axis('off')
                 ax[j].imshow(image, cmap='gray')
-                alpha = min(0.5, predictions[0][category].numpy())
                 ax[j].imshow(heatmap, cmap='magma', alpha=min(0.5, predictions[0][category].numpy()))
                 j += 1
-        fig.suptitle(img, y=0.9, fontsize=22, fontweight="bold")
+        fig.suptitle(f"{img} ({truth_str})", y=0.9, fontsize=22, fontweight="bold")
         plt.savefig(f"output/{Path(img).stem}_heatmap.png")
 
     def _PrepareData(self):
@@ -171,7 +178,7 @@ class GradCAM():
         self._train_df = pd.read_csv(f"{self._path}/train-small.csv")
         self._valid_df = pd.read_csv(f"{self._path}/valid-small.csv")
         self._test_df = pd.read_csv(f"{self._path}/test.csv")
-        self._get_mean_std_per_batch(f"{self._path}/images-small/00025288_001.png", self._train_df)
+        self._get_mean_std_per_batch()
 
         class_pos = self._train_df.loc[:, self._labels].sum(axis=0)
         class_neg = len(self._train_df) - class_pos
@@ -180,31 +187,24 @@ class GradCAM():
         self._pos_weights = class_pos / class_total
         self._neg_weights = class_neg / class_total
 
-    def _load_image_normalize(self, path, mean, std, H=320, W=320):
-        x = image.load_img(path, target_size=(H, W))
-        x -= mean
-        x /= std
-        return numpy.expand_dims(x, axis=0)
-
-    def _load_image(self, path, df, preprocess=True, H = 320, W = 320):
+    def _load_image(self, path, preprocess=True):
         """Load and preprocess image."""
-        x = image.load_img(path, target_size=(H, W))
+        x = image.load_img(path, target_size=(self._height, self._width))
         if preprocess:
-            mean, std = self._get_mean_std_per_batch(df, H=H, W=W)
-            x -= mean
-            x /= std
+            x -= self._mean
+            x /= self._std
             x = numpy.expand_dims(x, axis=0)
         return x
     
-    def _get_mean_std_per_batch(self, image_path, df, H=320, W=320):
+    def _get_mean_std_per_batch(self):
         sample_data = []
-        for idx, img in enumerate(df.sample(100)["Image"].values):
-            sample_data.append(numpy.array(image.load_img(image_path, target_size=(H, W))))
+        for idx, img in enumerate(self._train_df.sample(100)["Image"].values):
+            sample_data.append(numpy.array(image.load_img(f"{self._path}/images-small/{img}", target_size=(self._height, self._width))))
         self._mean = numpy.mean(sample_data[0])
         self._std = numpy.std(sample_data[0])
 
 if __name__ == "__main__":
-    gradcam = GradCAM("data/nih")
+    gradcam = GradCAM("data/nih", 320, 320)
     gradcam.BuildModel()
     gradcam.compute_gradcam("00016650_000.png", ['Cardiomegaly', 'Mass', 'Edema'])
     gradcam.compute_gradcam("00005410_000.png", ['Cardiomegaly', 'Mass', 'Edema'])

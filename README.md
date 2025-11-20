@@ -135,6 +135,40 @@ Metrics validation:
     ![NHANES / epidemiology risk summary plot](images/NHANESEpidemiologyDeathFactors_summary_plot.png?raw=true "NHANES / epidemiology risk summary plot")
     ![NHANES / epidemiology risk age-sex dependence plot](images/NHANESEpidemiologyDeathFactors_age_sex.png?raw=true "NHANES / epidemiology risk age-sex dependence plot")
 
+## GradCAM (Gradient-weighted Class Activation Mapping)
+
+- Interpret deep CNN model, DenseNet121 in this case with a pretrained model,
+- Visualize the impact of each region of an image on a specific output for a Convolutional Neural Network model, DenseNet121 in this case with a pretrained model.
+- Generate a heatmap by computing gradients of the specific class scores we are interested in visualizing.
+- Example:
+
+  ```
+  Image: 00016650_000.png Ground Truth: 0, Cardiomegaly
+  Generating heatmap for class Cardiomegaly, prediction: Cardiomegaly (p=0.9047)
+  Generating heatmap for class Mass, prediction: Cardiomegaly (p=0.2098)
+  Generating heatmap for class Edema, prediction: Cardiomegaly (p=0.0489)
+  ```
+
+  ![Cardiomegaly](images/00016650_000_heatmap.png?raw=true "Cardiomegaly")
+
+  ```
+  Image: 00005410_000.png Ground Truth: 5, Mass
+  Generating heatmap for class Cardiomegaly, prediction: Mass (p=0.0091)
+  Generating heatmap for class Mass, prediction: Mass (p=0.9355)
+  Generating heatmap for class Edema, prediction: Mass (p=0.0848)
+  ```
+
+  ![Mass](images/00005410_000_heatmap.png?raw=true "Mass")
+
+  ```
+  Image: 00004090_002.png Ground Truth: 12, Edema
+  Generating heatmap for class Cardiomegaly, prediction: Edema (p=0.3357)
+  Generating heatmap for class Mass, prediction: Edema (p=0.1737)
+  Generating heatmap for class Edema, prediction: Edema (p=0.8023)
+  ```
+
+  ![Edema](images/00004090_002_heatmap.png?raw=true "Edema")
+
 ## MNIST GAN
 
 ![MNIST GAN](images/mnist_gan.gif?raw=true "MNIST GAN")
