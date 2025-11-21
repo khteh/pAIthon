@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer, SimpleImputer
-from xgboost import XGBClassifier
+from xgboost import XGBClassifier, DMatrix
 from utils.DecisionTreeViz import PlotDecisionTree
 from .DecisionTree import DecisionTree
 from utils.CIndex import CIndex
@@ -22,15 +22,11 @@ class RandomForestRiskModel(DecisionTree):
     _xgb: XGBClassifier = None
     _shap = None
     def __init__(self, path:str, threshold:float, imputer_iterations:int):
-        super().__init__(path)
         self._imputer_iterations = imputer_iterations
         self._threshold = threshold
         self._PrepareData()
-        self._rf = self._LoadModel()
-        if self._rf is not None:
-            self._shap = shap.TreeExplainer(self._rf)
 
-    def BuildRandomForestModel(self, retrain:bool = False):
+    def BuildRandomForestModel(self, model_path:str, retrain:bool = False):
         """
         All of the hyperparameters found in the decision tree model will also exist in this algorithm, since a random forest is an ensemble of many Decision Trees.
         One additional hyperparameter for Random Forest is called n_estimators (default=100) which is the number of Decision Trees that make up the Random Forest.
@@ -46,6 +42,8 @@ class RandomForestRiskModel(DecisionTree):
         Changing this parameter does not impact on the final result but can reduce the training time.        
         """
         print(f"\n=== {self.BuildRandomForestModel.__name__} ===")
+        self._model_path = model_path
+        self._rf = self._LoadModel()
         if not self._rf or retrain:
             hyperparams = {
                 
@@ -80,15 +78,84 @@ class RandomForestRiskModel(DecisionTree):
         y_val_best = self._rf.predict_proba(self._X_val)[:, 1]
         print(f"Val C-Index: {CIndex(self._Y_val, y_val_best)}")
         print(f"classes: {self._rf.classes_}") # classes: [False  True]
-        cindex, subgroup = self._bad_subset(self._X_train, self._Y_train)
+        cindex, subgroup = self._bad_subset(self._rf, self._X_train, self._Y_train)
         print(f"Train dataset Subgroup size: {subgroup}, C-Index: {cindex}")
-        cindex, subgroup = self._bad_subset(self._X_val, self._Y_val)
+        cindex, subgroup = self._bad_subset(self._rf, self._X_val, self._Y_val)
         print(f"Validation dataset Subgroup size: {subgroup}, C-Index: {cindex}")
-        cindex, subgroup = self._bad_subset(self._X_test, self._Y_test)
+        cindex, subgroup = self._bad_subset(self._rf, self._X_test, self._Y_test)
         print(f"Test dataset Subgroup size: {subgroup}, C-Index: {cindex}")
         #PlotDecisionTree(self._rf, self._X_test.columns, ['neg', 'pos'], "HeartDiseasePredictionDecisionTree") # AttributeError: 'RandomForestClassifier' object has no attribute 'tree_'
+        self._ExplainModelPrediction(self._rf)
 
-    def ExplainModelPrediction(self):
+    def BuildXGBoost(self, model_path:str, retrain:bool = False):
+        """
+        Gradient Boosting model, called XGBoost. The boosting methods train several trees, but instead of them being uncorrelated to each other, now the trees are fit one after the other in order to minimize the error.
+
+        The model has the same parameters as a decision tree, plus the learning rate.
+
+        The learning rate is the size of the step on the Gradient Descent method that the XGBoost uses internally to minimize the error on each train step.
+        One interesting thing about the XGBoost is that during fitting, it can take in an evaluation dataset of the form (X_val,y_val).
+
+        On each iteration, it measures the cost (or evaluation metric) on the evaluation datasets.
+        Once the cost (or metric) stops decreasing for a number of rounds (called early_stopping_rounds), the training will stop.
+        More iterations lead to more estimators, and more estimators can result in overfitting.
+        By stopping once the validation metric no longer improves, we can limit the number of estimators created, and reduce overfitting.
+
+        We can then set a large number of estimators, because we can stop if the cost function stops decreasing.
+
+        Note some of the .fit() parameters:
+
+        eval_set = [(X_train_eval,y_train_eval)]:Here we must pass a list to the eval_set, because you can have several different tuples ov eval sets.
+        early_stopping_rounds: This parameter helps to stop the model training if its evaluation metric is no longer improving on the validation set. It's set to 10.
+        The model keeps track of the round with the best performance (lowest evaluation metric). For example, let's say round 16 has the lowest evaluation metric so far.
+        Each successive round's evaluation metric is compared to the best metric. If the model goes 10 rounds where none have a better metric than the best one, then the model stops training.
+        The model is returned at its last state when training terminated, not its state during the best round. For example, if the model stops at round 26, but the best round was 16, the model's training state at round 26 is returned, not round 16.
+        Note that this is different from returning the model's "best" state (from when the evaluation metric was the lowest).
+        """
+        print(f"\n=== {self.BuildXGBoost.__name__} ===")
+        self._model_path = model_path
+        self._xgb = self._LoadModel()
+        # define a subset of our training set (we should not use the test set here).
+        #n = int(len(self._X_train)*0.8) ## Let's use 80% to train and 20% to eval
+        #X_train_fit, X_train_eval, y_train_fit, y_train_eval = self._X_train[:n], self._X_train[n:], self._Y_train[:n], self._Y_train[n:]
+        if not self._xgb or retrain:
+            hyperparams = {
+                
+                # how many trees should be in the forest (int)
+                'n_estimators': [456, 789],
+
+                # the maximum depth of trees in the forest (int). If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.
+                'max_depth': [11,13,15, None],
+                
+                # the minimum number of samples in a leaf as a fraction
+                # of the total number of samples in the training set
+                # Can be int (in which case that is the minimum number)
+                # or float (in which case the minimum is that fraction of the
+                # number of training set samples)
+                'min_samples_leaf': [3,5,7,9],
+            }
+            fixed_hyperparams = {
+                'random_state': 11,
+                "early_stopping_rounds": 10
+            }
+            self._xgb = self._random_forest_grid_search(XGBClassifier, self._X_train, self._Y_train, self._X_val, self._Y_test, hyperparams, fixed_hyperparams)
+            print(f"Best hyperparameters:\n{self._best_hyperparams}")
+        y_train_best = self._xgb.predict_proba(self._X_train)[:, 1]
+        print(f"Train C-Index: {CIndex(self._Y_train, y_train_best)}")
+
+        y_val_best = self._xgb.predict_proba(self._X_val)[:, 1]
+        print(f"Val C-Index: {CIndex(self._Y_test, y_val_best)}")
+        print(f"classes: {self._xgb.classes_}") # classes: [False  True]
+        cindex, subgroup = self._bad_subset(self._xgb, self._X_train, self._Y_train)
+        print(f"Train dataset Subgroup size: {subgroup}, C-Index: {cindex}")
+        cindex, subgroup = self._bad_subset(self._xgb, self._X_val, self._Y_val)
+        print(f"Validation dataset Subgroup size: {subgroup}, C-Index: {cindex}")
+        cindex, subgroup = self._bad_subset(self._xgb, self._X_test, self._Y_test)
+        print(f"Test dataset Subgroup size: {subgroup}, C-Index: {cindex}")
+        #PlotDecisionTree(self._xgb, self._features, ['neg', 'pos'], "XGBoostHeartDiseasePrediction") AttributeError: 'XGBClassifier' object has no attribute 'tree_'
+        self._ExplainModelPrediction(self._xgb)
+
+    def _ExplainModelPrediction(self, model):
         """
         You choose to apply **SHAP (SHapley Additive exPlanations)**, a cutting edge method that explains predictions made by black-box machine learning models (i.e. models which are too complex to be understandable by humans as is).
         Given a prediction made by a machine learning model, SHAP values explain the prediction by quantifying the additive importance of each feature to the prediction. SHAP values have their roots in cooperative game theory, where Shapley values are used to quantify the contribution of each player to the game.
@@ -101,20 +168,50 @@ class RandomForestRiskModel(DecisionTree):
         - Note that the exact output of your chart will differ depending on the hyper-parameters that you choose for your model.
 
         """
-        print(f"\n=== {self.ExplainModelPrediction.__name__} ===")
+        print(f"\n=== {self._ExplainModelPrediction.__name__} ===")
         i = 0
         if self._X_test_risk is None:
             self._X_test_risk = self._X_test.copy(deep=True)
-            self._X_test_risk.loc[:, 'risk'] = self._rf.predict_proba(self._X_test_risk)[:, 1]
+            self._Y_test_risk = self._Y_test.copy(deep=True)
+            self._X_test_risk.loc[:, 'risk'] = model.predict_proba(self._X_test_risk)[:, 1]
             self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
+            self._Y_test_risk = self._Y_test_risk.reindex(self._X_test_risk.index)
             #print(self._X_test_risk.head())
         print(f"self._X_test_risk.index[{i}]: {self._X_test_risk.index[i]}")
-        shap_values = self._shap.shap_values(self._X_test.loc[self._X_test_risk.index[i], :])
-        shap_value = shap_values[:,1]
-        print(f"shap_values: {shap_values.shape}, {shap_values}")
-        print(f"shap_value: {shap_value.shape}, {shap_value}")
-        shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
-        shap_values = self._shap.shap_values(self._X_test)[:,:,1] # (992, 18, 2),
+        print(f"self._Y_test_risk.index[{i}]: {self._Y_test_risk.index[i]}")
+        print(self._X_test_risk.head())
+        self._shap = shap.TreeExplainer(model)
+        X = self._X_test.loc[self._X_test_risk.index[i], :]
+        Y = self._Y_test.loc[self._Y_test_risk.index[i]]
+        print(f"X: {X}")
+        print(f"Y: {Y}")
+        print(f"index: {self._X_test_risk.index[i]}, X: {X.shape}, Y: {Y.shape}")
+        if isinstance(model, XGBClassifier):
+            # Avoid pandas Series which will have the original DF columns as its index and the values of that specific row as its data. 
+            # The "name" column is actually the name attribute of the resulting Series, which automatically gets assigned the index label used to retrieve the row.
+            # ValueError: DataFrame.dtypes for data must be int, float, bool or category. When categorical type is supplied, the experimental DMatrix parameter`enable_categorical` must be set to `True`.  Invalid columns:371: object
+            X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy()
+            X = X[numpy.newaxis, ...] # Add a single grayacale channel
+            Y = Y[numpy.newaxis, ...] # Add a single grayacale channel
+            dmatrix = DMatrix(data=X, label=Y, enable_categorical=False)
+            #dmatrix = DMatrix(data=X, enable_categorical=True)
+            print(f"dmatrix: {dmatrix}")
+            shap_values = self._shap.shap_values(dmatrix)
+            shap_value = shap_values[0]
+            print(f"shap_values: {shap_values.shape}, {shap_values}")
+            print(f"shap_value: {shap_value.shape}, {shap_value}")
+            shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
+        else:
+            shap_values = self._shap.shap_values(X)
+            shap_value = shap_values[:,1]
+            print(f"shap_values: {shap_values.shape}, {shap_values}")
+            print(f"shap_value: {shap_value.shape}, {shap_value}")
+            shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
+        if isinstance(model, XGBClassifier):
+            test_data_dm = DMatrix(data = self._X_test, label = self._Y_test, enable_categorical=False)
+            shap_values = self._shap.shap_values(test_data_dm)
+        else:
+            shap_values = self._shap.shap_values(self._X_test)[:,:,1] # (992, 18, 2),
         print(f"shap_values: {shap_values.shape}, {shap_values}")
         shap.summary_plot(shap_values, self._X_test)
         shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex')
@@ -161,7 +258,7 @@ class RandomForestRiskModel(DecisionTree):
         self._X_val = pd.DataFrame(self._imputer.transform(self._X_val), columns=self._X_val.columns, index=self._X_val.index)
         self._X_test = pd.DataFrame(self._imputer.transform(self._X_test), columns=self._X_test.columns, index=self._X_test.index)
 
-    def _bad_subset(self, X, Y):
+    def _bad_subset(self, model, X, Y):
         # define mask to select large subset with poor performance
         # currently mask defines the entire set
         print(f"\n=== {self._bad_subset.__name__} ===")
@@ -171,7 +268,7 @@ class RandomForestRiskModel(DecisionTree):
         y_subgroup = Y[mask]
         subgroup_size = len(X_subgroup)
 
-        y_subgroup_preds = self._rf.predict_proba(X_subgroup)[:, 1]
+        y_subgroup_preds = model.predict_proba(X_subgroup)[:, 1]
         performance = CIndex(y_subgroup.values, y_subgroup_preds)
         return performance, subgroup_size
     
@@ -188,9 +285,8 @@ if __name__ == "__main__":
     """
     parser = argparse.ArgumentParser(description='Random Forest Risk Model')
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
-    parser.add_argument('-g', '--grayscale', action='store_true', help='Use grayscale model')
     args = parser.parse_args()
 
-    risk = RandomForestRiskModel("models/RandomForestRiskModel.pkl", 10, 10)
-    risk.BuildRandomForestModel(args.retrain)
-    risk.ExplainModelPrediction()
+    risk = RandomForestRiskModel(None, 10, 10)
+    risk.BuildRandomForestModel("models/RandomForestRiskModel.pkl", args.retrain)
+    risk.BuildXGBoost("models/XGBoostRiskModel.pkl", args.retrain)

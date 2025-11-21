@@ -114,21 +114,18 @@ Python AI, ML, DL, NLP and GAN exploration playground.
 
 ## Heart Disease Decision Tree Model
 
-```
-classes: [0 1]
-Metrics train:
-	Accuracy score: 0.8583
-Metrics validation:
-	Accuracy score: 0.8641
-```
-
-![Heart Disease Decision Tree Model](images/HeartDiseasePredictionDecisionTree.png?raw=true "Heart Disease Decision Tree Model")
+- Features: `'Age', 'RestingBP', 'Cholesterol', 'FastingBS', 'MaxHR', 'Oldpeak', 'Sex_F', 'Sex_M', 'ChestPainType_ASY', 'ChestPainType_ATA', 'ChestPainType_NAP', 'ChestPainType_TA', 'RestingECG_LVH', 'RestingECG_Normal', 'RestingECG_ST', 'ExerciseAngina_N', 'ExerciseAngina_Y', 'ST_Slope_Down', 'ST_Slope_Flat', 'ST_Slope_Up'`
+  ![Heart Disease Decision Tree Model](images/HeartDiseasePredictionDecisionTree.png?raw=true "Heart Disease Decision Tree Model")
+- Model explaination of contributing factors to heart disease:
+  - Red colors contribute positively and blue colors contribute negatively to heart disease.
+    ![Heart Disease force plot](images/XGBoostHeartDisease_force_plot.png?raw=true "Heart Disease force plot")
+    ![Heart Disease summary plot](images/XGBoostHeartDisease_summary_plot.png?raw=true "Heart Disease summary plot")
 
 ## NHANES | epidemiology risk analysis
 
 - Predicting the 10-year risk of death of individuals from the NHANES | epidemiology dataset.
 - Model: Random Forest
-- Dataset consists of `Age, Diastolic BP, Poverty index, Race, Red blood cells, Sedimentation rate, Serum Albumin, Serum Cholesterol, Serum Iron, Serum Magnesium, Serum Protein, Sex, Systolic BP, TIBC, TS, White blood cells, BMI, Pulse pressure`
+- Features: `'Age', 'Diastolic BP', 'Poverty index', 'Race', 'Red blood cells', 'Sedimentation rate', 'Serum Albumin', 'Serum Cholesterol', 'Serum Iron', 'Serum Magnesium', 'Serum Protein', 'Sex', S'ystolic BP', 'TIBC', 'TS', 'White blood cells', 'BMI', 'Pulse pressure'`
 - Model explaination of contributing factors to 10-year risk of death:
   - Red colors contribute positively and blue colors contribute negatively to the 10-year risk of death.
     ![NHANES / epidemiology risk force plot](images/NHANESEpidemiologyDeathFactors_force_plot.png?raw=true "NHANES / epidemiology risk force plot")
@@ -139,7 +136,7 @@ Metrics validation:
 
 - Visualize the impact of each region of an image on a specific output for a Convolutional Neural Network model, DenseNet121 in this case with a pretrained model.
 - Generate a heatmap by computing gradients of the specific class scores we are interested in visualizing.
-- Example:
+- Features: `'Age', 'RestingBP', 'Cholesterol', 'FastingBS', 'MaxHR', 'Oldpeak', 'Sex_F', 'Sex_M', 'ChestPainType_ASY', 'ChestPainType_ATA', 'ChestPainType_NAP', 'ChestPainType_TA', 'RestingECG_LVH', 'RestingECG_Normal', 'RestingECG_ST', 'ExerciseAngina_N', 'ExerciseAngina_Y', 'ST_Slope_Down', 'ST_Slope_Flat', 'ST_Slope_Up'`
 
   ```
   Image: 00016650_000.png Ground Truth: 0, Cardiomegaly

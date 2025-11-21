@@ -190,8 +190,6 @@ class HeartDisease(DecisionTree):
             }
             self._xgb = self._random_forest_grid_search(XGBClassifier, self._X_train, self._Y_train, self._X_val, self._Y_val, hyperparams, fixed_hyperparams)
             print(f"Best hyperparameters:\n{self._best_hyperparams}")
-        #self._xgb = XGBClassifier(n_estimators = 500, learning_rate = 0.1, verbosity = 1, random_state = 11, early_stopping_rounds = 10)
-        #self._xgb.fit(X_train_fit,y_train_fit, eval_set = [(X_train_eval,y_train_eval)])
         print(f"Best iteration with lowest evaluation metric: {self._xgb.best_iteration}")
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_val), self._Y_val):.4f}")
         #PlotDecisionTree(self._xgb, self._features, ['neg', 'pos'], "XGBoostHeartDiseasePrediction") AttributeError: 'XGBClassifier' object has no attribute 'tree_'
@@ -258,8 +256,8 @@ class HeartDisease(DecisionTree):
         # features: ['Age', 'RestingBP', 'Cholesterol', 'FastingBS', 'MaxHR', 'Oldpeak', 'Sex_F', 'Sex_M', 'ChestPainType_ASY', 'ChestPainType_ATA', 'ChestPainType_NAP', 'ChestPainType_TA', 'RestingECG_LVH', 'RestingECG_Normal', 'RestingECG_ST', 'ExerciseAngina_N', 'ExerciseAngina_Y', 'ST_Slope_Down', 'ST_Slope_Flat', 'ST_Slope_Up']
         i = 0
         if self._X_test_risk is None:
-            self._X_test_risk = self._X_val.copy(deep=True)
-            self._Y_test_risk = self._Y_val.copy(deep=True)
+            self._X_test_risk = self._X_test.copy(deep=True)
+            self._Y_test_risk = self._Y_test.copy(deep=True)
             self._X_test_risk.loc[:, 'risk'] = model.predict_proba(self._X_test_risk)[:, 1]
             self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
             self._Y_test_risk = self._Y_test_risk.reindex(self._X_test_risk.index)
@@ -268,8 +266,8 @@ class HeartDisease(DecisionTree):
         print(f"self._Y_test_risk.index[{i}]: {self._Y_test_risk.index[i]}")
         print(self._X_test_risk.head())
         self._shap = shap.TreeExplainer(model)
-        X = self._X_val.loc[self._X_test_risk.index[i], :]
-        Y = self._Y_val.loc[self._Y_test_risk.index[i]]
+        X = self._X_test.loc[self._X_test_risk.index[i], :]
+        Y = self._Y_test.loc[self._Y_test_risk.index[i]]
         print(f"X: {X}")
         print(f"Y: {Y}")
         print(f"index: {self._X_test_risk.index[i]}, X: {X.shape}, Y: {Y.shape}")
@@ -277,7 +275,7 @@ class HeartDisease(DecisionTree):
             # Avoid pandas Series which will have the original DF columns as its index and the values of that specific row as its data. 
             # The "name" column is actually the name attribute of the resulting Series, which automatically gets assigned the index label used to retrieve the row.
             # ValueError: DataFrame.dtypes for data must be int, float, bool or category. When categorical type is supplied, the experimental DMatrix parameter`enable_categorical` must be set to `True`.  Invalid columns:371: object
-            X = self._X_val.loc[self._X_test_risk.index[i], :].to_numpy()
+            X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy()
             X = X[numpy.newaxis, ...] # Add a single grayacale channel
             Y = Y[numpy.newaxis, ...] # Add a single grayacale channel
             dmatrix = DMatrix(data=X, label=Y, enable_categorical=True)
@@ -287,23 +285,23 @@ class HeartDisease(DecisionTree):
             shap_value = shap_values[0]
             print(f"shap_values: {shap_values.shape}, {shap_values}")
             print(f"shap_value: {shap_value.shape}, {shap_value}")
-            shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_val.columns, matplotlib=True, figsize=(20, 10))
+            shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
         else:
             shap_values = self._shap.shap_values(X)
             shap_value = shap_values[:,1]
             print(f"shap_values: {shap_values.shape}, {shap_values}")
             print(f"shap_value: {shap_value.shape}, {shap_value}")
-            shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_val.columns, matplotlib=True, figsize=(20, 10))
+            shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
         
         if isinstance(model, XGBClassifier):
-            test_data_dm = DMatrix(data = self._X_val, label = self._Y_val, enable_categorical=True)
+            test_data_dm = DMatrix(data = self._X_test, label = self._Y_test, enable_categorical=True)
             shap_values = self._shap.shap_values(test_data_dm)
         else:
-            shap_values = self._shap.shap_values(self._X_val)[:,:,1] # (992, 18, 2),
+            shap_values = self._shap.shap_values(self._X_test)[:,:,1] # (992, 18, 2),
         print(f"shap_values: {shap_values.shape}, {shap_values}")
-        shap.summary_plot(shap_values, self._X_val)
-        shap.dependence_plot('Age', shap_values, self._X_val, interaction_index='Sex_F')
-        shap.dependence_plot('Age', shap_values, self._X_val, interaction_index='Sex_M')
+        shap.summary_plot(shap_values, self._X_test)
+        shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex_F')
+        shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex_M')
     
     def _Evaluate(self, Y, probabilities):
         predicted_labels = (probabilities[:, 1] > 0.5).astype(int)
