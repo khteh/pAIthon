@@ -4,7 +4,7 @@ from sklearn.tree import export_graphviz
 from six import StringIO
 from matplotlib import get_configdir
 from networkx.drawing.nx_pydot import graphviz_layout
-print(f"configdif: {get_configdir()}")
+print(f"configdir: {get_configdir()}")
 plt.style.reload_library()
 #print(f"style.available: {plt.style.available}")
 #plt.style.use('deeplearning.mplstyle')
@@ -120,9 +120,6 @@ def PlotDecisionTree(tree, features, classes, title:str):
     # Treat the DOT output as an image file in memory
     sio = io.BytesIO(image)
     img = mpimg.imread(sio)
-    # Clear the current axes and plot new data
-    #plt.cla()
-    #plt.clf()
     # Plot the image using Matplotlib
     plt.figure(figsize=(20, 10), constrained_layout=True)
     plt.imshow(img, aspect='equal')

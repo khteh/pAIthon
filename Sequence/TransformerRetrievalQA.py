@@ -50,7 +50,8 @@ class TransformerExtractiveQA():
                 opt.apply_gradients(zip(grads, self._model.trainable_weights))
                 if step % 20 == 0:
                     print("Training loss (for one batch) at step %d: %.4f"% (step, float(loss_start)))
-        plt.title("Loss over batches")
+        plt.figure(figsize=(10, 10), constrained_layout=True)
+        plt.title("Loss over batches", fontsize=22, fontweiht="bold")
         plt.plot(losses)
         plt.show()
     

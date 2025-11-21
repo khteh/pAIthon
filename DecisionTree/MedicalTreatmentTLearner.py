@@ -11,7 +11,7 @@ from sklearn.impute import IterativeImputer, SimpleImputer
 from xgboost import XGBClassifier
 from utils.DecisionTreeViz import PlotDecisionTree
 from .DecisionTree import DecisionTree
-from utils.CIndex import cindex
+from utils.CIndex import CIndex
 class MedicalTreatmentTLearner(DecisionTree):
     """
     Examine data from an RCT (Randomized Control Trial), measuring the effect of a particular drug combination on colon cancer. 
@@ -316,7 +316,7 @@ class MedicalTreatmentTLearner(DecisionTree):
 
     def _Evaluate(self, Y, predictions):
         # Evaluate the model's performance using the regular concordance index
-        return cindex(Y, predictions[:, 1])
+        return CIndex(Y, predictions[:, 1])
 
     def _event_rate(self):
         '''

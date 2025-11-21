@@ -134,6 +134,7 @@ class QuestionAnswering():
                 print (f'Epoch {epoch+1}, Loss {self._train_loss.result():.4f}')
                 self._losses.append(self._train_loss.result())
                 print (f'Time taken for one epoch: {time.time() - start} sec')
+            plt.figure(figsize=(10, 10), constrained_layout=True)
             plt.plot(self._losses)
             plt.ylabel('Loss')
             plt.xlabel('Epoch')

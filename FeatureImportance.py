@@ -1,5 +1,5 @@
 import pandas as pd, pickle, numpy, matplotlib.pyplot as plt, shap
-from utils.CIndex import cindex
+from utils.CIndex import CIndex
 
 class FeatureImportance():
     _path:str = None
@@ -54,7 +54,7 @@ class FeatureImportance():
         test_df = test_df.drop(test_df.columns[0], axis=1)
         self._X_test = test_df.drop('y', axis=1)
         self._Y_test = test_df.loc[:, 'y']
-        cindex_test = cindex(self._Y_test, self._model.predict_proba(self._X_test)[:, 1])
+        cindex_test = CIndex(self._Y_test, self._model.predict_proba(self._X_test)[:, 1])
         print("Model C-index on test: {}".format(cindex_test))
 
     def _permute_feature(self, df, feature):

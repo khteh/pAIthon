@@ -10,7 +10,7 @@ from sklearn.impute import IterativeImputer, SimpleImputer
 from xgboost import XGBClassifier
 from utils.DecisionTreeViz import PlotDecisionTree
 from .DecisionTree import DecisionTree
-from utils.CIndex import cindex
+from utils.CIndex import CIndex
 class RandomForestRiskModel(DecisionTree):
     """
     Tree based models by predicting the 10-year risk of death of individuals from the NHANES | epidemiology dataset (https://wwwn.cdc.gov/nchs/nhanes/nhefs/default.aspx/)
@@ -75,10 +75,10 @@ class RandomForestRiskModel(DecisionTree):
         # classes: [False  True]
         print(f"Best hyperparameters:\n{self._best_hyperparams}")
         y_train_best = self._rf.predict_proba(self._X_train)[:, 1]
-        print(f"Train C-Index: {self._cindex(self._Y_train, y_train_best)}")
+        print(f"Train C-Index: {CIndex(self._Y_train, y_train_best)}")
 
         y_val_best = self._rf.predict_proba(self._X_val)[:, 1]
-        print(f"Val C-Index: {self._cindex(self._Y_val, y_val_best)}")
+        print(f"Val C-Index: {CIndex(self._Y_val, y_val_best)}")
         print(f"classes: {self._rf.classes_}") # classes: [False  True]
         cindex, subgroup = self._bad_subset(self._X_train, self._Y_train)
         print(f"Train dataset Subgroup size: {subgroup}, C-Index: {cindex}")
@@ -103,12 +103,12 @@ class RandomForestRiskModel(DecisionTree):
         """
         print(f"\n=== {self.ExplainModelPrediction.__name__} ===")
         i = 0
-        if not self._X_test_risk:
+        if self._X_test_risk is None:
             self._X_test_risk = self._X_test.copy(deep=True)
             self._X_test_risk.loc[:, 'risk'] = self._rf.predict_proba(self._X_test_risk)[:, 1]
             self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
             #print(self._X_test_risk.head())
-        print(f"self._X_test_risk.index[i]: {self._X_test_risk.index[i]}")
+        print(f"self._X_test_risk.index[{i}]: {self._X_test_risk.index[i]}")
         shap_values = self._shap.shap_values(self._X_test.loc[self._X_test_risk.index[i], :])
         shap_value = shap_values[:,1]
         print(f"shap_values: {shap_values.shape}, {shap_values}")
@@ -172,11 +172,11 @@ class RandomForestRiskModel(DecisionTree):
         subgroup_size = len(X_subgroup)
 
         y_subgroup_preds = self._rf.predict_proba(X_subgroup)[:, 1]
-        performance = self._cindex(y_subgroup.values, y_subgroup_preds)
+        performance = CIndex(y_subgroup.values, y_subgroup_preds)
         return performance, subgroup_size
     
-    def _Evaluate(self, Y, predictions):
-        return cindex(Y, predictions[:,1])
+    def _Evaluate(self, Y, probabilities):
+        return CIndex(Y, probabilities[:,1])
     
     def _prob_drop(self, age):
         return 1 - (numpy.exp(0.25 * age - 5) / (1 + numpy.exp(0.25 * age - 5)))

@@ -187,10 +187,11 @@ class LogisticRegressionNN():
 
         # Plot learning curve (with costs)
         costs = numpy.squeeze(costs)
+        plt.figure(figsize=(10, 10), constrained_layout=True)
         plt.plot(costs)
         plt.ylabel('cost')
         plt.xlabel('iterations (per hundreds)')
-        plt.title(f"Learning rate = {self._learning_rate}")
+        plt.title(f"Learning rate = {self._learning_rate}", fontsize=22, fontweight="bold")
         plt.show()
         d = {"costs": costs,
             "Y_prediction_test": Y_prediction_test, 

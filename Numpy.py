@@ -290,7 +290,7 @@ def HierarchicalDataAnalysis(companies, prices):
     plt.legend(fontsize='x-large')
     #plt.show() This blocks
     plt.clf()
-    plt.cla()
+    plt.close()
     
 def Tensors():
     """

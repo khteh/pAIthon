@@ -37,7 +37,7 @@ class DecisionTree(ABC):
             print(f"Model saved to {self._model_path}.")
         return best_model, best_hyperparams
 
-    def _holdout_grid_search(self, rf, X_train, Y_train, X_val, Y_val, hyperparams:dict, fixed_hyperparams:dict):
+    def _holdout_grid_search(self, model, X_train, Y_train, X_val, Y_val, hyperparams:dict, fixed_hyperparams:dict):
         '''
         Conduct hyperparameter grid search on hold out validation set. Use holdout validation.
         Hyperparameters are input as a dictionary mapping each hyperparameter name to the
@@ -82,10 +82,13 @@ class DecisionTree(ABC):
                 param_dict[param_name] = params[param_index]
 
             # create estimator with specified params
-            estimator = rf(**param_dict, **fixed_hyperparams)
+            estimator = model(**param_dict, **fixed_hyperparams)
 
             # fit estimator
-            estimator.fit(X_train, Y_train)
+            if "early_stopping_rounds" in fixed_hyperparams:
+                estimator.fit(X_train, Y_train, eval_set = [(X_val, Y_val)])
+            else:
+                estimator.fit(X_train, Y_train)
             
             # get predictions on validation set
             preds = estimator.predict_proba(X_val)
