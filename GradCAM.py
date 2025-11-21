@@ -144,7 +144,7 @@ class GradCAM():
                 heatmap = tf.maximum(heatmap, 0) # ReLU so we only get positive importance
                 #print(f"heatmap: {type(heatmap)}")
                 heatmap = cv2.resize(heatmap.numpy(), (W, H), cv2.INTER_NEAREST)
-                heatmap = heatmap / heatmap.max()
+                heatmap /= heatmap.max()
 
                 pred_index = tf.argmax(predictions[0])
                 colour = "black"
