@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from xgboost import XGBClassifier
-from utils.DecisionTree import PlotDecisionTree
+from utils.DecisionTreeViz import PlotDecisionTree
 from .DecisionTree import DecisionTree
 
 # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download

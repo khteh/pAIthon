@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer, SimpleImputer
 from xgboost import XGBClassifier
-from utils.DecisionTree import PlotDecisionTree
+from utils.DecisionTreeViz import PlotDecisionTree
 from .DecisionTree import DecisionTree
 from utils.CIndex import cindex
 class RandomForestRiskModel(DecisionTree):

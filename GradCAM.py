@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt, pandas as pd, numpy, cv2, shap, tensorflow as tf
 from pathlib import Path
+from tensorflow.keras.utils import plot_model
 from keras.preprocessing import image
 from tensorflow.keras import Model
 from tensorflow.keras.applications.densenet import DenseNet121
@@ -69,6 +70,16 @@ class GradCAM():
         )
         self._model.load_weights("models/pretrained_model.h5")
         #self._model.summary()
+        plot_model(
+            self._model,
+            dpi=1000,
+            to_file="output/DenseNetGradCAM.png",
+            show_shapes=True,
+            show_dtype=True,
+            show_layer_names=True,
+            rankdir="T", # rankdir argument passed to PyDot, a string specifying the format of the plot: "TB" creates a vertical plot; "LR" creates a horizontal plot.
+            expand_nested=True,
+            show_layer_activations=True)
 
     def compute_gradcam(self, img, selected_labels):
         """
