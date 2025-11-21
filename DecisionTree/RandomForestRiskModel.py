@@ -18,7 +18,6 @@ class RandomForestRiskModel(DecisionTree):
     _threshold:float = None
     _imputer_iterations: int = None
     _imputer: IterativeImputer = None
-    _best_hyperparams = None
     _rf: RandomForestClassifier = None
     _xgb: XGBClassifier = None
     _shap = None
@@ -66,7 +65,7 @@ class RandomForestRiskModel(DecisionTree):
             fixed_hyperparams = {
                 'random_state': 10,
             }
-            self._rf, self._best_hyperparams = self._random_forest_grid_search(RandomForestClassifier, self._X_train, self._Y_train, self._X_val, self._Y_val, hyperparams, fixed_hyperparams)
+            self._rf = self._random_forest_grid_search(RandomForestClassifier, self._X_train, self._Y_train, self._X_val, self._Y_val, hyperparams, fixed_hyperparams)
             # Best hyperparameters:
             # {'n_estimators': 456, 'max_depth': None, 'min_samples_leaf': 5, 'random_state': 10}
             # Train C-Index: 0.9872592913256227

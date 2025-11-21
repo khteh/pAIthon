@@ -11,6 +11,8 @@ class DecisionTree(ABC):
     _Y_train = None
     _Y_val = None
     _Y_test = None
+    _best_hyperparams = None
+
     def __init__(self, path:str):
         self._model_path = path
 
@@ -25,17 +27,17 @@ class DecisionTree(ABC):
     def _random_forest_grid_search(self, model, X_train, Y_train, X_val, Y_val, hyperparams:dict, fixed_hyperparams:dict, model_path:str = None):
         print(f"\n=== {self._random_forest_grid_search.__name__} ===")
         # Define ranges for the chosen random forest hyperparameters 
-        best_model, best_hyperparams = self._holdout_grid_search(model, X_train, Y_train, X_val, Y_val, hyperparams, fixed_hyperparams)
+        best_model, self._best_hyperparams = self._holdout_grid_search(model, X_train, Y_train, X_val, Y_val, hyperparams, fixed_hyperparams)
                
         # add fixed hyperparamters to best combination of variable hyperparameters
-        best_hyperparams.update(fixed_hyperparams)
+        self._best_hyperparams.update(fixed_hyperparams)
         if model_path:
             self._model_path = model_path
         if self._model_path:
             with open(self._model_path, 'wb') as f:
                 pickle.dump(best_model, f)
             print(f"Model saved to {self._model_path}.")
-        return best_model, best_hyperparams
+        return best_model
 
     def _holdout_grid_search(self, model, X_train, Y_train, X_val, Y_val, hyperparams:dict, fixed_hyperparams:dict):
         '''
