@@ -131,6 +131,7 @@ class HeartDisease(DecisionTree):
                 'random_state': 11,
             }
             self._rf, self._best_hyperparams = self._random_forest_grid_search(RandomForestClassifier, self._X_train, self._Y_train, self._X_val, self._Y_val, hyperparams, fixed_hyperparams)
+            print(f"Best hyperparameters:\n{self._best_hyperparams}")
         print(f"classes: {self._rf.classes_}") # classes: [False  True]
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._rf.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._rf.predict(self._X_val), self._Y_val):.4f}")
         #PlotDecisionTree(self._rf, self._features, ['neg', 'pos'], "RandomForestHeartDiseasePrediction") AttributeError: 'RandomForestClassifier' object has no attribute 'tree_'
@@ -188,7 +189,7 @@ class HeartDisease(DecisionTree):
                 "early_stopping_rounds": 10
             }
             self._xgb, self._best_hyperparams = self._random_forest_grid_search(XGBClassifier, self._X_train, self._Y_train, self._X_val, self._Y_val, hyperparams, fixed_hyperparams)
-
+            print(f"Best hyperparameters:\n{self._best_hyperparams}")
         #self._xgb = XGBClassifier(n_estimators = 500, learning_rate = 0.1, verbosity = 1, random_state = 11, early_stopping_rounds = 10)
         #self._xgb.fit(X_train_fit,y_train_fit, eval_set = [(X_train_eval,y_train_eval)])
         print(f"Best iteration with lowest evaluation metric: {self._xgb.best_iteration}")

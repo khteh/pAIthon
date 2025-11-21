@@ -67,13 +67,14 @@ class RandomForestRiskModel(DecisionTree):
                 'random_state': 10,
             }
             self._rf, self._best_hyperparams = self._random_forest_grid_search(RandomForestClassifier, self._X_train, self._Y_train, self._X_val, self._Y_val, hyperparams, fixed_hyperparams)
+            # Best hyperparameters:
+            # {'n_estimators': 456, 'max_depth': None, 'min_samples_leaf': 5, 'random_state': 10}
+            # Train C-Index: 0.9872592913256227
+            # Val C-Index: 0.7800695629347684
+            # classes: [False  True]
+            print(f"Best hyperparameters:\n{self._best_hyperparams}")
             self._shap = shap.TreeExplainer(self._rf)
-        # Best hyperparameters:
-        # {'n_estimators': 456, 'max_depth': None, 'min_samples_leaf': 5, 'random_state': 10}
-        # Train C-Index: 0.9872592913256227
-        # Val C-Index: 0.7800695629347684
-        # classes: [False  True]
-        print(f"Best hyperparameters:\n{self._best_hyperparams}")
+
         y_train_best = self._rf.predict_proba(self._X_train)[:, 1]
         print(f"Train C-Index: {CIndex(self._Y_train, y_train_best)}")
 
