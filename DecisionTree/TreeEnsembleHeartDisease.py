@@ -1,4 +1,4 @@
-import argparse, pandas as pd, matplotlib.pyplot as plt, shap
+import argparse, pandas as pd, matplotlib.pyplot as plt, shap, numpy
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
@@ -235,7 +235,7 @@ class HeartDisease(DecisionTree):
 
         print(f"X_train: {self._X_train.shape}, Y_train: {self._Y_train.shape}, X_val: {self._X_val.shape}, Y_val: {self._Y_val.shape}, X_test: {self._X_test.shape}, Y_test: {self._Y_test.shape}")
         print(f'train samples: {len(self._X_train)}')
-        print(f'validation samples: {len(self._X_val)}')
+        print(f'validation samples: {len(self._X_val)} {type(self._X_val)}, Y_val: {self._Y_val.shape} {type(self._Y_val)}')
         print(f'target proportion: {sum(self._Y_train)/len(self._Y_train):.4f}')
         print(f"Y: shape: {self._Y_train.shape}, {self._Y_train[:10]}")
         print(f"X:")
@@ -261,24 +261,38 @@ class HeartDisease(DecisionTree):
             self._Y_test_risk = self._Y_val.copy(deep=True)
             self._X_test_risk.loc[:, 'risk'] = model.predict_proba(self._X_test_risk)[:, 1]
             self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
+            self._Y_test_risk = self._Y_test_risk.reindex(self._X_test_risk.index)
             #print(self._X_test_risk.head())
         print(f"self._X_test_risk.index[{i}]: {self._X_test_risk.index[i]}")
+        print(f"self._Y_test_risk.index[{i}]: {self._Y_test_risk.index[i]}")
         print(self._X_test_risk.head())
         self._shap = shap.TreeExplainer(model)
         X = self._X_val.loc[self._X_test_risk.index[i], :]
-        Y = self._Y_val.loc[self._X_test_risk.index[i]]
-        print(f"X: {X.shape}, Y: {Y.shape}")
+        Y = self._Y_val.loc[self._Y_test_risk.index[i]]
+        print(f"X: {X}")
+        print(f"Y: {Y}")
+        print(f"index: {self._X_test_risk.index[i]}, X: {X.shape}, Y: {Y.shape}")
         if isinstance(model, XGBClassifier):
-            #dmatrix = DMatrix(data=X, label=Y, enable_categorical=True)
-            dmatrix = DMatrix(data=X, enable_categorical=True)
+            # Avoid pandas Series which will have the original DF columns as its index and the values of that specific row as its data. 
+            # The "name" column is actually the name attribute of the resulting Series, which automatically gets assigned the index label used to retrieve the row.
+            # ValueError: DataFrame.dtypes for data must be int, float, bool or category. When categorical type is supplied, the experimental DMatrix parameter`enable_categorical` must be set to `True`.  Invalid columns:371: object
+            X = self._X_val.loc[self._X_test_risk.index[i], :].to_numpy()
+            X = X[numpy.newaxis, ...] # Add a single grayacale channel
+            Y = Y[numpy.newaxis, ...] # Add a single grayacale channel
+            dmatrix = DMatrix(data=X, label=Y, enable_categorical=True)
+            #dmatrix = DMatrix(data=X, enable_categorical=True)
             print(f"dmatrix: {dmatrix}")
             shap_values = self._shap.shap_values(dmatrix)
+            shap_value = shap_values[0]
+            print(f"shap_values: {shap_values.shape}, {shap_values}")
+            print(f"shap_value: {shap_value.shape}, {shap_value}")
+            shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_val.columns, matplotlib=True, figsize=(20, 10))
         else:
-            shap_values = self._shap.shap_values(self._X_val.loc[self._X_test_risk.index[i], :])
-        shap_value = shap_values[:,1]
-        print(f"shap_values: {shap_values.shape}, {shap_values}")
-        print(f"shap_value: {shap_value.shape}, {shap_value}")
-        shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_val.columns, matplotlib=True, figsize=(20, 10))
+            shap_values = self._shap.shap_values(X)
+            shap_value = shap_values[:,1]
+            print(f"shap_values: {shap_values.shape}, {shap_values}")
+            print(f"shap_value: {shap_value.shape}, {shap_value}")
+            shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_val.columns, matplotlib=True, figsize=(20, 10))
         
         if isinstance(model, XGBClassifier):
             test_data_dm = DMatrix(data = self._X_val, label = self._Y_val, enable_categorical=True)
