@@ -117,7 +117,8 @@ Python AI, ML, DL, NLP and GAN exploration playground.
 - Features: `'Age', 'RestingBP', 'Cholesterol', 'FastingBS', 'MaxHR', 'Oldpeak', 'Sex_F', 'Sex_M', 'ChestPainType_ASY', 'ChestPainType_ATA', 'ChestPainType_NAP', 'ChestPainType_TA', 'RestingECG_LVH', 'RestingECG_Normal', 'RestingECG_ST', 'ExerciseAngina_N', 'ExerciseAngina_Y', 'ST_Slope_Down', 'ST_Slope_Flat', 'ST_Slope_Up'`
   ![Heart Disease Decision Tree Model](images/HeartDiseasePredictionDecisionTree.png?raw=true "Heart Disease Decision Tree Model")
 - Model explaination of contributing factors to heart disease:
-  - Red colors contribute positively and blue colors contribute negatively to heart disease.
+  - The red sections on the left are features which push the model towards the final prediction in the positive direction (i.e. a higher Age increases the predicted risk).
+  - The blue sections on the right are features that push the model towards the final prediction in the negative direction (if an increase in a feature leads to a lower risk, it will be shown in blue).
     ![Heart Disease force plot](images/XGBoostHeartDisease_force_plot.png?raw=true "Heart Disease force plot")
     ![Heart Disease summary plot](images/XGBoostHeartDisease_summary_plot.png?raw=true "Heart Disease summary plot")
 
@@ -127,7 +128,8 @@ Python AI, ML, DL, NLP and GAN exploration playground.
 - Model: Random Forest
 - Features: `'Age', 'Diastolic BP', 'Poverty index', 'Race', 'Red blood cells', 'Sedimentation rate', 'Serum Albumin', 'Serum Cholesterol', 'Serum Iron', 'Serum Magnesium', 'Serum Protein', 'Sex', S'ystolic BP', 'TIBC', 'TS', 'White blood cells', 'BMI', 'Pulse pressure'`
 - Model explaination of contributing factors to 10-year risk of death:
-  - Red colors contribute positively and blue colors contribute negatively to the 10-year risk of death.
+  - The red sections on the left are features which push the model towards the final prediction in the positive direction (i.e. a higher Age increases the predicted risk).
+  - The blue sections on the right are features that push the model towards the final prediction in the negative direction (if an increase in a feature leads to a lower risk, it will be shown in blue).
     ![NHANES / epidemiology risk force plot](images/NHANESEpidemiologyDeathFactors_force_plot.png?raw=true "NHANES / epidemiology risk force plot")
     ![NHANES / epidemiology risk summary plot](images/NHANESEpidemiologyDeathFactors_summary_plot.png?raw=true "NHANES / epidemiology risk summary plot")
     ![NHANES / epidemiology risk age-sex dependence plot](images/NHANESEpidemiologyDeathFactors_age_sex.png?raw=true "NHANES / epidemiology risk age-sex dependence plot")

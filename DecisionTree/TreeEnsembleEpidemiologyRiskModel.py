@@ -11,7 +11,7 @@ from xgboost import XGBClassifier, DMatrix
 from utils.DecisionTreeViz import PlotDecisionTree
 from .DecisionTree import DecisionTree
 from utils.CIndex import CIndex
-class RandomForestRiskModel(DecisionTree):
+class TreeEnsembleEpidemiologyRiskModel(DecisionTree):
     """
     Tree based models by predicting the 10-year risk of death of individuals from the NHANES | epidemiology dataset (https://wwwn.cdc.gov/nchs/nhanes/nhefs/default.aspx/)
     """
@@ -186,6 +186,7 @@ class RandomForestRiskModel(DecisionTree):
         print(f"X: {X}")
         print(f"Y: {Y}")
         print(f"index: {self._X_test_risk.index[i]}, X: {X.shape}, Y: {Y.shape}")
+        # https://shap.readthedocs.io/en/latest/generated/shap.TreeExplainer.html
         if isinstance(model, XGBClassifier):
             # Avoid pandas Series which will have the original DF columns as its index and the values of that specific row as its data. 
             # The "name" column is actually the name attribute of the resulting Series, which automatically gets assigned the index label used to retrieve the row.
@@ -287,6 +288,6 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 
-    risk = RandomForestRiskModel(None, 10, 10)
-    risk.BuildRandomForestModel("models/RandomForestRiskModel.pkl", args.retrain)
-    risk.BuildXGBoost("models/XGBoostRiskModel.pkl", args.retrain)
+    risk = TreeEnsembleEpidemiologyRiskModel(None, 10, 10)
+    risk.BuildRandomForestModel("models/RandomForestEpidemiologyRiskModel.pkl", args.retrain)
+    risk.BuildXGBoost("models/XGBoostEpidemiologyRiskModel.pkl", args.retrain)
