@@ -316,22 +316,26 @@ class LSTM_Jazz_Solo():
             curr_chords = stream.Voice()
             
             # Loop over the chords of the current set of chords
-            print(f"chords: {type(self._music_data['chords'])} {self._music_data['chords'][0]}")
+            #print(f"chords: {type(self._music_data['chords'])} {self._music_data['chords'][:10]}")
             for j in self._music_data['chords'][i]:
                 # Add chord to the current chords with the adequate offset, no need to understand this
-                #curr_chords.insert((j.offset % 4), j)
-                curr_chords.insert(j)
+                curr_chords.insert((j.offset % 4), j)
+                #print(type(j))
             
             # Generate a sequence of tones using the model
-            _, indices = self.predict_and_sample(self._inference_model)
+            _, indices = self.predict_and_sample()
+            indices = indices.numpy()
+            print(f"indices: {type(indices)} {indices.shape}")
             indices = list(indices.squeeze())
+            print(f"{len(indices)} indices: {type(indices[0])}")
+            print(f"self._indices_tones: {type(self._indices_tones)}")
             pred = [self._indices_tones[p] for p in indices]
             
             predicted_tones = 'C,0.25 '
             for k in range(len(pred) - 1):
-                predicted_tones += pred[k] + ' ' 
+                predicted_tones += pred[k].pitchedCommonName + ' ' 
             
-            predicted_tones +=  pred[-1]
+            predicted_tones +=  pred[-1].pitchedCommonName
                     
             #### POST PROCESSING OF THE PREDICTED TONES ####
             # We will consider "A" and "X" as "C" tones. It is a common choice.
@@ -374,7 +378,170 @@ class LSTM_Jazz_Solo():
         # play = lambda x: midi.realtime.StreamPlayer(x).play()
         # play(out_stream)
         return out_stream
+    
+    ''' Given a grammar string and chords for a measure, returns measure notes. '''
+    def _unparse_grammar(self, m1_grammar, m1_chords):
+        m1_elements = stream.Voice()
+        currOffset = 0.0 # for recalculate last chord.
+        prevElement = None
+        for ix, grammarElement in enumerate(m1_grammar.split(' ')):
+            terms = grammarElement.split(',')
+            if len(terms) > 1:
+                currOffset += float(terms[1]) # works just fine
 
+            # Case 1: it's a rest. Just append
+            if terms[0] == 'R':
+                rNote = note.Rest(quarterLength = float(terms[1]))
+                m1_elements.insert(currOffset, rNote)
+                continue
+
+            # Get the last chord first so you can find chord note, scale note, etc.
+            try: 
+                lastChord = [n for n in m1_chords if n.offset <= currOffset][-1]
+            except IndexError:
+                m1_chords[0].offset = 0.0
+                lastChord = [n for n in m1_chords if n.offset <= currOffset][-1]
+
+            # Case: no < > (should just be the first note) so generate from range
+            # of lowest chord note to highest chord note (if not a chord note, else
+            # just generate one of the actual chord notes). 
+
+            # Case #1: if no < > to indicate next note range. Usually this lack of < >
+            # is for the first note (no precedent), or for rests.
+            if (len(terms) == 2): # Case 1: if no < >.
+                insertNote = note.Note() # default is C
+
+                # Case C: chord note.
+                if terms[0] == 'C':
+                    insertNote = self.__generate_chord_tone(lastChord)
+
+                # Case S: scale note.
+                elif terms[0] == 'S':
+                    insertNote = self.__generate_scale_tone(lastChord)
+
+                # Case A: approach note.
+                # Handle both A and X notes here for now.
+                else:
+                    insertNote = self.__generate_approach_tone(lastChord)
+
+                # Update the stream of generated notes
+                insertNote.quarterLength = float(terms[1])
+                print(f"insertNote: {insertNote}")
+                if not insertNote.octave or insertNote.octave < 4:
+                    insertNote.octave = 4
+                m1_elements.insert(currOffset, insertNote)
+                prevElement = insertNote
+
+            # Case #2: if < > for the increment. Usually for notes after the first one.
+            else:
+                # Get lower, upper intervals and notes.
+                interval1 = interval.Interval(terms[2].replace("<",''))
+                interval2 = interval.Interval(terms[3].replace(">",''))
+                if interval1.cents > interval2.cents:
+                    upperInterval, lowerInterval = interval1, interval2
+                else:
+                    upperInterval, lowerInterval = interval2, interval1
+                lowPitch = interval.transposePitch(prevElement.pitch, lowerInterval)
+                highPitch = interval.transposePitch(prevElement.pitch, upperInterval)
+                numNotes = int(highPitch.ps - lowPitch.ps + 1) # for range(s, e)
+
+                # Case C: chord note, must be within increment (terms[2]).
+                # First, transpose note with lowerInterval to get note that is
+                # the lower bound. Then iterate over, and find valid notes. Then
+                # choose randomly from those.
+                
+                if terms[0] == 'C':
+                    relevantChordTones = []
+                    for i in range(0, numNotes):
+                        currNote = note.Note(lowPitch.transpose(i).simplifyEnharmonic())
+                        if self. __is_chord_tone(lastChord, currNote):
+                            relevantChordTones.append(currNote)
+                    if len(relevantChordTones) > 1:
+                        insertNote = rng.choice([i for i in relevantChordTones
+                            if i.nameWithOctave != prevElement.nameWithOctave])
+                    elif len(relevantChordTones) == 1:
+                        insertNote = relevantChordTones[0]
+                    else: # if no choices, set to prev element +-1 whole step
+                        insertNote = prevElement.transpose(rng.choice([-2,2]))
+                    if not insertNote.octave or insertNote.octave < 3:
+                        insertNote.octave = 3
+                    insertNote.quarterLength = float(terms[1])
+                    m1_elements.insert(currOffset, insertNote)
+
+                # Case S: scale note, must be within increment.
+                elif terms[0] == 'S':
+                    relevantScaleTones = []
+                    for i in range(0, numNotes):
+                        currNote = note.Note(lowPitch.transpose(i).simplifyEnharmonic())
+                        if self. __is_scale_tone(lastChord, currNote):
+                            relevantScaleTones.append(currNote)
+                    if len(relevantScaleTones) > 1:
+                        insertNote = rng.choice([i for i in relevantScaleTones
+                            if i.nameWithOctave != prevElement.nameWithOctave])
+                    elif len(relevantScaleTones) == 1:
+                        insertNote = relevantScaleTones[0]
+                    else: # if no choices, set to prev element +-1 whole step
+                        insertNote = prevElement.transpose(rng.choice([-2,2]))
+                    if not insertNote.octave or insertNote.octave < 3:
+                        insertNote.octave = 3
+                    insertNote.quarterLength = float(terms[1])
+                    m1_elements.insert(currOffset, insertNote)
+
+                # Case A: approach tone, must be within increment.
+                # For now: handle both A and X cases.
+                else:
+                    relevantApproachTones = []
+                    for i in range(0, numNotes):
+                        currNote = note.Note(lowPitch.transpose(i).simplifyEnharmonic())
+                        if self. __is_approach_tone(lastChord, currNote):
+                            relevantApproachTones.append(currNote)
+                    if len(relevantApproachTones) > 1:
+                        insertNote = rng.choice([i for i in relevantApproachTones
+                            if i.nameWithOctave != prevElement.nameWithOctave])
+                    elif len(relevantApproachTones) == 1:
+                        insertNote = relevantApproachTones[0]
+                    else: # if no choices, set to prev element +-1 whole step
+                        insertNote = prevElement.transpose(rng.choice([-2,2]))
+                    if not insertNote.octave or insertNote.octave < 3:
+                        insertNote.octave = 3
+                    insertNote.quarterLength = float(terms[1])
+                    m1_elements.insert(currOffset, insertNote)
+
+                # update the previous element.
+                prevElement = insertNote
+        return m1_elements
+    
+    ''' Helper function to generate a chord tone. '''
+    def __generate_chord_tone(self, lastChord):
+        lastChordNoteNames = [p.nameWithOctave for p in lastChord.pitches]
+        return note.Note(rng.choice(lastChordNoteNames))
+
+    ''' Helper function to generate a scale tone. '''
+    def __generate_scale_tone(self, lastChord):
+        # Derive major or minor scales (minor if 'other') based on the quality
+        # of the lastChord.
+        scaleType = scale.WeightedHexatonicBlues() # minor pentatonic
+        if lastChord.quality == 'major':
+            scaleType = scale.MajorScale()
+        # Can change later to deriveAll() for flexibility. If so then use list
+        # comprehension of form [x for a in b for x in a].
+        scales = scaleType.derive(lastChord) # use deriveAll() later for flexibility
+        allPitches = list(set([pitch for pitch in scales.getPitches()]))
+        allNoteNames = [i.name for i in allPitches] # octaves don't matter
+
+        # Return a note (no octave here) in a scale that matches the lastChord.
+        sNoteName = rng.choice(allNoteNames)
+        lastChordSort = lastChord.sortAscending()
+        sNoteOctave = rng.choice([i.octave for i in lastChordSort.pitches])
+        sNote = note.Note(("%s%s" % (sNoteName, sNoteOctave)))
+        return sNote
+
+    ''' Helper function to generate an approach tone. '''
+    def __generate_approach_tone(self, lastChord):
+        sNote = self.__generate_scale_tone(lastChord)
+        aNote = sNote.transpose(rng.choice([1, -1]))
+        return aNote
+    
     def _PrepareData(self):
         """
         What are musical "values"?
@@ -386,15 +553,11 @@ class LSTM_Jazz_Solo():
         * This music generation system will use 90 unique values. 
         """
         self._extract_complex_grammar1()
-        self._corpus = self._music_data['extracted_grammars']
+        self._corpus = self._music_data['chords']
         self._tones_indices, self._indices_tones = self._get_corpus_data()
         self._X, self._Y, self._N_tones = self._data_processing(30)
         if isinstance(self._music_data, dict):
             print(f"Total Measures: {len(self._music_data['measures'])}")
-            if "chords" in self._music_data:
-                print(f"Total Chords:   {len(self._music_data['chords'])}")
-            if "extracted_grammars" in self._music_data:
-                print(f"Total Grammars: {len(self._music_data['extracted_grammars'])}")
             print(f"Unique Grammars Found: {self._music_data['unique_grammar_count']}")
             print("-" * 30)
             print("Sample Vocabulary (First 15 Unique Tokens):")
@@ -407,12 +570,13 @@ class LSTM_Jazz_Solo():
             print(self._music_data['grammar_sequence'][:20])
         else:
             print(self._music_data)        
-        print('number of training examples:', self._X.shape[0])
-        print('Tx (length of sequence):', self._X.shape[1])
-        print('total # of unique values:', self._N_tones)
-        print('shape of X:', self._X.shape)
-        print('Shape of Y:', self._Y.shape)
-        print('Number of chords', len(self._music_data["chords"]))
+        print(f'number of training examples: {self._X.shape[0]}')
+        print(f'Tx (length of sequence): {self._X.shape[1]}')
+        print(f'total # of unique values: {self._N_tones}')
+        print(f'shape of X: {self._X.shape}')
+        print(f'Shape of Y: {self._Y.shape}')
+        print(f"# chords: {len(self._music_data['chords'])}, type: {type(self._music_data['chords'][0])}")
+        print(f"# chord symbols: {len(self._music_data['chord_symbols'])}, type: {type(self._music_data['chord_symbols'][0])}")
 
     def _extract_complex_grammar(self):
         """
@@ -439,6 +603,7 @@ class LSTM_Jazz_Solo():
         print("Chordifying score (analyzing all instruments)...")
         chordified_score = score.chordify()
 
+        extracted_chords = []
         extracted_measures = []
         extracted_grammars = []
         
@@ -463,23 +628,25 @@ class LSTM_Jazz_Solo():
                 # This distinguishes specific harmonic colors (7ths, 9ths, etc.)
                 grammar_token = tuple(measure_chord.normalOrder)
                 extracted_grammars.append(grammar_token)
-            else:
-                extracted_grammars.append("Rest")
+                extracted_chords.append(measure_chord)
+            #else:
+            #    extracted_grammars.append("Rest")
 
         # 5. Create Abstract Grammar Mapping
         # Identify unique chord structures
-        unique_vocabulary = sorted(list(set(extracted_grammars)), key=lambda x: str(x))
+        #unique_vocabulary = sorted(list(set(extracted_grammars)), key=lambda x: str(x))
+        unique_vocabulary = list(set(extracted_chords))
         
         # Map each unique pitch set to an ID (0, 1, 2...)
         grammar_map = {token: i for i, token in enumerate(unique_vocabulary)}
         
         # Convert sequence to IDs
-        grammar_sequence = [grammar_map[g] for g in extracted_grammars]
+        grammar_sequence = [grammar_map[g] for g in extracted_chords]
         assert self._N_values == len(unique_vocabulary), f"Unique grammar count mismatch. Expects: {self._N_values}, gets: {len(unique_vocabulary)}"
         self._music_data = {
             "measures": extracted_measures,
-            "chords": extracted_grammars,
-            "extracted_grammars": extracted_grammars,
+            "chords": extracted_chords,
+            "chord_symbols": extracted_grammars,
             "unique_grammar_count": len(unique_vocabulary),
             "unique_vocabulary": unique_vocabulary,
             "vocabulary_map": grammar_map,
@@ -537,6 +704,7 @@ class LSTM_Jazz_Solo():
             # 3. Aggregate and Analyze
             analyzed_stream = score_flat 
             extracted_chords = []
+            extracted_chord_symbols = []
             extracted_measures = []
             measure_stream = analyzed_stream.makeMeasures()
 
@@ -567,10 +735,10 @@ class LSTM_Jazz_Solo():
                             symbol = aggregate_chord.pitchedCommonName
                     except:
                         symbol = aggregate_chord.pitchedCommonName
-                        
-                    extracted_chords.append(symbol)
-                else:
-                    extracted_chords.append("Rest")
+                    extracted_chord_symbols.append(symbol)
+                    extracted_chords.append(aggregate_chord)
+                #else:
+                #    extracted_chords.append("Rest")
             # --- GRAMMAR GENERATION ---
             #print(f"{len(extracted_chords)} extracted_chords: {extracted_chords}")
             #unique_vocabulary = sorted(list(set(extracted_chords))) This list consists of str and tuple. Sorting it will hit an error wit this mixed types.
@@ -580,7 +748,7 @@ class LSTM_Jazz_Solo():
             self._music_data = {
                 "measures": extracted_measures,
                 "chords": extracted_chords,
-                "extracted_grammars": extracted_chords,
+                "chord_symbols": extracted_chord_symbols,
                 "vocabulary_map": grammar_map,
                 "grammar_sequence": grammar_sequence,
                 "unique_grammar_count": len(unique_vocabulary),
@@ -764,11 +932,11 @@ class LSTM_Jazz_Solo():
         (e.g., 0.125, 0.250, 0.333 ... ). '''
     def _prune_grammar(self, curr_grammar):
         pruned_grammar = curr_grammar.split(' ')
-
         for ix, gram in enumerate(pruned_grammar):
             terms = gram.split(',')
-            terms[1] = str(self.__roundUpDown(float(terms[1]), 0.250, 
-                rng.choice([-1, 1])))
+            #print(f"terms: {len(terms)} {terms}")
+            if len(terms) > 1:
+                terms[1] = str(self.__roundUpDown(float(terms[1]), 0.250, rng.choice([-1, 1])))
             pruned_grammar[ix] = ','.join(terms)
         pruned_grammar = ' '.join(pruned_grammar)
 
@@ -809,8 +977,8 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--retrain', action='store_true', help='Retrain the model')
     args = parser.parse_args()
 
-    # def __init__(self, path:str, tx:int, hidden_dim:int, values:int, learning_rate:float):
-    jazz = LSTM_Jazz_Solo("data/original_metheny.mid", "models/LSTM_Jazz_Solo.keras", "models/LSTM_Jazz_Solo_Inference.keras", 30, 64, 96, 0.01, 60)
+    # def self. __init__(self, path:str, tx:int, hidden_dim:int, values:int, learning_rate:float):
+    jazz = LSTM_Jazz_Solo("data/original_metheny.mid", "models/LSTM_Jazz_Solo.keras", "models/LSTM_Jazz_Solo_Inference.keras", 30, 64, 211, 0.01, 60)
     jazz.BuildTrainModel(300, args.retrain)
     jazz.BuildInferenceModel(100, args.retrain)
     results, indices = jazz.predict_and_sample()

@@ -106,6 +106,7 @@ def extract_complex_grammar(midi_file_path):
     print("Chordifying score (analyzing all instruments)...")
     chordified_score = score.chordify()
 
+    extracted_chords = []
     extracted_measures = []
     extracted_grammars = []
     
@@ -130,23 +131,25 @@ def extract_complex_grammar(midi_file_path):
             # This distinguishes specific harmonic colors (7ths, 9ths, etc.)
             grammar_token = tuple(measure_chord.normalOrder)
             extracted_grammars.append(grammar_token)
-        else:
-            extracted_grammars.append("Rest")
+            extracted_chords.append(measure_chord)
+        #else:
+        #    extracted_grammars.append("Rest")
 
     # 5. Create Abstract Grammar Mapping
     # Identify unique chord structures
-    unique_vocabulary = sorted(list(set(extracted_grammars)), key=lambda x: str(x))
+    #unique_vocabulary = sorted(list(set(extracted_grammars)), key=lambda x: str(x))
+    unique_vocabulary = list(set(extracted_chords))
     
     # Map each unique pitch set to an ID (0, 1, 2...)
     grammar_map = {token: i for i, token in enumerate(unique_vocabulary)}
     
     # Convert sequence to IDs
-    grammar_sequence = [grammar_map[g] for g in extracted_grammars]
+    grammar_sequence = [grammar_map[g] for g in extracted_chords]
 
     return {
         "measures": extracted_measures,
-        "chords": extracted_grammars,
-        "extracted_grammars": extracted_grammars,
+        "chords": extracted_chords,
+        "chord_symbols": extracted_grammars,
         "unique_grammar_count": len(unique_vocabulary),
         "unique_vocabulary": unique_vocabulary,
         "vocabulary_map": grammar_map,
@@ -204,6 +207,7 @@ def extract_complex_grammar1(midi_file_path):
         # 3. Aggregate and Analyze
         analyzed_stream = score_flat 
         extracted_chords = []
+        extracted_chord_symbols = []
         extracted_measures = []
         measure_stream = analyzed_stream.makeMeasures()
 
@@ -219,7 +223,6 @@ def extract_complex_grammar1(midi_file_path):
                 elif isinstance(element, chord.Chord):
                     for p in element.pitches:
                         unique_pitch_classes.add(p.pitchClass)
-
             if len(unique_pitch_classes) > 0:
                 # Enforce Canonical Order: Sort the pitch classes (e.g., {0, 4, 7})
                 canonical_pitch_set = sorted(list(unique_pitch_classes))
@@ -230,23 +233,25 @@ def extract_complex_grammar1(midi_file_path):
                 # Use complex jazz analysis
                 try:
                     symbol = harmony.chordSymbolFigureFromChord(aggregate_chord, includeChordType=True)
+                    #print(f"symbol: {type(symbol)}, aggregate_chord: {type(aggregate_chord)}")
                     if symbol == 'Chord Symbol Cannot Be Identified' or 'Unnamed Triad' in symbol:
                         symbol = aggregate_chord.pitchedCommonName
                 except:
                     symbol = aggregate_chord.pitchedCommonName
-                    
-                extracted_chords.append(symbol)
-            else:
-                extracted_chords.append("Rest")        # --- GRAMMAR GENERATION ---
+                    #print(f"symbol: {type(symbol)}, aggregate_chord: {type(aggregate_chord)}")
+                extracted_chord_symbols.append(symbol)
+                extracted_chords.append(aggregate_chord)
+            #else:
+            #    extracted_chords.append("Rest")        # --- GRAMMAR GENERATION ---
         #print(f"{len(extracted_chords)} extracted_chords: {extracted_chords}")
-        #unique_vocabulary = sorted(list(set(extracted_chords))) This list consists of str and tuple. Sorting it will hit an error wit this mixed types.
+        #unique_vocabulary = sorted(list(set(extracted_chords))) # This list consists of str and tuple. Sorting it will hit an error wit this mixed types.
         unique_vocabulary = list(set(extracted_chords))
         grammar_map = {chord_name: i for i, chord_name in enumerate(unique_vocabulary)}
         grammar_sequence = [grammar_map[c] for c in extracted_chords]
         return {
             "measures": extracted_measures,
             "chords": extracted_chords,
-            "extracted_grammars": extracted_chords,
+            "chord_symbols": extracted_chord_symbols,
             "vocabulary_map": grammar_map,
             "grammar_sequence": grammar_sequence,
             "unique_grammar_count": len(unique_vocabulary),
@@ -406,7 +411,7 @@ def get_corpus_data(abstract_grammars):
 def data_processing(data, values_indices, m = 60, Tx = 30):
     # cut the corpus into semi-redundant sequences of Tx values
     Tx = Tx
-    corpus = data['extracted_grammars']
+    corpus = data['chords']
     N_values = int(data['unique_grammar_count'])
     X = numpy.zeros((m, Tx, N_values), dtype=numpy.bool)
     Y = numpy.zeros((m, Tx, N_values), dtype=numpy.bool)
@@ -437,10 +442,6 @@ if __name__ == "__main__":
 
     if isinstance(data, dict):
         print(f"Total Measures: {len(data['measures'])}")
-        if "chords" in data:
-            print(f"Total Chords:   {len(data['chords'])}")
-        if "extracted_grammars" in data:
-            print(f"Total Grammars: {len(data['extracted_grammars'])}")
         print(f"Unique Grammars Found: {data['unique_grammar_count']}")
         print("-" * 30)
         print("Sample Vocabulary (First 15 Unique Tokens):")
@@ -454,20 +455,17 @@ if __name__ == "__main__":
     else:
         print(data)
     X, Y, N_tones, indices_tones = load_music_utils(data)
-    print('number of training examples:', X.shape[0])
-    print('Tx (length of sequence):', X.shape[1])
-    print('total # of unique values:', N_tones)
-    print('shape of X:', X.shape)
-    print('Shape of Y:', Y.shape)
-    print('Number of chords', len(data['chords']))    
+    print(f'number of training examples: {X.shape[0]}')
+    print(f'Tx (length of sequence): {X.shape[1]}')
+    print(f'total # of unique values: {N_tones}')
+    print(f'shape of X: {X.shape}')
+    print(f'Shape of Y: {Y.shape}')
+    print(f"# chords: {len(data['chords'])}, type: {type(data['chords'][0])}")
+    print(f"# chord symbols: {len(data['chord_symbols'])}, type: {type(data['chord_symbols'][0])}")
 
     data = extract_complex_grammar1(file_path)
     if isinstance(data, dict):
         print(f"Total Measures: {len(data['measures'])}")
-        if "chords" in data:
-            print(f"Total Chords:   {len(data['chords'])}")
-        if "extracted_grammars" in data:
-            print(f"Total Grammars: {len(data['extracted_grammars'])}")
         print(f"Unique Grammars Found: {data['unique_grammar_count']}")
         print("-" * 30)
         print("Sample Vocabulary (First 15 Unique Tokens):")
@@ -481,9 +479,11 @@ if __name__ == "__main__":
     else:
         print(data)        
     X, Y, N_tones, indices_tones = load_music_utils(data)
-    print('number of training examples:', X.shape[0])
-    print('Tx (length of sequence):', X.shape[1])
-    print('total # of unique values:', N_tones)
-    print('shape of X:', X.shape)
-    print('Shape of Y:', Y.shape)
-    print('Number of chords', len(data['chords']))    
+    print(f'number of training examples: {X.shape[0]}')
+    print(f'Tx (length of sequence): {X.shape[1]}')
+    print(f'total # of unique values: {N_tones}')
+    print(f'shape of X: {X.shape}')
+    print(f'Shape of Y: {Y.shape}')
+    print(f"# chords: {len(data['chords'])}, type: {type(data['chords'][0])}")
+    print(f"# chord symbols: {len(data['chord_symbols'])}, type: {type(data['chord_symbols'][0])}")
+
