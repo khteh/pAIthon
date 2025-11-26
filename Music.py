@@ -585,9 +585,16 @@ def data_processing(corpus, values_indices, m = 60, Tx = 30):
     return numpy.asarray(X), numpy.asarray(Y), N_values 
 
 def load_music_utils(file):
+    print(f"\n=== {load_music_utils.__name__} ===")
     chords, abstract_grammars = get_musical_data(file)
     corpus, tones, tones_indices, indices_tones = get_corpus_data(abstract_grammars)
-    X, Y, N_tones = data_processing(corpus, tones_indices, 60, 30)   
+    X, Y, N_tones = data_processing(corpus, tones_indices, 60, 30)
+    print('number of training examples:', X.shape[0])
+    print('Tx (length of sequence):', X.shape[1])
+    print('total # of unique values:', N_tones)
+    print('shape of X:', X.shape)
+    print('Shape of Y:', Y.shape)
+    print('Number of chords', len(chords))
     return (X, Y, N_tones, indices_tones, chords)
 
 def separate_part(midi_file_path, part: int):

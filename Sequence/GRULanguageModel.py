@@ -100,4 +100,4 @@ class GRULanguageModel(Model):
         embedding_dim = tf.keras.saving.deserialize_keras_object(embedding_dim_config)
         rnn_units_config = config.pop("rnn_units")
         rnn_units = tf.keras.saving.deserialize_keras_object(rnn_units_config)
-        return cls(vocab_size, embedding_dim, embedding_dim, rnn_units**config)
+        return cls(vocab_size, embedding_dim, embedding_dim, rnn_units, **config)

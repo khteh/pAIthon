@@ -262,43 +262,56 @@ class HeartDisease(DecisionTree):
             self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
             self._Y_test_risk = self._Y_test_risk.reindex(self._X_test_risk.index)
             #print(self._X_test_risk.head())
+        print(f"X_test: {self._X_test.shape}") # (92, 20)
         print(f"self._X_test_risk.index[{i}]: {self._X_test_risk.index[i]}")
         print(f"self._Y_test_risk.index[{i}]: {self._Y_test_risk.index[i]}")
         print(self._X_test_risk.head())
         self._shap = shap.TreeExplainer(model)
-        X = self._X_test.loc[self._X_test_risk.index[i], :]
+        X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy()
+        X = X[numpy.newaxis, ...] # Add axis-0 as samples
         Y = self._Y_test.loc[self._Y_test_risk.index[i]]
-        print(f"X: {X}")
-        print(f"Y: {Y}")
-        print(f"index: {self._X_test_risk.index[i]}, X: {X.shape}, Y: {Y.shape}")
+        Y = Y[numpy.newaxis, ...] # Add axis-0 as samples
+        print(f"X: {type(X)}, {X.shape}\n{X}") # (20,)
+        print(f"Y: {Y.shape}\n{Y}") # 1 scalar value
+        print(f"index: {self._X_test_risk.index[i]}") # index: 414, X: (20,), Y: ()
+        # https://shap.readthedocs.io/en/latest/generated/shap.TreeExplainer.html
+        # X: A matrix of samples (# samples x # features) on which to explain the model’s output.
         if isinstance(model, XGBClassifier):
             # Avoid pandas Series which will have the original DF columns as its index and the values of that specific row as its data. 
             # The "name" column is actually the name attribute of the resulting Series, which automatically gets assigned the index label used to retrieve the row.
-            # ValueError: DataFrame.dtypes for data must be int, float, bool or category. When categorical type is supplied, the experimental DMatrix parameter`enable_categorical` must be set to `True`.  Invalid columns:371: object
-            X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy()
-            X = X[numpy.newaxis, ...] # Add a single grayacale channel
-            Y = Y[numpy.newaxis, ...] # Add a single grayacale channel
-            dmatrix = DMatrix(data=X, label=Y, enable_categorical=True)
-            #dmatrix = DMatrix(data=X, enable_categorical=True)
-            print(f"dmatrix: {dmatrix}")
-            shap_values = self._shap.shap_values(dmatrix)
-            shap_value = shap_values[0]
-            print(f"shap_values: {shap_values.shape}, {shap_values}")
-            print(f"shap_value: {shap_value.shape}, {shap_value}")
-            shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
+            # https://github.com/shap/shap/issues/4214
+            # https://github.com/shap/shap/issues/4224
+            #X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy()
+            #X = X[numpy.newaxis, ...] # Add axis-0 as samples
+            #Y = Y[numpy.newaxis, ...] # Add axis-0 as samples
+            #print(f"X: {X.shape}\n{X}") # (1, 20)
+            #print(f"Y: {Y.shape}\n{Y}") # 1 scalar value
+            #dmatrix = DMatrix(data=X, label=Y, enable_categorical=True)
+            #dmatrix = DMatrix(data=X, enable_categorical=True) # (#samples, #features)
+            #print(f"dmatrix: {dmatrix}")
+            #shap_values = self._shap.shap_values(dmatrix)
+            shap_values = self._shap.shap_values(X)
+            #shap_value = shap_values[0]
+            shap_value = shap_values[:,1]
+            #print(f"shap_values: {shap_values.shape}, {shap_values}")
+            #print(f"shap_value: {shap_value.shape}, {shap_value}")
+            #print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}")
+            #shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
         else:
             shap_values = self._shap.shap_values(X)
             shap_value = shap_values[:,1]
-            print(f"shap_values: {shap_values.shape}, {shap_values}")
-            print(f"shap_value: {shap_value.shape}, {shap_value}")
-            shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
+        print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (20, 2)
+        print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (20,)
+        print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
+        #shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
+        shap.force_plot(model, None, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
         
         if isinstance(model, XGBClassifier):
             test_data_dm = DMatrix(data = self._X_test, label = self._Y_test, enable_categorical=True)
             shap_values = self._shap.shap_values(test_data_dm)
         else:
             shap_values = self._shap.shap_values(self._X_test)[:,:,1] # (992, 18, 2),
-        print(f"shap_values: {shap_values.shape}, {shap_values}")
+        print(f"shap_values: {shap_values.shape}, {shap_values}") # (92, 20)
         shap.summary_plot(shap_values, self._X_test)
         shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex_F')
         shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex_M')
