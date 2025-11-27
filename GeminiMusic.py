@@ -392,20 +392,6 @@ def parse_melody(fullMeasureNotes, fullMeasureChords):
         fullGrammar += (grammarTerm + " ")
     return fullGrammar.rstrip()
 
-def __get_abstract_grammars(measures, chords):
-    # extract grammars
-    abstract_grammars = []
-    for ix in range(1, len(measures)):
-        m = stream.Voice()
-        for i in measures[ix]:
-            m.insert(i.offset, i)
-        c = stream.Voice()
-        for j in chords[ix]:
-            c.insert(j.offset, j)
-        parsed = parse_melody(m, c)
-        abstract_grammars.append(parsed)
-    return abstract_grammars
-
 ''' Get corpus data from grammatical data '''
 def get_corpus_data(abstract_grammars):
     print(f"\n=== {get_corpus_data.__name__} ===")
