@@ -14,6 +14,7 @@ from tensorflow.keras.regularizers import l2
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import plot_model, to_categorical
+from tqdm import tqdm
 from utils.GPU import InitializeGPU
 from utils.TrainingMetricsPlot import PlotModelHistory
 from numpy.random import Generator, PCG64DXSM
@@ -61,7 +62,6 @@ class LSTM_Jazz_Solo():
     _X = None
     _Y = None
     _batch_size:int = None
-    _N_tones:int = None
     _N_values: int = None
     _indices_tones = None
     _hidden_dim: int = None
@@ -314,7 +314,7 @@ class LSTM_Jazz_Solo():
         print("Predicting new values for different set of chords.")
         # Loop over all 18 set of chords. At each iteration generate a sequence of tones
         # and use the current chords to convert it into actual sounds 
-        for i in range(1, num_chords):
+        for i in tqdm(range(1, num_chords)):
             
             # Retrieve current chord from stream
             curr_chords = stream.Voice()
@@ -333,13 +333,13 @@ class LSTM_Jazz_Solo():
             indices = list(indices.squeeze())
             #print(f"{len(indices)} indices: {type(indices[0])}")
             #print(f"self._indices_tones: {type(self._indices_tones)}")
-            pred = [self._indices_tones[p] for p in indices]
-            
+            pred = [self._indices_tones[p] for p in indices] # list[<music21.chord.Chord>]
+            #print(f"pred: {type(pred)} {type(pred[0])}")
             predicted_tones = 'C,0.25 '
             for k in range(len(pred) - 1):
-                predicted_tones += pred[k].pitchedCommonName + ' ' 
+                predicted_tones += pred[k].fullName + ' ' 
             
-            predicted_tones +=  pred[-1].pitchedCommonName
+            predicted_tones +=  pred[-1].fullName
                     
             #### POST PROCESSING OF THE PREDICTED TONES ####
             # We will consider "A" and "X" as "C" tones. It is a common choice.
@@ -550,10 +550,12 @@ class LSTM_Jazz_Solo():
         * This python module will obtain a dataset of values, and will use an RNN model to generate sequences of values.
         * This music generation system will use 90 unique values. 
         """
-        self._extract_complex_grammar1()
+        #self._extract_complex_grammar1()
+        self._extract_complex_grammar()
         self._corpus = self._music_data['chords']
+        assert self._N_values == len(set(self._corpus))
         self._tones_indices, self._indices_tones = self._get_corpus_data()
-        self._X, self._Y, self._N_tones = self._data_processing(30)
+        self._X, self._Y = self._data_processing()
         if isinstance(self._music_data, dict):
             print(f"Total Measures: {len(self._music_data['measures'])}")
             print(f"Unique Grammars Found: {self._music_data['unique_grammar_count']}")
@@ -570,7 +572,7 @@ class LSTM_Jazz_Solo():
             print(self._music_data)        
         print(f'number of training examples: {self._X.shape[0]}')
         print(f'Tx (length of sequence): {self._X.shape[1]}')
-        print(f'total # of unique values: {self._N_tones}')
+        print(f'total # of unique values: {self._N_values}')
         print(f'shape of X: {self._X.shape}')
         print(f'Shape of Y: {self._Y.shape}')
         print(f"# chords: {len(self._music_data['chords'])}, type: {type(self._music_data['chords'][0])}")
@@ -633,9 +635,11 @@ class LSTM_Jazz_Solo():
         # 5. Create Abstract Grammar Mapping
         # Identify unique chord structures
         #unique_vocabulary = sorted(list(set(extracted_grammars)), key=lambda x: str(x))
+        unique_symbols = list(set(extracted_grammars))
         unique_vocabulary = list(set(extracted_chords))
         
         # Map each unique pitch set to an ID (0, 1, 2...)
+        symbols_map = {token: i for i, token in enumerate(unique_symbols)}
         grammar_map = {token: i for i, token in enumerate(unique_vocabulary)}
         
         # Convert sequence to IDs
@@ -648,6 +652,7 @@ class LSTM_Jazz_Solo():
             "unique_grammar_count": len(unique_vocabulary),
             "unique_vocabulary": unique_vocabulary,
             "vocabulary_map": grammar_map,
+            "symbols_map": symbols_map,
             "grammar_sequence": grammar_sequence
         }
 
@@ -740,7 +745,9 @@ class LSTM_Jazz_Solo():
             # --- GRAMMAR GENERATION ---
             #print(f"{len(extracted_chords)} extracted_chords: {extracted_chords}")
             #unique_vocabulary = sorted(list(set(extracted_chords))) This list consists of str and tuple. Sorting it will hit an error wit this mixed types.
+            unique_symbols = list(set(extracted_chord_symbols))
             unique_vocabulary = list(set(extracted_chords))
+            symbols_map = {chord_name: i for i, chord_name in enumerate(unique_symbols)}
             grammar_map = {chord_name: i for i, chord_name in enumerate(unique_vocabulary)}
             grammar_sequence = [grammar_map[c] for c in extracted_chords]
             self._music_data = {
@@ -748,6 +755,7 @@ class LSTM_Jazz_Solo():
                 "chords": extracted_chords,
                 "chord_symbols": extracted_chord_symbols,
                 "vocabulary_map": grammar_map,
+                "symbols_map": symbols_map,
                 "grammar_sequence": grammar_sequence,
                 "unique_grammar_count": len(unique_vocabulary),
                 "unique_vocabulary": unique_vocabulary
@@ -762,24 +770,22 @@ class LSTM_Jazz_Solo():
         indices_val = dict((i, v) for i, v in enumerate(self._music_data['vocabulary_map']))
         return val_indices, indices_val
 
-    def _data_processing(self, Tx = 30):
+    def _data_processing(self):
         # cut the corpus into semi-redundant sequences of Tx values
-        Tx = Tx 
-        N_values = len(set(self._corpus))
-        X = numpy.zeros((self._batch_size, Tx, N_values), dtype=numpy.bool)
-        Y = numpy.zeros((self._batch_size, Tx, N_values), dtype=numpy.bool)
+        X = numpy.zeros((self._batch_size, self._Tx, self._N_values), dtype=numpy.bool)
+        Y = numpy.zeros((self._batch_size, self._Tx, self._N_values), dtype=numpy.bool)
         for i in range(self._batch_size):
     #         for t in range(1, Tx):
-            random_idx = rng.choice(len(self._corpus) - Tx)
-            corp_data = self._corpus[random_idx:(random_idx + Tx)]
-            for j in range(Tx):
+            random_idx = rng.choice(len(self._corpus) - self._Tx)
+            corp_data = self._corpus[random_idx:(random_idx + self._Tx)]
+            for j in range(self._Tx):
                 idx = self._tones_indices[corp_data[j]]
                 if j != 0:
                     X[i, j, idx] = 1
                     Y[i, j-1, idx] = 1
         Y = numpy.swapaxes(Y,0,1)
         Y = Y.tolist()
-        return numpy.asarray(X), numpy.asarray(Y), N_values
+        return numpy.asarray(X), numpy.asarray(Y)
 
     def _parse_melody(self, fullMeasureNotes, fullMeasureChords):
         # Remove extraneous elements.x
@@ -1016,7 +1022,7 @@ if __name__ == "__main__":
     jazz.BuildTrainModel(300, args.retrain)
     jazz.BuildInferenceModel(100, args.retrain)
     results, indices = jazz.predict_and_sample()
-    print("numpy.argmax(results[12]) =", numpy.argmax(results[12]))
-    print("numpy.argmax(results[17]) =", numpy.argmax(results[17]))
-    print("list(indices[12:18]) =", list(indices[12:18]))
+    print(f"numpy.argmax(results[12]): {numpy.argmax(results[12])}")
+    print(f"numpy.argmax(results[17]): {numpy.argmax(results[17])}")
+    print(f"list(indices[12:18]): {list(indices[12:18])}")
     jazz.generate_music("output/lstm_jazz.midi")

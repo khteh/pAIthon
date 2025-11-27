@@ -138,9 +138,11 @@ def extract_complex_grammar(midi_file_path):
     # 5. Create Abstract Grammar Mapping
     # Identify unique chord structures
     #unique_vocabulary = sorted(list(set(extracted_grammars)), key=lambda x: str(x))
+    unique_symbols = list(set(extracted_grammars))
     unique_vocabulary = list(set(extracted_chords))
     
     # Map each unique pitch set to an ID (0, 1, 2...)
+    symbols_map = {token: i for i, token in enumerate(unique_symbols)}
     grammar_map = {token: i for i, token in enumerate(unique_vocabulary)}
     
     # Convert sequence to IDs
@@ -153,6 +155,7 @@ def extract_complex_grammar(midi_file_path):
         "unique_grammar_count": len(unique_vocabulary),
         "unique_vocabulary": unique_vocabulary,
         "vocabulary_map": grammar_map,
+        "symbols_map": symbols_map,
         "grammar_sequence": grammar_sequence
     }
 
@@ -245,14 +248,17 @@ def extract_complex_grammar1(midi_file_path):
             #    extracted_chords.append("Rest")        # --- GRAMMAR GENERATION ---
         #print(f"{len(extracted_chords)} extracted_chords: {extracted_chords}")
         #unique_vocabulary = sorted(list(set(extracted_chords))) # This list consists of str and tuple. Sorting it will hit an error wit this mixed types.
+        unique_symbols = list(set(extracted_chord_symbols))
         unique_vocabulary = list(set(extracted_chords))
         grammar_map = {chord_name: i for i, chord_name in enumerate(unique_vocabulary)}
+        symbols_map = {chord_name: i for i, chord_name in enumerate(unique_symbols)}
         grammar_sequence = [grammar_map[c] for c in extracted_chords]
         return {
             "measures": extracted_measures,
             "chords": extracted_chords,
             "chord_symbols": extracted_chord_symbols,
             "vocabulary_map": grammar_map,
+            "symbols_map": symbols_map,
             "grammar_sequence": grammar_sequence,
             "unique_grammar_count": len(unique_vocabulary),
             "unique_vocabulary": unique_vocabulary
