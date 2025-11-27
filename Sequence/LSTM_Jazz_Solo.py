@@ -612,6 +612,10 @@ class LSTM_Jazz_Solo():
         measures = chordified_score.makeMeasures()
         
         for m in measures.getElementsByClass('Measure'):
+            for voice in m.getElementsByClass('Voice'):
+                #print(el.offset, el, el.activeSite)
+                if voice.quarterLength == 0.0:
+                    voice.quarterLength = 0.25
             extracted_measures.append(m.number)
             
             # Flatten the measure to get all simultaneous notes played by all instruments
@@ -712,6 +716,11 @@ class LSTM_Jazz_Solo():
             measure_stream = analyzed_stream.makeMeasures()
 
             for m in measure_stream.getElementsByClass('Measure'):
+                for voice in m.getElementsByClass('Voice'):
+                    #print(el.offset, el, el.activeSite)
+                    if voice.quarterLength == 0.0:
+                        voice.quarterLength = 0.25
+
                 extracted_measures.append(m.number)
                 notes_and_chords = m.flatten().getElementsByClass(['Note', 'Chord'])
                 

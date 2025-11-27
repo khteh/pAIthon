@@ -115,8 +115,11 @@ def extract_complex_grammar(midi_file_path):
     measures = chordified_score.makeMeasures()
     
     for m in measures.getElementsByClass('Measure'):
+        for voice in m.getElementsByClass('Voice'):
+            #print(el.offset, el, el.activeSite)
+            if voice.quarterLength == 0.0:
+                voice.quarterLength = 0.25
         extracted_measures.append(m.number)
-        
         # Flatten the measure to get all simultaneous notes played by all instruments
         notes = m.flatten().notes
         
@@ -215,6 +218,11 @@ def extract_complex_grammar1(midi_file_path):
         measure_stream = analyzed_stream.makeMeasures()
 
         for m in measure_stream.getElementsByClass('Measure'):
+            for voice in m.getElementsByClass('Voice'):
+                #print(el.offset, el, el.activeSite)
+                if voice.quarterLength == 0.0:
+                    voice.quarterLength = 0.25
+
             extracted_measures.append(m.number)
             notes_and_chords = m.flatten().getElementsByClass(['Note', 'Chord'])
             
