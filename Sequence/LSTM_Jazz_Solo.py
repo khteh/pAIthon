@@ -1,7 +1,11 @@
-import argparse, numpy, copy, traceback, tensorflow as tf
+import argparse, numpy, copy, traceback, tensorflow as tf, math
 from itertools import zip_longest
+from collections import defaultdict
 from pathlib import Path
 from music21 import *
+from mido import MidiFile
+from pydub import AudioSegment
+from pydub.generators import Sine
 from keras import saving
 from tensorflow.keras.saving import serialize_keras_object
 from tensorflow.keras.layers import Dense, Activation, Dropout, Input, LSTM, Reshape, Layer, RepeatVector
@@ -325,10 +329,10 @@ class LSTM_Jazz_Solo():
             # Generate a sequence of tones using the model
             _, indices = self.predict_and_sample()
             indices = indices.numpy()
-            print(f"indices: {type(indices)} {indices.shape}")
+            #print(f"indices: {type(indices)} {indices.shape}")
             indices = list(indices.squeeze())
-            print(f"{len(indices)} indices: {type(indices[0])}")
-            print(f"self._indices_tones: {type(self._indices_tones)}")
+            #print(f"{len(indices)} indices: {type(indices[0])}")
+            #print(f"self._indices_tones: {type(self._indices_tones)}")
             pred = [self._indices_tones[p] for p in indices]
             
             predicted_tones = 'C,0.25 '
@@ -354,7 +358,7 @@ class LSTM_Jazz_Solo():
             sounds = self._clean_up_notes(sounds)
 
             # Print number of tones/notes in sounds
-            print('Generated %s sounds using the predicted values for the set of chords ("%s") and after pruning' % (len([k for k in sounds if isinstance(k, note.Note)]), i))
+            print(f'Generated {len([k for k in sounds if isinstance(k, note.Note)])} sounds using the predicted values for the set of chords ("{i}") and after pruning')
             
             # Insert sounds into the output stream
             for m in sounds:
@@ -371,13 +375,9 @@ class LSTM_Jazz_Solo():
         mf = midi.translate.streamToMidiFile(out_stream)
         mf.open(path, 'wb')
         mf.write()
-        print(f"Your generated music is saved in {path}")
+        print(f"Your generated music is saved in {path}") # $ fluidsynth output/lstm_jazz.mid
         mf.close()
-        
-        # Play the final stream through output (see 'play' lambda function above)
-        # play = lambda x: midi.realtime.StreamPlayer(x).play()
-        # play(out_stream)
-        return out_stream
+        self._mid2wav(path)
     
     ''' Given a grammar string and chords for a measure, returns measure notes. '''
     def _unparse_grammar(self, m1_grammar, m1_chords):
@@ -408,7 +408,7 @@ class LSTM_Jazz_Solo():
 
             # Case #1: if no < > to indicate next note range. Usually this lack of < >
             # is for the first note (no precedent), or for rests.
-            if (len(terms) == 2): # Case 1: if no < >.
+            if len(terms) == 2: # Case 1: if no < >.
                 insertNote = note.Note() # default is C
 
                 # Case C: chord note.
@@ -426,14 +426,13 @@ class LSTM_Jazz_Solo():
 
                 # Update the stream of generated notes
                 insertNote.quarterLength = float(terms[1])
-                print(f"insertNote: {insertNote}")
+                #print(f"insertNote: {insertNote}")
                 if not insertNote.octave or insertNote.octave < 4:
                     insertNote.octave = 4
                 m1_elements.insert(currOffset, insertNote)
                 prevElement = insertNote
-
             # Case #2: if < > for the increment. Usually for notes after the first one.
-            else:
+            elif len(terms) >= 3:
                 # Get lower, upper intervals and notes.
                 interval1 = interval.Interval(terms[2].replace("<",''))
                 interval2 = interval.Interval(terms[3].replace(">",''))
@@ -467,7 +466,6 @@ class LSTM_Jazz_Solo():
                         insertNote.octave = 3
                     insertNote.quarterLength = float(terms[1])
                     m1_elements.insert(currOffset, insertNote)
-
                 # Case S: scale note, must be within increment.
                 elif terms[0] == 'S':
                     relevantScaleTones = []
@@ -924,7 +922,7 @@ class LSTM_Jazz_Solo():
 
     ''' Helper function, from recipes, to iterate over list in chunks of n 
         length. '''
-    def __grouper(iterable, n, fillvalue=None):
+    def __grouper(self, iterable, n, fillvalue=None):
         args = [iter(iterable)] * n
         return zip_longest(*args, fillvalue=fillvalue)
 
@@ -968,6 +966,42 @@ class LSTM_Jazz_Solo():
         curr_notes = [i for ix, i in enumerate(curr_notes) if ix not in removeIxs]
         return curr_notes
     
+    def _mid2wav(self, path):
+        mid = MidiFile(path)
+        output = AudioSegment.silent(mid.length * 1000.0)
+        tempo = 130 # bpm
+        for track in mid.tracks:
+            # position of rendering in ms
+            current_pos = 0.0
+            current_notes = defaultdict(dict)
+            for msg in track:
+                current_pos += self._ticks_to_ms(msg.time, tempo, mid)
+                if msg.type == 'note_on':
+                    if msg.note in current_notes[msg.channel]:
+                        current_notes[msg.channel][msg.note].append((current_pos, msg))
+                    else:
+                        current_notes[msg.channel][msg.note] = [(current_pos, msg)]
+                if msg.type == 'note_off':
+                    start_pos, start_msg = current_notes[msg.channel][msg.note].pop()
+                    duration = math.ceil(current_pos - start_pos)
+                    signal_generator = Sine(self._note_to_freq(msg.note, 500))
+                    #print(duration)
+                    rendered = signal_generator.to_audio_segment(duration=duration-50, volume=-20).fade_out(100).fade_in(30)
+                    output = output.overlay(rendered, start_pos)
+        wav_path = f"{Path(path).with_suffix('')}.wav"
+        output.export(wav_path, format="wav")
+        print(f"Your generated music is saved in {wav_path}") # $ aplay output/lstm_jazz.wav
+
+    def _note_to_freq(self, note, concert_A=440.0):
+        '''
+        from wikipedia: http://en.wikipedia.org/wiki/MIDI_Tuning_Standard#Frequency_values
+        '''
+        return (2.0 ** ((note - 69) / 12.0)) * concert_A
+
+    def _ticks_to_ms(self, ticks, tempo, mid):
+        tick_ms = math.ceil((60000.0 / tempo) / mid.ticks_per_beat)
+        return ticks * tick_ms
+
 if __name__ == "__main__":
     """
     https://docs.python.org/3/library/argparse.html
