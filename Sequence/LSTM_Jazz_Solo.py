@@ -569,12 +569,19 @@ class LSTM_Jazz_Solo():
             print("First 20 tokens of the sequence:")
             print(self._music_data['grammar_sequence'][:20])
         else:
-            print(self._music_data)        
+            print(self._music_data)
+        """
+        number of training examples: 60
+        Tx (length of sequence): 30
+        total # of unique values: 211
+        X: (60, 30, 211)
+        Y: (30, 60, 211)
+        """
         print(f'number of training examples: {self._X.shape[0]}')
         print(f'Tx (length of sequence): {self._X.shape[1]}')
         print(f'total # of unique values: {self._N_values}')
-        print(f'shape of X: {self._X.shape}')
-        print(f'Shape of Y: {self._Y.shape}')
+        print(f'X: {self._X.shape}')
+        print(f'Y: {self._Y.shape}')
         print(f"# chords: {len(self._music_data['chords'])}, type: {type(self._music_data['chords'][0])}")
         print(f"# chord symbols: {len(self._music_data['chord_symbols'])}, type: {type(self._music_data['chord_symbols'][0])}")
 
