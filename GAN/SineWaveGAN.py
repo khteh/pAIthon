@@ -75,6 +75,10 @@ class Discriminator():
         self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
    
 class Generator():
+    """
+    Takes samples from a latent space as its input and generates data resembling data in the training dataset.
+    Use NN as multilayer perceptron.
+    """
     _samples: int = None
     model = None
     _cross_entropy = None
