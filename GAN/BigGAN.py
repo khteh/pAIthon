@@ -435,7 +435,8 @@ class BigGAN():
         z = tf.random.normal((batch_size, z_dim))                 # Generate random noise (z)
         y = tf.range(start=0, limit=self._classes, dtype=tf.int64)# Generate a batch of labels (y), one for each class
         y_emb = self._generator.shared_emb(y)                     # Retrieve class embeddings (y_emb) from generator
-        # print(f"z: {z.shape}, y: {y.shape}, y_emb: {y_emb.shape}") # z: (5, 120), y: (5,), y_emb: (5, 128)
+        #print(f"z: {z.shape}, y: {y.shape}, y_emb: {y_emb.shape}") # z: (5, 120), y: (5,), y_emb: (5, 128)
+        #print(f"y: {y}, y_emb: {y_emb}")
         x_gen = self._generator.forward(z, y_emb)                 # Generate fake images from z and y_emb
         score = self._discriminator.forward(x_gen, y)             # Generate classification for fake images
         # x_gen: (5, 128, 128, 3), score: (5, 1) 
