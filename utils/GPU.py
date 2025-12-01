@@ -21,3 +21,13 @@ def SetMemoryLimit(size: int):
     print(f"{len(gpus)} GPUs available")
     for gpu in gpus:
         tf.config.experimental.set_virtual_device_configuration(gpu,[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=size)])
+
+def UseCPU():
+    # Get a list of all physical devices
+    physical_devices = tf.config.list_physical_devices()
+
+    # Filter for CPU devices
+    cpu_devices = [device for device in physical_devices if device.device_type == 'CPU']
+
+    # Set only CPU devices as visible
+    tf.config.set_visible_devices(cpu_devices)    

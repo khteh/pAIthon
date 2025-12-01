@@ -6,11 +6,11 @@ from pathlib import Path
 from utils.Image import CreateGIF, ShowImage
 from tensorflow.keras.initializers import Orthogonal
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Input, Conv2D, Activation, ReLU, Embedding, Dense, BatchNormalization, Reshape, AveragePooling2D, Layer, SpectralNormalization, UpSampling2D
+from tensorflow.keras.layers import Input, Conv2D, Activation, ReLU, Embedding, Dense, BatchNormalization, AveragePooling2D, MaxPool2D, Layer, SpectralNormalization, UpSampling2D
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.regularizers import l2
-from utils.GPU import InitializeGPU
+from utils.GPU import InitializeGPU, UseCPU
 from utils.TrainingMetricsPlot import PlotGANLossHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
@@ -41,19 +41,23 @@ class ClassConditionalBatchNorm2d(Layer):
     in_channels: the dimension of the class embedding (c) + noise vector (z), a scalar
     out_channels: the dimension of the activation tensor to be normalized, a scalar
     '''
-
+    _bn: BatchNormalization = None
+    _class_scale_transform: SpectralNormalization = None
+    _class_shift_transform: SpectralNormalization = None
     def __init__(self, in_channels, out_channels):
         super().__init__()
         #self._input = Input(shape=(in_channels, ))
-        self.bn = BatchNormalization()
-        self.class_scale_transform = SpectralNormalization(Dense(out_channels, use_bias=False, kernel_initializer=Orthogonal()))
-        self.class_shift_transform = SpectralNormalization(Dense(out_channels, use_bias=False, kernel_initializer=Orthogonal()))
+        self._bn = BatchNormalization()
+        self._class_scale_transform = SpectralNormalization(Dense(out_channels, use_bias=False, kernel_initializer=Orthogonal()))
+        self._class_shift_transform = SpectralNormalization(Dense(out_channels, use_bias=False, kernel_initializer=Orthogonal()))
 
-    def call(self, x, y):
+    def __call__(self, x, y):
         #x = self._input(x)
-        normalized_image = self.bn(x)
-        class_scale = (1 + self.class_scale_transform(y))[:, :, None, None]
-        class_shift = self.class_shift_transform(y)[:, :, None, None]
+        print(f"ClassConditionalBatchNorm2d() x: {x.shape}")
+        normalized_image = self._bn(x)
+        class_scale = (1 + self._class_scale_transform(y))[:, None, None, :] # Insert a new dimension of size 1 at axis=1 and axis=2
+        class_shift = self._class_shift_transform(y)[:, None, None, :] # Insert a new dimension of size 1 at axis=1 and axis=2
+        print(f"class_scale: {class_scale.shape}, class_shift: {class_shift.shape}")
         transformed_image = class_scale * normalized_image + class_shift
         return transformed_image
 
@@ -77,33 +81,57 @@ class AttentionBlock(Layer):
     '''
     def __init__(self, channels):
         super().__init__()
-
         self.channels = channels
-
         self.theta = SpectralNormalization(Conv2D(channels // 8, kernel_size=1, padding="valid", use_bias=False, kernel_initializer=Orthogonal()))
         self.phi = SpectralNormalization(Conv2D(channels // 8, kernel_size=1, padding="valid", use_bias=False, kernel_initializer=Orthogonal()))
         self.g = SpectralNormalization(Conv2D(channels // 2, kernel_size=1, padding="valid", use_bias=False, kernel_initializer=Orthogonal()))
         self.o = SpectralNormalization(Conv2D(channels, kernel_size=1, padding="valid", use_bias=False, kernel_initializer=Orthogonal()))
         self.gamma = tf.Variable(0., requires_grad=True)
 
-    def call(self, x):
-        spatial_size = x.shape[2] * x.shape[3]
+    def __call__(self, x):
+        spatial_size = x.shape[1] * x.shape[2]
 
         # Apply convolutions to get query (theta), key (phi), and value (g) transforms
         theta = self.theta(x)
-        phi = tf.nn.max_pool2d(self.phi(x), kernel_size=2)
-        g = tf.nn.max_pool2d(self.g(x), kernel_size=2)
+        phi = MaxPool2D((2,2))(self.phi(x))
+        g = MaxPool2D((2,2))(self.g(x))
 
         # Reshape spatial size for self-attention
-        theta = theta.view(-1, self.channels // 8, spatial_size)
-        phi = phi.view(-1, self.channels // 8, spatial_size // 4)
-        g = g.view(-1, self.channels // 2, spatial_size // 4)
+        """
+        spatial_size: 64, theta: torch.Size([5, 192, 8, 8])
+        theta: torch.Size([5, 192, 64]), phi: torch.Size([5, 192, 4, 4])
+        phi: torch.Size([5, 192, 16]), g: torch.Size([5, 768, 4, 4])
+        g: torch.Size([5, 768, 16])
+        theta: torch.Size([5, 192, 64]), transposed: torch.Size([5, 64, 192]), phi: torch.Size([5, 192, 16])
+        g: torch.Size([5, 768, 16]), beta: torch.Size([5, 64, 16])
+        tmp: torch.Size([5, 768, 64]), tmp1: torch.Size([5, 768, 8, 8])
 
+        spatial_size: 64, theta: (5, 8, 8, 192)
+        theta: (5, 64, 192), phi: (5, 4, 4, 192)
+        phi: (5, 16, 192), g: (5, 4, 4, 768)
+        g: (5, 16, 768)
+        theta: (5, 64, 192), transposed: (5, 192, 64), phi: (5, 16, 192)
+        g: (5, 16, 768), beta: (5, 64, 16)
+        tmp: (5, 64, 768)
+        """
+        print(f"spatial_size: {spatial_size}, theta: {theta.shape}")
+        theta = tf.reshape(theta, [-1, spatial_size, self.channels // 8])
+        print(f"theta: {theta.shape}, phi: {phi.shape}")
+        phi = tf.reshape(phi, [-1, spatial_size // 4, self.channels // 8])
+        print(f"phi: {phi.shape}, g: {g.shape}")
+        g = tf.reshape(g, [-1, spatial_size // 4, self.channels // 2])
+        print(f"g: {g.shape}")
         # Compute dot product attention with query (theta) and key (phi) matrices
-        beta = tf.nn.softmax(tf.matmul(theta.transpose(1, 2), phi), dim=-1)
+        phi_transposed = tf.transpose(phi, perm=[0, 2, 1])
+        print(f"theta: {theta.shape}, phi: {phi.shape}, transposed: {phi_transposed.shape}, ")
+        beta = tf.nn.softmax(tf.matmul(theta, phi_transposed), axis=-1)
 
         # Compute scaled dot product attention with value (g) and attention (beta) matrices
-        o = self.o(tf.matmul(g, beta.transpose(1, 2)).view(-1, self.channels // 2, x.shape[2], x.shape[3]))
+        print(f"g: {g.shape}, beta: {beta.shape}")
+        tmp = tf.matmul(beta, g)
+        print(f"tmp: {tmp.shape}")
+        tmp = tf.reshape(tmp, [-1, x.shape[1], x.shape[2], self.channels // 2])
+        o = self.o(tmp)
 
         # Apply gain and residual
         return self.gamma * o + x
@@ -140,7 +168,8 @@ class GResidualBlock(Layer):
         if self.mixin:
             self.conv_mixin = SpectralNormalization(Conv2D(out_channels, kernel_size=1, padding="valid", kernel_initializer=Orthogonal()))
 
-    def call(self, x, y):
+    def __call__(self, x, y):
+        print(f"GResidualBlock() x: {x.shape}")
         # h := upsample(x, y)
         h = self.bn1(x, y)
         h = self.activation(h)
@@ -218,7 +247,7 @@ class Generator():
                 AttentionBlock(base_channels),
             ])
         self._proj_o = Sequential([
-            BatchNormalization(base_channels),
+            BatchNormalization(),
             ReLU(),
             SpectralNormalization(Conv2D(3, kernel_size=1, padding="valid", kernel_initializer=Orthogonal())),
             Activation("tanh")
@@ -239,8 +268,10 @@ class Generator():
  
         # Project noise and reshape to feed through generator blocks
         h = self._proj_z(z)
-        h = tf.reshape(h, [h.shape[0], -1, self._bottom_width, self._bottom_width])
- 
+        print(f"h: {h.shape}")
+        h = tf.reshape(h, [h.shape[0], self._bottom_width, self._bottom_width, -1])
+        print(f"h: {h.shape}")
+
         # Feed through generator blocks
         for idx, g_block in enumerate(self._g_blocks):
             h = g_block[0](h, ys[idx])
@@ -298,7 +329,7 @@ class DResidualBlock(Layer):
                 x = self.conv_mixin(x)
         return x
 
-    def forward(self, x):
+    def __call__(self, x):
         # Apply preactivation if applicable
         if self.use_preactivation:
             h = tf.nn.relu(x)
@@ -391,10 +422,10 @@ class BigGAN():
         z = tf.random.normal((batch_size, z_dim))                 # Generate random noise (z)
         y = tf.range(start=0, limit=self._classes, dtype=tf.int64)# Generate a batch of labels (y), one for each class
         y_emb = self._generator.shared_emb(y)                     # Retrieve class embeddings (y_emb) from generator
-
+        print(f"z: {z.shape}, y: {y.shape}, y_emb: {y_emb.shape}")
         x_gen = self._generator.forward(z, y_emb)                 # Generate fake images from z and y_emb
         score = self._discriminator.forward(x_gen, y)             # Generate classification for fake images
-        print(f"score: {score}")
+        print(f"x_gen: {x_gen.shape}, score: {score.shape} {score}")
 
 if __name__ == "__main__":
     # Initialize models
@@ -402,6 +433,6 @@ if __name__ == "__main__":
     z_dim = 120
     n_classes = 5   # 5 classes is used instead of the original 1000, for efficiency
     shared_dim = 128
-    InitializeGPU()
+    UseCPU() # It will OOM due to the size of BigGAN if using GPU.
     biggan = BigGAN(base_channels, z_dim, n_classes, shared_dim)
     biggan.SampleForwardPass()
