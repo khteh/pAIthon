@@ -309,6 +309,10 @@ class DResidualBlock(Layer):
         self._downsample = downsample    # downsample occurs in all except last dblock
 
     def build(self, input_shape):
+        """
+        When creating custom Keras layers by subclassing tf.keras.layers.Layer, it is common practice to implement a build() method. 
+        This method is where you define and create the layer's weights and biases, often depending on the input shape.
+        """
         self._conv1 = SpectralNormalization(Conv2D(self._out_channels, kernel_size=3, padding="same", kernel_initializer=Orthogonal()))
         self._conv2 = SpectralNormalization(Conv2D(self._out_channels, kernel_size=3, padding="same", kernel_initializer=Orthogonal()))
 
@@ -401,6 +405,17 @@ class Discriminator():
         return uncond_out + cond_out
     
 class BigGAN():
+    """
+    [Large Scale GAN Training for High Fidelity Natural Image Synthesis](https://arxiv.org/abs/1809.11096) (Brock et al. 2019). 
+    BigGAN performs a conditional generation task, so unlike StyleGAN, it conditions on a certain class to generate results. 
+    BigGAN is based mainly on empirical results and shows extremely good results when trained on ImageNet and its 1000 classes.
+
+    The authors propose a several changes that improve state-of-the-art Inception Score (IS) and Frechet Inception Distance (FID), including:
+    - **Increasing batch size by a factor of 8**, which improves IS by 46% and improves FID by 35%, but also induces complete mode collapse in training.
+    - **Increasing the number of convolutional channels by 1.5x**, which improves IS by 21% and FID by 23%.
+    - **Using shared class-conditional embeddings $c$ in BatchNorm layers**, which reduces the number of parameters and increases IS by 2% and FID by 4%.
+    - **Adding skip connections from latent noise $z$** by concatenating chunks of $z$ to $c$. This improves IS by 1% and FID by 5%.
+    """
     _generator:Generator = None
     _discrinimator:Discriminator = None
     _checkpoint: tf.train.Checkpoint = None
