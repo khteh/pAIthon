@@ -3,7 +3,7 @@ import numpy, math, tensorflow as tf
 from pathlib import Path
 from tensorflow.image import ResizeMethod
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Dropout, Flatten, Dense, GroupNormalization, Reshape, Conv2DTranspose, UpSampling2D
+from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Layer, Flatten, Dense, GroupNormalization, Reshape, Conv2DTranspose, UpSampling2D
 from scipy.stats import truncnorm
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from utils.Image import ShowImage, CreateGIF, make_image_grid
@@ -28,7 +28,7 @@ def get_truncated_noise(n_samples, z_dim, truncation):
     #print(f"truncated_noise: {truncated_noise.shape}")
     return truncated_noise
 
-class MappingLayers(tf.Module):
+class MappingLayers(Layer):
     '''
     Mapping Layers Class
     Values:
@@ -53,10 +53,10 @@ class MappingLayers(tf.Module):
             Dense(self._hidden_dim, activation="relu"),
             Dense(self._w_dim),
         ])
-    def __call__(self, noise):
+    def call(self, noise):
         return self._noise_mapping(noise)
 
-class InjectNoise(tf.Module):
+class InjectNoise(Layer):
     '''
     Inject Noise Class
     Values:
@@ -72,7 +72,7 @@ class InjectNoise(tf.Module):
             tf.random.normal(shape=(1, self._channels, 1, 1)),
             name = "NoiseWeights"
         )
-    def __call__(self, image):
+    def call(self, image):
         '''
         Inject Noise Class
         Values:
@@ -95,7 +95,7 @@ class InjectNoise(tf.Module):
         self._weights = tf.Variable(weights, name = "NoiseWeights")
         return self._weights
 
-class AdaIN(tf.Module):
+class AdaIN(Layer):
     '''
     AdaIN Class
     Values:
@@ -128,7 +128,7 @@ class AdaIN(tf.Module):
         # corresponding to the number of image channels.
         self.style_scale_transform = Dense(channels) # dimensionality of the output space.
         self.style_shift_transform = Dense(channels)
-    def __call__(self, image, w):
+    def call(self, image, w):
         '''
         Function for completing a forward pass of AdaIN: Given an image and intermediate noise vector w, 
         returns the normalized image that has been scaled and shifted by the style.
@@ -136,7 +136,7 @@ class AdaIN(tf.Module):
             image: the feature map of shape (n_samples, channels, width, height)
             w: the intermediate noise vector
         '''
-        print(f"=== AdaIN.__call__ ===")
+        print(f"=== AdaIN.call ===")
         normalized_image = self._instance_norm(image)
         style_scale = self.style_scale_transform(w)[:, :, None, None]
         style_shift = self.style_shift_transform(w)[:, :, None, None]
@@ -144,7 +144,7 @@ class AdaIN(tf.Module):
         # Calculate the transformed image
         return style_scale * normalized_image + style_shift
     
-class MicroStyleGANGeneratorBlock(tf.Module):
+class MicroStyleGANGeneratorBlock(Layer):
     '''
     Micro StyleGAN Generator Block Class
     Values:
@@ -187,7 +187,7 @@ class MicroStyleGANGeneratorBlock(tf.Module):
         self.adain = AdaIN(out_chan, w_dim)
         self.activation = LeakyReLU(0.2)
 
-    def __call__(self, x, w):
+    def call(self, x, w):
         '''
         Function for completing a forward pass of MicroStyleGANGeneratorBlock: Given an x and w, 
         computes a StyleGAN generator block.
@@ -203,7 +203,7 @@ class MicroStyleGANGeneratorBlock(tf.Module):
         x = self.activation(x)
         return x
 
-class MicroStyleGANGenerator(tf.Module):
+class MicroStyleGANGenerator(Layer):
     '''
     Micro StyleGAN Generator Class.
     StyleGAN starts with a constant 4 x 4 (x 512 channel) tensor which is put through an iteration of the generator without upsampling. The output is some noise that can then be transformed into a blurry 4 x 4 image. This is where the progressive growing process begins. The 4 x 4 noise can be further passed through a generator block with upsampling to produce an 8 x 8 output. However, this will be done gradually.
@@ -271,7 +271,7 @@ class MicroStyleGANGenerator(tf.Module):
         '''
         return tf.image.resize(smaller_image, size=bigger_image.shape[-2:], method=ResizeMethod.BILINEAR)
         
-    def __call__(self, noise, return_intermediate=False):
+    def call(self, noise, return_intermediate=False):
         '''
         Function for completing a forward pass of MicroStyleGANGenerator: Given noise, 
         computes a StyleGAN iteration.

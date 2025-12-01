@@ -51,13 +51,13 @@ class ClassConditionalBatchNorm2d(Layer):
         self._class_scale_transform = SpectralNormalization(Dense(out_channels, use_bias=False, kernel_initializer=Orthogonal()))
         self._class_shift_transform = SpectralNormalization(Dense(out_channels, use_bias=False, kernel_initializer=Orthogonal()))
 
-    def __call__(self, x, y):
+    def call(self, x, y):
         #x = self._input(x)
-        print(f"ClassConditionalBatchNorm2d() x: {x.shape}")
+        # print(f"ClassConditionalBatchNorm2d() x: {x.shape}") # x: (5, 4, 4, 1536)
         normalized_image = self._bn(x)
         class_scale = (1 + self._class_scale_transform(y))[:, None, None, :] # Insert a new dimension of size 1 at axis=1 and axis=2
         class_shift = self._class_shift_transform(y)[:, None, None, :] # Insert a new dimension of size 1 at axis=1 and axis=2
-        print(f"class_scale: {class_scale.shape}, class_shift: {class_shift.shape}")
+        # print(f"class_scale: {class_scale.shape}, class_shift: {class_shift.shape}") # class_scale: (5, 1, 1, 1536), class_shift: (5, 1, 1, 1536)
         transformed_image = class_scale * normalized_image + class_shift
         return transformed_image
 
@@ -88,7 +88,7 @@ class AttentionBlock(Layer):
         self.o = SpectralNormalization(Conv2D(channels, kernel_size=1, padding="valid", use_bias=False, kernel_initializer=Orthogonal()))
         self.gamma = tf.Variable(0., requires_grad=True)
 
-    def __call__(self, x):
+    def call(self, x):
         spatial_size = x.shape[1] * x.shape[2]
 
         # Apply convolutions to get query (theta), key (phi), and value (g) transforms
@@ -98,14 +98,6 @@ class AttentionBlock(Layer):
 
         # Reshape spatial size for self-attention
         """
-        spatial_size: 64, theta: torch.Size([5, 192, 8, 8])
-        theta: torch.Size([5, 192, 64]), phi: torch.Size([5, 192, 4, 4])
-        phi: torch.Size([5, 192, 16]), g: torch.Size([5, 768, 4, 4])
-        g: torch.Size([5, 768, 16])
-        theta: torch.Size([5, 192, 64]), transposed: torch.Size([5, 64, 192]), phi: torch.Size([5, 192, 16])
-        g: torch.Size([5, 768, 16]), beta: torch.Size([5, 64, 16])
-        tmp: torch.Size([5, 768, 64]), tmp1: torch.Size([5, 768, 8, 8])
-
         spatial_size: 64, theta: (5, 8, 8, 192)
         theta: (5, 64, 192), phi: (5, 4, 4, 192)
         phi: (5, 16, 192), g: (5, 4, 4, 768)
@@ -114,22 +106,22 @@ class AttentionBlock(Layer):
         g: (5, 16, 768), beta: (5, 64, 16)
         tmp: (5, 64, 768)
         """
-        print(f"spatial_size: {spatial_size}, theta: {theta.shape}")
+        # print(f"spatial_size: {spatial_size}, theta: {theta.shape}")
         theta = tf.reshape(theta, [-1, spatial_size, self.channels // 8])
-        print(f"theta: {theta.shape}, phi: {phi.shape}")
+        # print(f"theta: {theta.shape}, phi: {phi.shape}")
         phi = tf.reshape(phi, [-1, spatial_size // 4, self.channels // 8])
-        print(f"phi: {phi.shape}, g: {g.shape}")
+        # print(f"phi: {phi.shape}, g: {g.shape}")
         g = tf.reshape(g, [-1, spatial_size // 4, self.channels // 2])
-        print(f"g: {g.shape}")
+        # print(f"g: {g.shape}")
         # Compute dot product attention with query (theta) and key (phi) matrices
         phi_transposed = tf.transpose(phi, perm=[0, 2, 1])
-        print(f"theta: {theta.shape}, phi: {phi.shape}, transposed: {phi_transposed.shape}, ")
+        # print(f"theta: {theta.shape}, phi: {phi.shape}, transposed: {phi_transposed.shape}, ")
         beta = tf.nn.softmax(tf.matmul(theta, phi_transposed), axis=-1)
 
         # Compute scaled dot product attention with value (g) and attention (beta) matrices
-        print(f"g: {g.shape}, beta: {beta.shape}")
+        # print(f"g: {g.shape}, beta: {beta.shape}")
         tmp = tf.matmul(beta, g)
-        print(f"tmp: {tmp.shape}")
+        # print(f"tmp: {tmp.shape}")
         tmp = tf.reshape(tmp, [-1, x.shape[1], x.shape[2], self.channels // 2])
         o = self.o(tmp)
 
@@ -168,8 +160,8 @@ class GResidualBlock(Layer):
         if self.mixin:
             self.conv_mixin = SpectralNormalization(Conv2D(out_channels, kernel_size=1, padding="valid", kernel_initializer=Orthogonal()))
 
-    def __call__(self, x, y):
-        print(f"GResidualBlock() x: {x.shape}")
+    def call(self, x, y):
+        # print(f"GResidualBlock() x: {x.shape}")
         # h := upsample(x, y)
         h = self.bn1(x, y)
         h = self.activation(h)
@@ -268,9 +260,9 @@ class Generator():
  
         # Project noise and reshape to feed through generator blocks
         h = self._proj_z(z)
-        print(f"h: {h.shape}")
+        # print(f"h: {h.shape}")
         h = tf.reshape(h, [h.shape[0], self._bottom_width, self._bottom_width, -1])
-        print(f"h: {h.shape}")
+        # print(f"h: {h.shape}")
 
         # Feed through generator blocks
         for idx, g_block in enumerate(self._g_blocks):
@@ -299,48 +291,55 @@ class DResidualBlock(Layer):
     downsample: whether to apply downsampling
     use_preactivation: whether to apply an activation function before the first convolution
     '''
-
+    _in_channels:int = None
+    _out_channels: int = None
+    _conv1: SpectralNormalization =  None
+    _conv2: SpectralNormalization =  None
+    _use_preactivation:bool = None
+    _activation = None
+    _downsample: bool = None
+    _downsample_fn = None
+    _mixin:bool = None
+    _conv_mixin: SpectralNormalization = None
     def __init__(self, in_channels, out_channels, downsample=True, use_preactivation=False):
         super().__init__()
+        self._in_channels = in_channels
+        self._out_channels = out_channels
+        self._use_preactivation = use_preactivation  # apply preactivation in all except first dblock
+        self._downsample = downsample    # downsample occurs in all except last dblock
 
-        self.conv1 = SpectralNormalization(Conv2D(out_channels, kernel_size=3, padding="same", kernel_initializer=Orthogonal()))
-        self.conv2 = SpectralNormalization(Conv2D(out_channels, kernel_size=3, padding="same", kernel_initializer=Orthogonal()))
+    def build(self, input_shape):
+        self._conv1 = SpectralNormalization(Conv2D(self._out_channels, kernel_size=3, padding="same", kernel_initializer=Orthogonal()))
+        self._conv2 = SpectralNormalization(Conv2D(self._out_channels, kernel_size=3, padding="same", kernel_initializer=Orthogonal()))
 
-        self.activation = ReLU()
-        self.use_preactivation = use_preactivation  # apply preactivation in all except first dblock
-
-        self.downsample = downsample    # downsample occurs in all except last dblock
-        if downsample:
-            self.downsample_fn = AveragePooling2D(2)
-        self.mixin = (in_channels != out_channels) or downsample
-        if self.mixin:
-            self.conv_mixin = SpectralNormalization(Conv2D(out_channels, kernel_size=1, padding="valid", kernel_initializer=Orthogonal()))
+        self._activation = ReLU()
+        if self._downsample:
+            self._downsample_fn = AveragePooling2D(2)
+        self._mixin = (self._in_channels != self._out_channels) or self._downsample
+        if self._mixin:
+            self._conv_mixin = SpectralNormalization(Conv2D(self._out_channels, kernel_size=1, padding="valid", kernel_initializer=Orthogonal()))
+        super().build(input_shape)
 
     def _residual(self, x):
-        if self.use_preactivation:
-            if self.mixin:
-                x = self.conv_mixin(x)
-            if self.downsample:
-                x = self.downsample_fn(x)
+        if self._use_preactivation:
+            if self._mixin:
+                x = self._conv_mixin(x)
+            if self._downsample:
+                x = self._downsample_fn(x)
         else:
-            if self.downsample:
-                x = self.downsample_fn(x)
-            if self.mixin:
-                x = self.conv_mixin(x)
+            if self._downsample:
+                x = self._downsample_fn(x)
+            if self._mixin:
+                x = self._conv_mixin(x)
         return x
 
-    def __call__(self, x):
+    def call(self, x):
         # Apply preactivation if applicable
-        if self.use_preactivation:
-            h = tf.nn.relu(x)
-        else:
-            h = x
-
-        h = self.conv1(h)
-        h = self.activation(h)
-        if self.downsample:
-            h = self.downsample_fn(h)
-
+        h = tf.nn.relu(x) if self._use_preactivation else x
+        h = self._conv1(h)
+        h = self._activation(h)
+        if self._downsample:
+            h = self._downsample_fn(h)
         return h + self._residual(x)
     
 class Discriminator():
@@ -361,10 +360,8 @@ class Discriminator():
         #super().__init__()
         self._base_channels = base_channels
         self._classes = n_classes
-
         # For adding class-conditional evidence
         self.shared_emb = SpectralNormalization(Embedding(n_classes, 16 * base_channels))
-
         self._d_blocks = Sequential([
             DResidualBlock(3, base_channels, downsample=True, use_preactivation=False),
             AttentionBlock(base_channels),
@@ -391,15 +388,16 @@ class Discriminator():
 
     def forward(self, x, y=None):
         h = self._d_blocks(x)
-        h = tf.math.reduce_sum(h, axis=[2, 3])
-
+        # print(f"h: {h.shape}") # h: (5, 24576)
+        h = tf.math.reduce_sum(h, axis=[1, 2])
+        # print(f"h: {h.shape} {type(h)}")# h: (5, 4, 4, 1536)
         # Class-unconditional output
-        uncond_out = self.proj_o(h)
+        uncond_out = self._proj_o(h)
         if y is None:
             return uncond_out
 
         # Class-conditional output
-        cond_out = tf.math.reduce_sum(self.shared_emb(y) * h, axis=1, keepdim=True)
+        cond_out = tf.math.reduce_sum(tf.cast(self.shared_emb(y), tf.float32) * h, axis=-1, keepdims=True)
         return uncond_out + cond_out
     
 class BigGAN():
@@ -422,9 +420,10 @@ class BigGAN():
         z = tf.random.normal((batch_size, z_dim))                 # Generate random noise (z)
         y = tf.range(start=0, limit=self._classes, dtype=tf.int64)# Generate a batch of labels (y), one for each class
         y_emb = self._generator.shared_emb(y)                     # Retrieve class embeddings (y_emb) from generator
-        print(f"z: {z.shape}, y: {y.shape}, y_emb: {y_emb.shape}")
+        # print(f"z: {z.shape}, y: {y.shape}, y_emb: {y_emb.shape}") # z: (5, 120), y: (5,), y_emb: (5, 128)
         x_gen = self._generator.forward(z, y_emb)                 # Generate fake images from z and y_emb
         score = self._discriminator.forward(x_gen, y)             # Generate classification for fake images
+        # x_gen: (5, 128, 128, 3), score: (5, 1) 
         print(f"x_gen: {x_gen.shape}, score: {score.shape} {score}")
 
 if __name__ == "__main__":
