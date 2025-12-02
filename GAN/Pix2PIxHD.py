@@ -126,7 +126,7 @@ class GlobalGenerator(Layer):
             ]
             channels //= 2
 
-        # Output convolutional layer as its own nn.Sequential since it will be omitted in second training phase
+        # Output convolutional layer as its own Sequential since it will be omitted in second training phase
         self.out_layers = Sequential(
             ReflectionPad2D((3,3,3,3)),
             Conv2D(out_channels, kernel_size=7, padding="valid"),
@@ -438,26 +438,23 @@ class Encoder(Layer):
         x = self.instancewise_average_pooling(x, inst)
         return x
     
-class VGG19(nn.Module):
+class VGG19(Layer):
     '''
     VGG19 Class
     Wrapper for pretrained torchvision.models.vgg19 to output intermediate feature maps
     '''
-
     def __init__(self):
         super().__init__()
-        vgg_features = models.vgg19(pretrained=True).features
-
-        self.f1 = nn.Sequential(*[vgg_features[x] for x in range(2)])
-        self.f2 = nn.Sequential(*[vgg_features[x] for x in range(2, 7)])
-        self.f3 = nn.Sequential(*[vgg_features[x] for x in range(7, 12)])
-        self.f4 = nn.Sequential(*[vgg_features[x] for x in range(12, 21)])
-        self.f5 = nn.Sequential(*[vgg_features[x] for x in range(21, 30)])
-
+        vgg_features = VGG19(weights='imagenet').features
+        self.f1 = Sequential(*[vgg_features[x] for x in range(2)])
+        self.f2 = Sequential(*[vgg_features[x] for x in range(2, 7)])
+        self.f3 = Sequential(*[vgg_features[x] for x in range(7, 12)])
+        self.f4 = Sequential(*[vgg_features[x] for x in range(12, 21)])
+        self.f5 = Sequential(*[vgg_features[x] for x in range(21, 30)])
         for param in self.parameters():
             param.requires_grad = False
 
-    def forward(self, x):
+    def call(self, x):
         h1 = self.f1(x)
         h2 = self.f2(h1)
         h3 = self.f3(h2)
@@ -526,7 +523,7 @@ class Loss(Layer):
             vgg_loss += weight * F.l1_loss(real.detach(), fake)
         return vgg_loss
 
-    def forward(self, x_real, label_map, instance_map, boundary_map, encoder, generator, discriminator):
+    def call(self, x_real, label_map, instance_map, boundary_map, encoder, generator, discriminator):
         '''
         Function that computes the forward pass and total loss for generator and discriminator.
         '''
