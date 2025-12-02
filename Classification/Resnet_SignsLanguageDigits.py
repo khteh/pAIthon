@@ -212,6 +212,7 @@ class ResnetSignsLanguageDigits(SignsLanguageDigits):
         return preprocess_input(data)
 
     def _undo_resnetv2_preprocess_np(self, data):
+        # https://github.com/keras-team/keras/issues/21829
         out = (data + 1.0) * 127.5
         return numpy.clip(out, 0, 255).astype(numpy.uint8)
 
