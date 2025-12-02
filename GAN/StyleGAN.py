@@ -31,6 +31,8 @@ def get_truncated_noise(n_samples, z_dim, truncation):
 class MappingLayers(Layer):
     '''
     Mapping Layers Class
+    The mapping network. It takes the noise vector, z, and maps it to an intermediate noise vector, w. This makes it so z can be represented in a more disentangled space which makes the features easier to control later.
+    The mapping network in StyleGAN is composed of 8 layers, but this class will use a neural network with 3 layers. This is to save time training later.
     Values:
         z_dim: the dimension of the noise vector, a scalar
         hidden_dim: the inner dimension, a scalar
@@ -59,6 +61,11 @@ class MappingLayers(Layer):
 class InjectNoise(Layer):
     '''
     Inject Noise Class
+    The random noise injection that occurs before every AdaIN block. It creates a noise tensor that is the same size as the current feature map (image).
+    The noise tensor is not entirely random; it is initialized as one random channel that is then multiplied by learned weights for each channel in the image. For example, imagine an image has 512 channels and its height and width are (4 x 4). You would first create a random (4 x 4) noise matrix with one channel. 
+    Then, the model would create 512 values—one for each channel. Next, you multiply the (4 x 4) matrix by each one of these values. This creates a "random" tensor of 512 channels and (4 x 4) pixels, the same dimensions as the image. Finally, you add this noise tensor to the image. This introduces uncorrelated noise and is meant to increase the diversity in the image.
+    New starting weights are generated for every new layer, or generator, where this class is used. Within a layer, every following time the noise injection is called, you take another step with the optimizer and the weights that you use for each channel are optimized (i.e. learned).
+
     Values:
         channels: the number of channels the image has, a scalar
     '''
@@ -69,7 +76,7 @@ class InjectNoise(Layer):
         self._channels = channels
         self._weights = tf.Variable( # You use nn.Parameter so that these weights can be optimized
             # Initiate the weights for the channels from a random normal distribution
-            tf.random.normal(shape=(1, self._channels, 1, 1)),
+            tf.random.normal(shape=(1, 1, 1, self._channels)),
             name = "NoiseWeights"
         )
     def call(self, image):
@@ -80,12 +87,12 @@ class InjectNoise(Layer):
         Function for completing a forward pass of InjectNoise: Given an image, 
         returns the image with random noise added.
         Parameters:
-            image: the feature map of shape (n_samples, channels, width, height)
+            image: the feature map of shape (n_samples, width, height, channels)
         '''
         # Set the appropriate shape for the noise!
         # You would first create a random (4 x 4) noise matrix with one channel.
-        noise = tf.random.normal(shape=(image.shape[0], 1, image.shape[2], image.shape[3]))
-        #print(f"image: {image.shape}, weight: {self._weights.shape}, noise: {noise.shape}, weight_noise: {weight_noise.shape}")
+        noise = tf.random.normal(shape=(image.shape[0], image.shape[1], image.shape[2], 1))
+        print(f"image: {image.shape}, weight: {self._weights.shape}, noise: {noise.shape}")
         return image + self._weights * noise
     
     def GetNoiseWeights(self):
@@ -98,6 +105,10 @@ class InjectNoise(Layer):
 class AdaIN(Layer):
     '''
     AdaIN Class
+    To increase control over the image, you inject w — the intermediate noise vector — multiple times throughout StyleGAN. 
+    This is done by transforming it into a set of style parameters and introducing the style to the image through AdaIN. 
+    Given an image x[i] and the intermediate vector w, AdaIN takes the instance normalization of the image and multiplies it by the style scale y_s and adds the style bias y_b. You need to calculate the learnable style scale and bias by using linear mappings from w.
+
     Values:
         channels: the number of channels the image has, a scalar
         w_dim: the dimension of the intermediate noise vector, a scalar
@@ -106,7 +117,7 @@ class AdaIN(Layer):
     _w_dim:int = None
     _instance_norm = None
     style_scale_transform: Dense = None
-    style_shift_transform:Dense = None
+    style_shift_transform: Dense = None
     def __init__(self, channels: int, w_dim: int):
         super().__init__()
         self._channels = channels
@@ -117,7 +128,7 @@ class AdaIN(Layer):
         # For InstanceNormalization, groups are typically set to the number of channels.
         self._instance_norm = GroupNormalization(
             groups=self._channels, # Set groups to the number of channels for Instance Normalization effect
-            axis=1, # channels-first format
+            axis=-1, # channels-last format
             epsilon=1e-5,
             center=True,
             scale=True,
@@ -133,14 +144,14 @@ class AdaIN(Layer):
         Function for completing a forward pass of AdaIN: Given an image and intermediate noise vector w, 
         returns the normalized image that has been scaled and shifted by the style.
         Parameters:
-            image: the feature map of shape (n_samples, channels, width, height)
+            image: the feature map of shape (n_samples, width, height, channels)
             w: the intermediate noise vector
         '''
         print(f"=== AdaIN.call ===")
         normalized_image = self._instance_norm(image)
-        style_scale = self.style_scale_transform(w)[:, :, None, None]
-        style_shift = self.style_shift_transform(w)[:, :, None, None]
-        #print(f"image: {tf.math.reduce_mean(image)}, normalized_image: {tf.math.reduce_mean(normalized_image)}, style_scale: {tf.math.reduce_mean(style_scale)}, style_shift: {tf.math.reduce_mean(style_shift)}")
+        style_scale = self.style_scale_transform(w)[:, None, None, :]
+        style_shift = self.style_shift_transform(w)[:, None, None, :]
+        print(f"image: {image.shape} {tf.math.reduce_mean(image)}, normalized_image: {normalized_image.shape} {tf.math.reduce_mean(normalized_image)}, style_scale: {style_scale.shape} {tf.math.reduce_mean(style_scale)}, style_shift: {style_shift.shape} {tf.math.reduce_mean(style_shift)}")
         # Calculate the transformed image
         return style_scale * normalized_image + style_shift
     
@@ -181,8 +192,8 @@ class MicroStyleGANGeneratorBlock(Layer):
         # 4. Create an AdaIN object
         # 5. Create a LeakyReLU activation with slope 0.2
         if self._use_upsample:
-            self.upsample = UpSampling2D(factor, interpolation='bilinear', data_format="channels_first") # size: The upsampling factors for rows and columns.
-        self.conv = Conv2D(out_chan, kernel_size, padding="same", data_format="channels_first")
+            self.upsample = UpSampling2D(factor, interpolation='bilinear') # size: The upsampling factors for rows and columns.
+        self.conv = Conv2D(out_chan, kernel_size, padding="same")
         self.inject_noise = InjectNoise(out_chan)
         self.adain = AdaIN(out_chan, w_dim)
         self.activation = LeakyReLU(0.2)
@@ -192,7 +203,7 @@ class MicroStyleGANGeneratorBlock(Layer):
         Function for completing a forward pass of MicroStyleGANGeneratorBlock: Given an x and w, 
         computes a StyleGAN generator block.
         Parameters:
-            x: the input into the generator, feature map of shape (n_samples, channels, width, height)
+            x: the input into the generator, feature map of shape (n_samples, width, height, channels)
             w: the intermediate noise vector
         '''
         if self._use_upsample:
@@ -250,7 +261,7 @@ class MicroStyleGANGenerator(Layer):
         self.map = MappingLayers(z_dim, map_hidden_dim, w_dim)
         # Typically this constant is initiated to all ones, but you will initiate to a
         # Gaussian to better visualize the network's effect
-        self.starting_constant = tf.Variable(tf.random.normal((1, in_chan, 4, 4)))
+        self.starting_constant = tf.Variable(tf.random.normal((1, 4, 4, in_chan)))
         self.block0 = MicroStyleGANGeneratorBlock(in_chan, hidden_chan, w_dim, kernel_size, 4, use_upsample=False)
         self.block1 = MicroStyleGANGeneratorBlock(hidden_chan, hidden_chan, w_dim, kernel_size, 8)
         self.block2 = MicroStyleGANGeneratorBlock(hidden_chan, hidden_chan, w_dim, kernel_size, 16)
@@ -269,7 +280,7 @@ class MicroStyleGANGenerator(Layer):
             smaller_image: the smaller image to upsample
             bigger_image: the bigger image whose dimensions will be upsampled to
         '''
-        return tf.image.resize(smaller_image, size=bigger_image.shape[-2:], method=ResizeMethod.BILINEAR)
+        return tf.image.resize(smaller_image, size=bigger_image.shape[1,2], method=ResizeMethod.BILINEAR)
         
     def call(self, noise, return_intermediate=False):
         '''
@@ -431,21 +442,21 @@ def MicroStyleGANGeneratorTests():
 def MicroStyleGANGeneratorBlockTests():
     print(f"\n=== {MicroStyleGANGeneratorBlockTests.__name__} ===")
     stylegan_generator_block = MicroStyleGANGeneratorBlock(in_chan=128, out_chan=64, w_dim=256, kernel_size=3, factor=2)
-    test_x = numpy.ones((1, 128, 4, 4))
-    test_x[:, :, 1:3, 1:3] = 0
+    test_x = numpy.ones((1, 4, 4, 128))
+    test_x[:, 1:3, 1:3, :] = 0
     test_w = numpy.ones((1, 256))
     test_x = stylegan_generator_block.upsample(test_x)
     print(f"test_x.shape: {test_x.shape}")
-    assert tuple(test_x.shape) == (1, 128, 8, 8)
+    assert tuple(test_x.shape) == (1, 8, 8, 128)
     assert numpy.abs(tf.math.reduce_mean(test_x) - 0.75) < 1e-4
     test_x = stylegan_generator_block.conv(test_x)
-    assert tuple(test_x.shape) == (1, 64, 8, 8)
+    assert tuple(test_x.shape) == (1, 8, 8, 64)
     test_x = stylegan_generator_block.inject_noise(test_x)
     test_x = stylegan_generator_block.activation(test_x)
     assert tf.math.reduce_min(test_x) < 0
     assert -tf.math.reduce_min(test_x) / tf.math.reduce_max(test_x) < 0.4
     test_x = stylegan_generator_block.adain(test_x, test_w) 
-    foo = stylegan_generator_block(tf.ones((10, 128, 4, 4)), tf.ones((10, 256)))
+    foo = stylegan_generator_block(tf.ones((10, 4, 4, 128)), tf.ones((10, 256)))
     print(f"\n{bcolors.OKGREEN}All test passed!{bcolors.DEFAULT}")
 
 def AdaINTests():
@@ -459,7 +470,9 @@ def AdaINTests():
     test_w = tf.random.normal(shape=(n_test, w_channels))
     assert adain.style_scale_transform(test_w).shape == adain.style_shift_transform(test_w).shape
     assert adain.style_scale_transform(test_w).shape[-1] == image_channels
-    assert tuple(adain(tf.random.normal(shape=(n_test, image_channels, image_size, image_size)), test_w).shape) == (n_test, image_channels, image_size, image_size)
+    # image: -0.000349392561474815, normalized_image: -8.477105128967821e-11, style_scale: torch.Size([10, 20, 1, 1]) 0.016156677156686783, style_shift: torch.Size([10, 20, 1, 1]) -0.03685055673122406
+    # image: 0.0011006887070834637, normalized_image: 2.691480815997238e-09, style_scale: (10, 1, 1, 20) -0.005794139113277197, style_shift: (10, 1, 1, 20) 0.005941260606050491
+    assert tuple(adain(tf.random.normal(shape=(n_test, image_size, image_size, image_channels)), test_w).shape) == (n_test, image_size, image_size, image_channels)
 
     w_channels = 3
     image_channels = 2
@@ -489,21 +502,21 @@ def AdaINTests():
     assert (style_scale_weights[1] == 0).all()
     assert (style_shift_weights[1] == 0).all()
 
-    test_output = adain(test_input, test_w)
     print(f"test_input: {test_input.shape} {test_input}")
+    test_output = adain(tf.transpose(test_input, perm=[0,2,3,1]), test_w)
     print(f"test_output: {test_output.shape} {test_output}")
-    # image: -0.0047212447971105576, normalized_image: -1.4834933281804297e-10, style_scale: -0.07495932281017303, style_shift: 0.034594107419252396
-    # image: 0.6666666666666666, normalized_image: 0.0, style_scale: 0.75, style_shift: 0.6000000238418579
-    assert(tf.math.abs(test_output[0, 0, 0, 0] - 3 / 5 + tf.math.sqrt(9 / 8)) < 1e-4)
-    assert(tf.math.abs(test_output[0, 0, 1, 0] - 3 / 5 - tf.math.sqrt(9 / 32)) < 1e-4)
+    # image: 0.6666666865348816, normalized_image: 0.0, style_scale: torch.Size([1, 2, 1, 1]) 0.75, style_shift: torch.Size([1, 2, 1, 1]) 0.6000000238418579
+    # image: 0.6666666865348816, normalized_image: -7.947286206899662e-08, style_scale: (1, 1, 1, 2) 0.75, style_shift: (1, 1, 1, 2) 0.6000000238418579
+    assert tf.math.abs(test_output[0, 0, 0, 0] - 3 / 5 + tf.math.sqrt(9 / 8)) < 1e-4, f"{bcolors.FAIL}Expects < 1e-4, actual: {tf.math.abs(test_output[0, 0, 0, 0] - 3 / 5 + tf.math.sqrt(9 / 8))}{bcolors.DEFAULT}"
+    assert tf.math.abs(test_output[0, 1, 0, 0] - 3 / 5 - tf.math.sqrt(9 / 32)) < 1e-4, f"{bcolors.FAIL}Expects < 1e-4, actual: {tf.math.abs(test_output[0, 1, 0, 0] - 3 / 5 - tf.math.sqrt(9 / 32))}{bcolors.DEFAULT}"
     print(f"\n{bcolors.OKGREEN}All test passed!{bcolors.DEFAULT}")
 
 def InjectNoiseTests():
     print(f"\n=== {InjectNoiseTests.__name__} ===")
     # First, check the weights * stochastic noise broadcasting.
-    weights = numpy.ones((1,3,1,1)) # 3 channels
-    image = numpy.ones((5,3,10,10)) # 5 samples, 3 channels, w = h = 10
-    noise = numpy.zeros(shape=(image.shape[0], 1, image.shape[2], image.shape[3]))
+    weights = numpy.ones((1,1,1,3)) # 3 channels
+    image = numpy.ones((5,10,10,3)) # 5 samples, 3 channels, w = h = 10
+    noise = numpy.zeros(shape=(image.shape[0], image.shape[1], image.shape[2], 1))
     weighted_noise = weights * noise
     noisy_image = image + weighted_noise
     print(f"noise: {noise.shape}")
@@ -517,12 +530,12 @@ def InjectNoiseTests():
 
     test_noise_channels = 3000
     test_noise_samples = 20
-    fake_images = tf.random.normal(shape=(test_noise_samples, test_noise_channels, 10, 10))
+    fake_images = tf.random.normal(shape=(test_noise_samples, 10, 10, test_noise_channels))
     weights = inject_noise.GetNoiseWeights()
     assert tf.math.abs(tf.math.reduce_std(weights) - 1) < 0.1
     assert tf.math.abs(tf.math.reduce_mean(weights)) < 0.1
 
-    assert tuple(weights.shape) == (1, test_noise_channels, 1, 1)
+    assert tuple(weights.shape) == (1, 1, 1, test_noise_channels)
     weights = inject_noise.SetNoiseWeights(tf.ones_like(weights))
     # Check that something changed
     assert tf.math.reduce_mean(tf.math.abs((inject_noise(fake_images) - fake_images))) > 0.1
@@ -531,11 +544,11 @@ def InjectNoiseTests():
         print(f"{i}: {tf.math.reduce_mean(tf.math.abs(tf.math.reduce_std(inject_noise(fake_images) - fake_images, axis=i)))}")
     assert tf.math.reduce_mean(tf.math.abs(tf.math.reduce_std(inject_noise(fake_images) - fake_images, axis=0))) > 1e-4
     #print(f"{tf.math.abs((inject_noise(fake_images) - fake_images).std(1)).mean()}")
-    assert tf.math.reduce_mean(tf.math.abs(tf.math.reduce_std(inject_noise(fake_images) - fake_images, axis=1))) < 1e-4
+    assert tf.math.reduce_mean(tf.math.abs(tf.math.reduce_std(inject_noise(fake_images) - fake_images, axis=1))) > 1e-4
     assert tf.math.reduce_mean(tf.math.abs(tf.math.reduce_std(inject_noise(fake_images) - fake_images, axis=2))) > 1e-4
-    assert tf.math.reduce_mean(tf.math.abs(tf.math.reduce_std(inject_noise(fake_images) - fake_images, axis=3))) > 1e-4
+    assert tf.math.reduce_mean(tf.math.abs(tf.math.reduce_std(inject_noise(fake_images) - fake_images, axis=3))) < 1e-4
     # Check that the per-channel change is roughly normal
-    per_channel_change = tf.math.reduce_std(tf.math.reduce_mean(inject_noise(fake_images) - fake_images, axis=1))
+    per_channel_change = tf.math.reduce_std(tf.math.reduce_mean(inject_noise(fake_images) - fake_images, axis=-1))
     print(f"per_channel_change: {per_channel_change}")
     assert per_channel_change > 0.9 and per_channel_change < 1.1
     # Make sure that the weights are being used at all
@@ -567,7 +580,7 @@ def truncated_noise_tests():
 
 if __name__ == "__main__":
     InitializeGPU()
-    SetMemoryLimit(4096)
+    #SetMemoryLimit(4096)
     truncated_noise_tests()
     NoiseMappingLayersTests()
     InjectNoiseTests()
