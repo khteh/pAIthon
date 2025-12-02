@@ -37,7 +37,7 @@ class ResidualBlock(Layer):
     def __init__(self, channels):
         super().__init__()
         self._channels = channels
-        self.layers = Sequential(
+        self.layers = Sequential([
             ReflectionPad2D(),
             Conv2D(channels, kernel_size=3, padding="valid"),
             GroupNormalization(
@@ -46,7 +46,7 @@ class ResidualBlock(Layer):
                 epsilon=1e-5,
                 center=True,
                 scale=True,
-            )
+            ),
             ReLU(),
             ReflectionPad2D(),
             Conv2D(channels, kernel_size=3, padding="valid"),
@@ -57,7 +57,7 @@ class ResidualBlock(Layer):
                 center=True,
                 scale=True,
             )
-        )
+        ])
     def call(self, x):
         return x + self.layers(x)
     
