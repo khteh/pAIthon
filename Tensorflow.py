@@ -34,7 +34,18 @@ class Basic():
             self._train_step()
         return self._w
 
+def NumpyChannelLast():
+    batch_size = 1
+    image_channels = 2
+    image_size = 3
+    data = numpy.ones((batch_size, image_channels, image_size, image_size))
+    data[:, :, 0] = 0
+    print(f"data: {data.shape} {data}")
+    data_transposed = tf.transpose(data, perm=[0,2,3,1])
+    print(f"data_transposed: {type(data_transposed)} {data_transposed.shape} {data_transposed}")
+
 if __name__ == "__main__":
     simple = Basic(1000)
     w = simple.Train()
     assert numpy.allclose(w, 5.0), f"Unexpected gradients. Expect 5.0 but get {w}"
+    NumpyChannelLast()
