@@ -56,3 +56,15 @@ def make_image_grid(images, num_rows, num_cols):
             axes[i].axis('off')
     plt.tight_layout()
     plt.show()
+
+def show_tensor_images(self, image_tensor, num_images=16, nrow=3):
+    '''
+    Function for visualizing images: Given a tensor of images, number of images,
+    size per image, and images per row, plots and prints the images in an uniform grid.
+    '''
+    image_tensor = (image_tensor + 1) / 2
+    image_unflat = image_tensor.clip_by_value(0, 1)
+    image_grid = make_image_grid(image_unflat[:num_images], nrow=nrow, padding=0)
+    plt.imshow(image_grid.permute(1, 2, 0).squeeze())
+    plt.axis('off')
+    plt.show()

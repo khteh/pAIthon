@@ -6,7 +6,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, Conv2D, LeakyReLU, Layer, Flatten, Dense, GroupNormalization, Reshape, Conv2DTranspose, UpSampling2D
 from scipy.stats import truncnorm
 from tensorflow.keras import layers, losses, optimizers, regularizers
-from utils.Image import ShowImage, CreateGIF, make_image_grid
+from utils.Image import show_tensor_images
 from utils.GPU import InitializeGPU, SetMemoryLimit
 from utils.TrainingMetricsPlot import PlotGANLossHistory
 from utils.TermColour import bcolors
@@ -372,20 +372,8 @@ class StyleGAN():
                 self._noise, 
                 return_intermediate=True)
             images += [tensor for tensor in viz_result]
-        self._show_tensor_images(tf.stack(images), nrow=self._samples, num_images=len(images))
+        show_tensor_images(tf.stack(images), nrow=self._samples, num_images=len(images))
         self._stylegan_generator = self._stylegan_generator.train()        
-
-    def _show_tensor_images(self, image_tensor, num_images=16, size=(3, 64, 64), nrow=3):
-        '''
-        Function for visualizing images: Given a tensor of images, number of images,
-        size per image, and images per row, plots and prints the images in an uniform grid.
-        '''
-        image_tensor = (image_tensor + 1) / 2
-        image_unflat = image_tensor.detach().cpu().clamp_(0, 1)
-        image_grid = make_image_grid(image_unflat[:num_images], nrow=nrow, padding=0)
-        plt.imshow(image_grid.permute(1, 2, 0).squeeze())
-        plt.axis('off')
-        plt.show()
 
 def StyleGANTests():
     print(f"\n=== {StyleGANTests.__name__} ===")

@@ -394,10 +394,8 @@ class ImageSegmentation3DUNet():
                 1: for edema
                 2: for non-enhancing tumor 
                 3: for enhancing tumor""")
-        
         with open(f"{self._path}/processed/config.json") as json_file:
             config = json.load(json_file)
-
         # Get generators for training and validation sets
         self._train_generator = VolumeDataGenerator(config["train"], f"{self._path}/processed/train/", batch_size=self._batch_size, dim=(self._input_shape[1], self._input_shape[2], self._input_shape[3]), verbose=0)
         self._valid_generator = VolumeDataGenerator(config["valid"], f"{self._path}/processed/valid/", batch_size=self._batch_size, dim=(self._input_shape[1], self._input_shape[2], self._input_shape[3]), verbose=0)

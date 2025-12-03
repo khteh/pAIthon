@@ -8,6 +8,7 @@ from tensorflow.keras.initializers import Orthogonal
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input
 from tensorflow.keras.layers import Input, Conv2D, Activation, ReLU, Embedding, Dense, BatchNormalization, GroupNormalization, Conv2DTranspose, AveragePooling2D, MaxPool2D, Layer, SpectralNormalization, UpSampling2D, ZeroPadding2D, LeakyReLU
+from tensorflow.keras.losses import mean_absolute_error
 from tensorflow.keras.activations import tanh
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import layers, losses, optimizers, regularizers
@@ -438,7 +439,7 @@ class Encoder(Layer):
         x = self.instancewise_average_pooling(x, inst)
         return x
     
-class VGG19(Layer):
+class VGG19(tf.keras.Model):
     '''
     VGG19 Class
     Wrapper for pretrained torchvision.models.vgg19 to output intermediate feature maps
@@ -508,7 +509,7 @@ class Loss(Layer):
         fm_loss = 0.0
         for real_features, fake_features in zip(real_preds, fake_preds):
             for real_feature, fake_feature in zip(real_features, fake_features):
-                fm_loss += F.l1_loss(real_feature.detach(), fake_feature)
+                fm_loss += mean_absolute_error(real_feature, fake_feature) # Original code has .detach() on the real_feature Pytorch tensor
         return fm_loss
 
     def vgg_loss(self, x_real, x_fake):
@@ -520,7 +521,7 @@ class Loss(Layer):
 
         vgg_loss = 0.0
         for real, fake, weight in zip(vgg_real, vgg_fake, self.vgg_weights):
-            vgg_loss += weight * F.l1_loss(real.detach(), fake)
+            vgg_loss += weight * mean_absolute_error(real, fake) # Original code has .detach() on the real Pytorch tensor
         return vgg_loss
 
     def call(self, x_real, label_map, instance_map, boundary_map, encoder, generator, discriminator):
@@ -528,12 +529,12 @@ class Loss(Layer):
         Function that computes the forward pass and total loss for generator and discriminator.
         '''
         feature_map = encoder(x_real, instance_map)
-        x_fake = generator(tf.concat((label_map, boundary_map, feature_map), dim=1))
+        x_fake = generator(tf.concat((label_map, boundary_map, feature_map), axis=1))
 
         # Get necessary outputs for loss/backprop for both generator and discriminator
-        fake_preds_for_g = discriminator(tf.concat((label_map, boundary_map, x_fake), dim=1))
-        fake_preds_for_d = discriminator(tf.concat((label_map, boundary_map, x_fake.detach()), dim=1))
-        real_preds_for_d = discriminator(tf.concat((label_map, boundary_map, x_real.detach()), dim=1))
+        fake_preds_for_g = discriminator(tf.concat((label_map, boundary_map, x_fake), axis=1))
+        fake_preds_for_d = discriminator(tf.concat((label_map, boundary_map, x_fake), axis=1)) # Original code has .detach() on the x_fake Pytorch tensor
+        real_preds_for_d = discriminator(tf.concat((label_map, boundary_map, x_real), axis=1)) # Original code has .detach() on the x_real Pytorch tensor
 
         g_loss = (
             self.lambda0 * self.adv_loss(fake_preds_for_g, True) + \
@@ -544,4 +545,6 @@ class Loss(Layer):
             self.adv_loss(real_preds_for_d, True) + \
             self.adv_loss(fake_preds_for_d, False)
         )
-        return g_loss, d_loss, x_fake.detach()
+        return g_loss, d_loss, x_fake.detach() # Original code has .detach() on the x_fake Pytorch tensor
+    
+# https://www.tensorflow.org/datasets/catalog/cityscapes
