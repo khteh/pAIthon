@@ -43,6 +43,7 @@ class ResidualBlock(Layer):
         super().__init__()
         self._channels = channels
         self.layers = Sequential([
+            Input(shape=(channels,)),
             ReflectionPad2D(),
             Conv2D(channels, kernel_size=3, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
             GroupNormalization(
@@ -133,6 +134,7 @@ class GlobalGenerator(Layer):
 
         # Output convolutional layer as its own Sequential since it will be omitted in second training phase
         self.out_layers = Sequential(
+            Input(shape=(base_channels,)),
             ReflectionPad2D((3,3,3,3)),
             Conv2D(out_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02), activation="tanh"),
         )
@@ -174,6 +176,7 @@ class LocalEnhancer(Layer):
         # Initialize local frontend block
         self.g2.append(
             Sequential(
+                Input(shape=(in_channels,)),
                 # Initial convolutional layer
                 ReflectionPad2D((3,3,3,3)),
                 Conv2D(base_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
@@ -253,6 +256,7 @@ class Discriminator(Layer):
         # Initial convolutional layer
         self.layers.append(
             Sequential(
+                Input(shape=(in_channels,)),
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                 Conv2D(base_channels, kernel_size=4, strides=2, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 LeakyReLU(0.2),
@@ -266,6 +270,7 @@ class Discriminator(Layer):
             channels = min(2 * channels, 512)
             self.layers.append(
                 Sequential(
+                    Input(shape=(prev_channels,)),
                     ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                     Conv2D(channels, kernel_size=4, strides=2, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                     GroupNormalization(
@@ -284,6 +289,7 @@ class Discriminator(Layer):
         channels = min(2 * channels, 512)
         self.layers.append(
             Sequential(
+                Input(shape=(prev_channels,)),
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                 Conv2D(channels, kernel_size=4, strides=1, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
@@ -697,9 +703,9 @@ for (x, _, inst, _) in tqdm(dataloader2):
         rate_per_block = 32 * n_inst / area
         rate = tf.ones((1, 1), device=device).to(feature.dtype) * rate_per_block
 
-        feature = tf.concat((feature, rate), dim=1)
+        feature = tf.concat((feature, rate), axis=1)
         if label in features.keys():
-            features[label] = tf.concat((features[label], feature), dim=0)
+            features[label] = tf.concat((features[label], feature), axis=0)
         else:
             features[label] = feature
 
@@ -737,7 +743,7 @@ def infer(label_map, instance_map, boundary_map):
             feature_map[idx[:, 0], :, idx[:, 2], idx[:, 3]] = feature
 
     with tf.GradientTape() as tape:
-        x_fake = generator2(tf.concat((label_map, boundary_map, feature_map), dim=1))
+        x_fake = generator2(tf.concat((tf.stop_gradient(label_map), tf.stop_gradient(boundary_map), tf.stop_gradient(feature_map)), axis=1))
     return x_fake
 
 for x, labels, insts, bounds in dataloader2:

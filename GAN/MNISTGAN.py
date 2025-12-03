@@ -1,5 +1,4 @@
-import matplotlib.pyplot as plt, os, PIL, time
-import numpy, math, tensorflow as tf
+import matplotlib.pyplot as plt, os, PIL, time, tensorflow as tf
 from tqdm import tqdm
 from pathlib import Path
 from tensorflow.keras.models import Sequential

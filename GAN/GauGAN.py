@@ -36,6 +36,7 @@ class SPADE(Layer):
         super().__init__()
         self.batchnorm = BatchNormalization()
         self.spade = Sequential([
+            #Input(shape=(cond_channels,)),
             Conv2D(channels, kernel_size=3, padding="same"),
             ReLU(),
             Conv2D(2 * channels, kernel_size=3, padding="same"),
@@ -158,6 +159,7 @@ class Generator(Layer):
             self.res_blocks.append(ResidualBlock(in_channels, out_channels, n_classes))
 
         self.proj_o = Sequential([
+            #Input(shape=(base_channels,)),
             Conv2D(3, kernel_size=3, padding="same", activation="tanh"),
         ])
     def call(self, z, seg):
@@ -191,9 +193,10 @@ class PatchGANDiscriminator(Layer):
         # Initial convolutional layer
         self.layers.append(
             Sequential([
+                #Input(shape=(in_channels,)),
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                 SpectralNormalization(
-                    Conv2D(base_channels, kernel_size=4, strides=2, padding="same")
+                    Conv2D(base_channels, kernel_size=4, strides=2, padding="valid")
                 ),
                 LeakyReLU(0.2)
             ])
@@ -206,9 +209,10 @@ class PatchGANDiscriminator(Layer):
             channels = min(2 * channels, 512)
             self.layers.append(
                 Sequential([
+                    #Input(shape=(prev_channels,)),
                     ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                     SpectralNormalization(
-                        Conv2D(channels, kernel_size=4, strides=2, padding="same")
+                        Conv2D(channels, kernel_size=4, strides=2, padding="valid")
                     ),
                     GroupNormalization(channels),
                     LeakyReLU(0.2)
@@ -220,15 +224,16 @@ class PatchGANDiscriminator(Layer):
         channels = min(2 * channels, 512)
         self.layers.append(
             Sequential([
+                #Input(shape=(prev_channels,)),
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                 SpectralNormalization(
-                    Conv2D(channels, kernel_size=4, strides=1, padding="same")
+                    Conv2D(channels, kernel_size=4, strides=1, padding="valid")
                 ),
                 GroupNormalization(channels),
                 LeakyReLU(0.2),
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                 SpectralNormalization(
-                    Conv2D(1, kernel_size=4, strides=1, padding="same")
+                    Conv2D(1, kernel_size=4, strides=1, padding="valid")
                 ),
             ])
         )

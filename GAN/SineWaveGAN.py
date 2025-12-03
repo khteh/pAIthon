@@ -1,6 +1,4 @@
-import glob, imageio, matplotlib.pyplot as plt, os, time
-import numpy, math, tensorflow as tf
-import matplotlib.pyplot as plt
+import glob, imageio, matplotlib.pyplot as plt, os, time, numpy, math, tensorflow as tf
 from tqdm import tqdm
 from pathlib import Path
 from utils.Image import CreateGIF, ShowImage
