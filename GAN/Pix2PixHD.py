@@ -3,18 +3,19 @@ import numpy, math, tensorflow as tf
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from pathlib import Path
-from utils.Image import CreateGIF, ShowImage
+from sklearn.cluster import KMeans
 from tensorflow.keras.initializers import Orthogonal
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input
 from tensorflow.keras.layers import Input, Conv2D, Activation, ReLU, Embedding, Dense, BatchNormalization, GroupNormalization, Conv2DTranspose, AveragePooling2D, MaxPool2D, Layer, SpectralNormalization, UpSampling2D, ZeroPadding2D, LeakyReLU
 from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.losses import mean_absolute_error
+from tensorflow.keras.losses import MeanAbsoluteError
 from tensorflow.keras.activations import tanh
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.optimizers.schedules import LearningRateSchedule
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.regularizers import l2
+from .Pix2PixCityscapeDataGenerator import Pix2PixCityscapeDataGenerator
 from utils.GPU import InitializeGPU, UseCPU
 from utils.Image import show_tensor_images
 from utils.TrainingMetricsPlot import PlotGANLossHistory
@@ -442,14 +443,15 @@ class Encoder(Layer):
         x = self.instancewise_average_pooling(x, inst)
         return x
     
-class VGG19(tf.keras.Model):
+class _VGG19(tf.keras.Model):
     '''
     VGG19 Class
-    Wrapper for pretrained torchvision.models.vgg19 to output intermediate feature maps
+    Wrapper for pretrained VGG19 to output intermediate feature maps
     '''
     def __init__(self):
         super().__init__()
-        vgg_features = VGG19(weights='imagenet').features
+        vgg_features = VGG19(weights='imagenet', include_top=False)
+        vgg_features.summary()
         self.f1 = Sequential(*[vgg_features[x] for x in range(2)])
         self.f2 = Sequential(*[vgg_features[x] for x in range(2, 7)])
         self.f3 = Sequential(*[vgg_features[x] for x in range(7, 12)])
@@ -482,7 +484,7 @@ class Loss(Layer):
     '''
     def __init__(self, lambda1=10., lambda2=10., device='cuda', norm_weight_to_one=True):
         super().__init__()
-        self.vgg = VGG19(weights='imagenet')
+        self.vgg = _VGG19()
         self.vgg_weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]
 
         lambda0 = 1.0
@@ -512,7 +514,7 @@ class Loss(Layer):
         fm_loss = 0.0
         for real_features, fake_features in zip(real_preds, fake_preds):
             for real_feature, fake_feature in zip(real_features, fake_features):
-                fm_loss += mean_absolute_error(real_feature, fake_feature) # Original code has .detach() on the real_feature Pytorch tensor
+                fm_loss += MeanAbsoluteError(real_feature, fake_feature) # Original code has .detach() on the real_feature Pytorch tensor
         return fm_loss
 
     def vgg_loss(self, x_real, x_fake):
@@ -524,7 +526,7 @@ class Loss(Layer):
 
         vgg_loss = 0.0
         for real, fake, weight in zip(vgg_real, vgg_fake, self.vgg_weights):
-            vgg_loss += weight * mean_absolute_error(real, fake) # Original code has .detach() on the real Pytorch tensor
+            vgg_loss += weight * MeanAbsoluteError(real, fake) # Original code has .detach() on the real Pytorch tensor
         return vgg_loss
 
     def call(self, x_real, label_map, instance_map, boundary_map, encoder, generator, discriminator):
@@ -572,6 +574,8 @@ loss_fn = Loss(device=device)
 #    CityscapesDataset(train_dir, target_width=1024, n_classes=n_classes),
 #    collate_fn=CityscapesDataset.collate_fn, batch_size=1, shuffle=True, drop_last=False, pin_memory=True,
 #)
+# def __init__(self, paths, target_width=1024, n_classes=35):
+dataloader1 = Pix2PixCityscapeDataGenerator(f"data/cityscape/", target_width=1024, n_classes=n_classes)
 encoder = Encoder(rgb_channels, n_features)
 generator1 = GlobalGenerator(n_classes + n_features + 1, rgb_channels)
 discriminator1 = MultiscaleDiscriminator(n_classes + 1 + rgb_channels, n_discriminators=2)
@@ -584,6 +588,7 @@ d1_optimizer = Adam(list(discriminator1.parameters()), learning_rate=lr_lambda, 
 #    CityscapesDataset(train_dir, target_width=2048, n_classes=n_classes),
 #    collate_fn=CityscapesDataset.collate_fn, batch_size=1, shuffle=True, drop_last=False, pin_memory=True,
 #)
+dataloader2 = Pix2PixCityscapeDataGenerator(f"data/cityscape/", target_width=2048, n_classes=n_classes)
 generator2 = LocalEnhancer(n_classes + n_features + 1, rgb_channels)
 discriminator2 = MultiscaleDiscriminator(n_classes + 1 + rgb_channels)
 
@@ -629,7 +634,7 @@ def train(dataloader, models, optimizers):
 # Phase 1: Low Resolution
 #######################################################################
 train(
-    #dataloader1,
+    dataloader1,
     [encoder, generator1, discriminator1],
     [g1_optimizer, d1_optimizer]
 )
@@ -660,7 +665,86 @@ def freeze(encoder):
     return forward
 
 train(
-    #dataloader2,
+    dataloader2,
     [freeze(encoder), generator2, discriminator2],
     [g2_optimizer, d2_optimizer]
 )
+
+## Inference with Pix2PixHD
+# Recall that in inference time, the encoder feature maps from training are saved and clustered with K-means by object class.
+
+# Encode features by class label
+features = {}
+for (x, _, inst, _) in tqdm(dataloader2):
+    area = inst.size(2) * inst.size(3)
+
+    # Get pooled feature map
+    # Perform an operation without gradient tracking (similar to torch.no_grad)
+    with tf.GradientTape() as tape:
+        feature_map = encoder(tf.stop_gradient(x), tf.stop_gradient(inst))
+
+    for i in tf.unique(inst):
+        label = i if i < 1000 else i // 1000
+        label = int(label.flatten(0).item())
+
+        # All indices should have same feature per class from pooling
+        idx = tf.where(inst == i, as_tuple=False)
+        n_inst = idx.size(0)
+        idx = idx[0, :]
+
+        # Retrieve corresponding encoded feature
+        feature = feature_map[idx[0], :, idx[2], idx[3]].unsqueeze(0)
+
+        # Compute rate of feature appearance (in official code, they compute per block)
+        block_size = 32
+        rate_per_block = 32 * n_inst / area
+        rate = tf.ones((1, 1), device=device).to(feature.dtype) * rate_per_block
+
+        feature = tf.concat((feature, rate), dim=1)
+        if label in features.keys():
+            features[label] = tf.concat((features[label], feature), dim=0)
+        else:
+            features[label] = feature
+
+
+# Cluster features by class label
+k = 10
+centroids = {}
+for label in range(n_classes):
+    if label in features.keys():
+        feature = features[label]
+
+        # Thresholding by 0.5 isn't mentioned in the paper, but is present in the
+        # official code repository, probably so that only frequent features are clustered
+        feature = feature[feature[:, -1] > 0.5, :-1].cpu().numpy()
+
+        if feature.shape[0]:
+            n_clusters = min(feature.shape[0], k)
+            kmeans = KMeans(n_clusters=n_clusters).fit(feature)
+            centroids[label] = kmeans.cluster_centers_
+
+def infer(label_map, instance_map, boundary_map):
+    # Sample feature vector centroids
+    b, _, h, w = label_map.shape
+    feature_map = tf.zeros((b, n_features, h, w), device=device).to(label_map.dtype)
+
+    for i in tf.unique(instance_map):
+        label = i if i < 1000 else i // 1000
+        label = int(label.flatten(0).item())
+
+        if label in centroids.keys():
+            centroid_idx = rng.integers(low=0, high=centroids[label].shape[0] - 1)
+            idx = tf.where(instance_map == int(i), as_tuple=False)
+
+            feature = tf.convert_to_tensor(centroids[label][centroid_idx, :]).to(device)
+            feature_map[idx[:, 0], :, idx[:, 2], idx[:, 3]] = feature
+
+    with tf.GradientTape() as tape:
+        x_fake = generator2(tf.concat((label_map, boundary_map, feature_map), dim=1))
+    return x_fake
+
+for x, labels, insts, bounds in dataloader2:
+    x_fake = infer(labels.to(device), insts.to(device), bounds.to(device))
+    show_tensor_images(x_fake.to(x.dtype))
+    show_tensor_images(x)
+    break

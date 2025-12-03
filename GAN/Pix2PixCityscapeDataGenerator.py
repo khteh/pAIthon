@@ -21,7 +21,6 @@ class Pix2PixCityscapeDataGenerator(Sequence):
         target_width: the size of image widths for resizing, a scalar
         n_classes: the number of object classes, a scalar
     '''
-
     def __init__(self, paths, target_width=1024, n_classes=35):
         super().__init__()
 
