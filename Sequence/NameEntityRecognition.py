@@ -4,12 +4,11 @@ from collections import Counter
 from matplotlib import pyplot as plt
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 #from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.models import load_model
 from tf_keras.optimizers import Adam
 from pandas import DataFrame
 from tqdm import tqdm
-from tensorflow.keras.models import load_model
 from transformers import DistilBertTokenizerFast, TFDistilBertForTokenClassification #, TFDistilBertModel
-from seqeval.metrics import classification_report
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.GPU import InitializeGPU, SetMemoryLimit
 tf.get_logger().setLevel('ERROR')
@@ -47,7 +46,7 @@ class NameEntityRecognition():
         """
         self._tokenizer = DistilBertTokenizerFast.from_pretrained('tokenizer/')
         self._PrepareData()
-        #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file(): TFDistilBertForTokenClassification is NOT decorated @keras.saving.register_keras_serializable()
+        #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file(): # TFDistilBertForTokenClassification is NOT decorated @keras.saving.register_keras_serializable()
         #    print(f"Using saved model {self._model_path}...")
         #    self._model = load_model(self._model_path)
 
