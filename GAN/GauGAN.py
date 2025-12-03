@@ -1,4 +1,4 @@
-import glob, imageio, matplotlib.pyplot as plt, os, time
+import glob, imageio, matplotlib.pyplot as plt, os, time, getpass
 import numpy, math, tensorflow as tf
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -10,9 +10,11 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Input, Conv2D, Activation, ReLU, Embedding, Flatten, Dense, BatchNormalization, GroupNormalization, AveragePooling2D, MaxPool2D, Layer, SpectralNormalization, UpSampling2D, LeakyReLU, ZeroPadding2D
 from tensorflow.keras.activations import tanh
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.losses import mean_absolute_error
+from tensorflow.keras.losses import MeanAbsoluteError
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.regularizers import l2
+from .GauGANCityscapeDataGenerator import GauGANCityscapeDataGenerator
+from utils.Image import show_tensor_images
 from utils.GPU import InitializeGPU, UseCPU
 from utils.TrainingMetricsPlot import PlotGANLossHistory
 from numpy.random import Generator, PCG64DXSM
@@ -23,7 +25,7 @@ class SPADE(Layer):
     SPADE Class
     With vanilla batch norm, these denormalization parameters are spatially invariant - that is, the same values are applied to every position in the input activation. 
     As you may imagine, this could be limiting for the model. Oftentimes it's conducive for the model to learn denormalization parameters for each position.
-    The authors address this with **SPatially Adaptive DEnormalization (SPADE)**. They compute denormalization parameters $\gamma$ and $\beta$ by convolving the input segmentation masks and apply these elementwise.
+    The authors address this with **SPatially Adaptive DEnormalization (SPADE)**. They compute denormalization parameters gamma and beta by convolving the input segmentation masks and apply these elementwise.
     Note: the authors use spectral norm in all convolutional layers in the generator and discriminator of GauGAN, but the official code omits spectral norm for SPADE layers.
 
     Values:
@@ -111,7 +113,7 @@ class Encoder(Layer):
             out_channels = 2 * z_dim if i < n_downsample else max(self.max_channels, channels * 2)
             layers += [
                 SpectralNormalization(
-                    Conv2D(out_channels, stride=2, kernel_size=3, padding="same")
+                    Conv2D(out_channels, strides=2, kernel_size=3, padding="same")
                 ),
                 GroupNormalization(out_channels),
                 LeakyReLU(0.2)
@@ -120,10 +122,10 @@ class Encoder(Layer):
 
         h, w = spatial_size[0] // 2 ** n_downsample, spatial_size[1] // 2 ** n_downsample
         layers += [
-            Flatten(1),
-            Dense(channels * h * w, 2 * z_dim),
+            Flatten(),
+            Dense(2 * z_dim)
         ]
-        self.layers = Sequential(*layers)
+        self.layers = Sequential([*layers])
 
     def call(self, x):
         return tf.split(self.layers(x), 2, dim=1)
@@ -146,7 +148,7 @@ class Generator(Layer):
     def __init__(self, n_classes, spatial_size, z_dim=256, base_channels=64, n_upsample=6):
         super().__init__()
         h, w = spatial_size[0] // 2 ** n_upsample, spatial_size[1] // 2 ** n_upsample
-        self.proj_z = Dense(z_dim, self.max_channels * h * w)
+        self.proj_z = Dense(self.max_channels * h * w)
         self.reshape = lambda x: tf.reshape(x, (-1, self.max_channels, h, w))
         self.upsample = UpSampling2D(size=2)
         self.res_blocks = []
@@ -156,8 +158,7 @@ class Generator(Layer):
             self.res_blocks.append(ResidualBlock(in_channels, out_channels, n_classes))
 
         self.proj_o = Sequential([
-            Conv2D(3, kernel_size=3, padding="same"),
-            tanh()
+            Conv2D(3, kernel_size=3, padding="same", activation="tanh"),
         ])
     def call(self, z, seg):
         h = self.proj_z(z)
@@ -192,7 +193,7 @@ class PatchGANDiscriminator(Layer):
             Sequential([
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                 SpectralNormalization(
-                    Conv2D(base_channels, kernel_size=4, stride=2, padding="same")
+                    Conv2D(base_channels, kernel_size=4, strides=2, padding="same")
                 ),
                 LeakyReLU(0.2)
             ])
@@ -207,7 +208,7 @@ class PatchGANDiscriminator(Layer):
                 Sequential([
                     ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                     SpectralNormalization(
-                        Conv2D(channels, kernel_size=4, stride=2, padding="same")
+                        Conv2D(channels, kernel_size=4, strides=2, padding="same")
                     ),
                     GroupNormalization(channels),
                     LeakyReLU(0.2)
@@ -221,13 +222,13 @@ class PatchGANDiscriminator(Layer):
             Sequential([
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                 SpectralNormalization(
-                    Conv2D(channels, kernel_size=4, stride=1, padding="same")
+                    Conv2D(channels, kernel_size=4, strides=1, padding="same")
                 ),
                 GroupNormalization(channels),
                 LeakyReLU(0.2),
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
                 SpectralNormalization(
-                    Conv2D(1, kernel_size=4, stride=1, padding="same")
+                    Conv2D(1, kernel_size=4, strides=1, padding="same")
                 ),
             ])
         )
@@ -260,7 +261,7 @@ class Discriminator(Layer):
             )
 
         # Downsampling layer to pass inputs between discriminators at different scales
-        self.downsample = AveragePooling2D(3, stride=2, padding=1, count_include_pad=False)
+        self.downsample = AveragePooling2D(3, strides=2, padding="same")
 
     def call(self, x):
         outputs = []
@@ -344,14 +345,15 @@ class GauGAN(tf.keras.Model):
     def n_disc(self):
         return self.discriminator.n_discriminators
     
-class VGG19(tf.keras.Model):
+class _VGG19(tf.keras.Model):
     '''
     VGG19 Class
-    Wrapper for pretrained torchvision.models.vgg19 to output intermediate feature maps
+    Wrapper for pretrained VGG19 to output intermediate feature maps
     '''
     def __init__(self):
         super().__init__()
-        vgg_features = VGG19(weights='imagenet').features
+        vgg_features = VGG19(weights='imagenet', include_top=False)
+        vgg_features.summary()
         self.f1 = Sequential(*[vgg_features[x] for x in range(2)])
         self.f2 = Sequential(*[vgg_features[x] for x in range(2, 7)])
         self.f3 = Sequential(*[vgg_features[x] for x in range(7, 12)])
@@ -388,7 +390,7 @@ class Loss(Layer):
     def __init__(self, lambda1=10., lambda2=10., lambda3=0.05, device='cuda', norm_weight_to_one=True):
         super().__init__()
 
-        self.vgg = VGG19().to(device)
+        self.vgg = _VGG19()
         self.vgg_weights = [1.0/32, 1.0/16, 1.0/8, 1.0/4, 1.0]
 
         lambda0 = 1.0
@@ -423,7 +425,7 @@ class Loss(Layer):
         fm_loss = 0.0
         for real_features, fake_features in zip(real_preds, fake_preds):
             for real_feature, fake_feature in zip(real_features, fake_features):
-                fm_loss += mean_absolute_error(real_feature, fake_feature) # Original code has .detach() on the real_feature Pytorch tensor
+                fm_loss += MeanAbsoluteError(real_feature, fake_feature) # Original code has .detach() on the real_feature Pytorch tensor
         return fm_loss
 
     def vgg_loss(self, x_real, x_fake):
@@ -432,7 +434,7 @@ class Loss(Layer):
 
         vgg_loss = 0.0
         for real, fake, weight in zip(vgg_real, vgg_fake, self.vgg_weights):
-            vgg_loss += weight * mean_absolute_error(real, fake) # Original code has .detach() on the real Pytorch tensor
+            vgg_loss += weight * MeanAbsoluteError(real, fake) # Original code has .detach() on the real Pytorch tensor
         return vgg_loss
 
     def call(self, x_real, label_map, gaugan):
@@ -459,3 +461,94 @@ class Loss(Layer):
             self.d_adv_loss(fake_preds_for_d, False)
         )
         return g_loss, d_loss, x_fake # Original code has .detach() on the x_fake Pytorch tensor
+
+# https://www.tensorflow.org/datasets/catalog/cityscapes
+# https://www.cityscapes-dataset.com/
+epochs = 200                    # total number of train epochs
+decay_after = 100               # number of epochs with constant lr
+betas = (0.0, 0.999)
+def lr_lambda(epoch):
+    ''' Function for scheduling learning rate '''
+    return 1. if epoch < decay_after else 1 - float(epoch - decay_after) / (epochs - decay_after)
+
+gaugan_config = {
+    'n_classes': 35,
+    'spatial_size': (128, 256), # Default (256, 512): halve size for memory
+    'base_channels': 32,        # Default 64: halve channels for memory
+    'z_dim': 256,
+    'n_upsample': 5,            # Default 6: decrease layers for memory
+    'n_disc_layers': 2,
+    'n_disc': 3,
+}
+gaugan = GauGAN(**gaugan_config)
+loss = Loss()
+
+# Initialize dataloader
+train_dir = ['data']
+batch_size = 16                 # Default 32: decrease for memory
+#dataset = CityscapesDataset(
+#    train_dir, img_size=gaugan_config['spatial_size'], n_classes=gaugan_config['n_classes'],
+#)
+# def __init__(self, paths, img_size=(256, 512), n_classes=35):
+dataloader = GauGANCityscapeDataGenerator("data/cityscape/", img_size=gaugan_config['spatial_size'], n_classes=gaugan_config['n_classes'])
+#dataloader = DataLoader(
+#    dataset, collate_fn=CityscapesDataset.collate_fn,
+#    batch_size=batch_size, shuffle=True,
+#    drop_last=False, pin_memory=True,
+#)
+
+# Initialize optimizers + schedulers
+epochs = 200                    # total number of train epochs
+decay_after = 100               # number of epochs with constant lr
+betas = (0.0, 0.999)
+
+g_params = list(gaugan.generator.parameters()) + list(gaugan.encoder.parameters())
+d_params = list(gaugan.discriminator.parameters())
+
+g_optimizer = Adam(g_params, learning_rate=lr_lambda, beta_1 = betas[0], beta_2 = betas[1])
+d_optimizer = Adam(d_params, learning_rate=lr_lambda, beta_1 = betas[0], beta_2 = betas[1])
+
+def Train(dataloader, gaugan, optimizers):
+    g_optimizer, d_optimizer = optimizers
+
+    cur_step = 0
+    display_step = 100
+
+    mean_g_loss = 0.0
+    mean_d_loss = 0.0
+
+    for epoch in tqdm(range(epochs)):
+        start = time.time()
+        for (x_real, labels) in tqdm(dataloader, position=0):
+
+            # Enable autocast to FP16 tensors (new feature since torch==1.6.0)
+            # If you're running older versions of torch, comment this out
+            # and use NVIDIA apex for mixed/half precision training
+            with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+                g_loss, d_loss, x_fake = loss(x_real, labels, gaugan)
+
+            # Compute gradients
+            g_gradients = gen_tape.gradient(g_loss, gaugan.generator.trainable_variables)
+            d_gradients = disc_tape.gradient(d_loss, gaugan.discriminator.trainable_variables)
+
+            # Apply gradients to update weights to model
+            g_optimizer.apply_gradients(zip(g_gradients, gaugan.generator.trainable_variables))
+            d_optimizer.apply_gradients(zip(d_gradients, gaugan.discriminator.trainable_variables))
+
+            mean_g_loss += g_loss.item() / display_step
+            mean_d_loss += d_loss.item() / display_step
+
+            if cur_step % display_step == 0 and cur_step > 0:
+                print('Step {}: Generator loss: {:.5f}, Discriminator loss: {:.5f}'
+                      .format(cur_step, mean_g_loss, mean_d_loss))
+                show_tensor_images(x_fake.to(x_real.dtype))
+                show_tensor_images(x_real)
+                mean_g_loss = 0.0
+                mean_d_loss = 0.0
+            cur_step += 1
+        print(f"Epoch {epoch + 1}: {time.time()-start}s")
+
+Train(
+    dataloader, gaugan,
+    [g_optimizer, d_optimizer],
+)

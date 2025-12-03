@@ -100,7 +100,7 @@ class GlobalGenerator(Layer):
         # Frontend blocks
         for _ in range(fb_blocks):
             g1 += [
-                Conv2D(2 * channels, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
+                Conv2D(2 * channels, kernel_size=3, strides=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=2 * channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -119,7 +119,7 @@ class GlobalGenerator(Layer):
         # Backend blocks
         for _ in range(fb_blocks):
             g1 += [
-                Conv2DTranspose(channels // 2, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
+                Conv2DTranspose(channels // 2, kernel_size=3, strides=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=channels // 2, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -134,8 +134,7 @@ class GlobalGenerator(Layer):
         # Output convolutional layer as its own Sequential since it will be omitted in second training phase
         self.out_layers = Sequential(
             ReflectionPad2D((3,3,3,3)),
-            Conv2D(out_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
-            tanh(),
+            Conv2D(out_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02), activation="tanh"),
         )
         self.g1 = Sequential(*g1)
 
@@ -163,7 +162,7 @@ class LocalEnhancer(Layer):
         global_base_channels = 2 * base_channels
 
         # Downsampling layer for high-res -> low-res input to g1
-        self.downsample = nn.AvgPool2d(3, stride=2, padding=1, count_include_pad=False)
+        self.downsample = AveragePooling2D(3, strides=2, padding="same")
 
         # Initialize global generator without its output layers
         self.g1 = GlobalGenerator(
@@ -187,7 +186,7 @@ class LocalEnhancer(Layer):
                 ),
                 ReLU(),
                 # Frontend block
-                Conv2D(2 * base_channels, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
+                Conv2D(2 * base_channels, kernel_size=3, strides=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=2 * base_channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -206,7 +205,7 @@ class LocalEnhancer(Layer):
                 *[ResidualBlock(2 * base_channels) for _ in range(local_res_blocks)],
 
                 # Backend blocks
-                Conv2DTranspose(base_channels, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
+                Conv2DTranspose(base_channels, kernel_size=3, strides=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=base_channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -218,8 +217,7 @@ class LocalEnhancer(Layer):
 
                 # Output convolutional layer
                 ReflectionPad2D((3,3,3,3)),
-                Conv2D(out_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
-                tanh()
+                Conv2D(out_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02), activation="tanh")
             )
         )
 
@@ -256,7 +254,7 @@ class Discriminator(Layer):
         self.layers.append(
             Sequential(
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
-                Conv2D(base_channels, kernel_size=4, stride=2, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
+                Conv2D(base_channels, kernel_size=4, strides=2, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 LeakyReLU(0.2),
             )
         )
@@ -269,7 +267,7 @@ class Discriminator(Layer):
             self.layers.append(
                 Sequential(
                     ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
-                    Conv2D(channels, kernel_size=4, stride=2, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
+                    Conv2D(channels, kernel_size=4, strides=2, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                     GroupNormalization(
                         groups=channels, # Set groups to the number of channels for Instance Normalization effect
                         axis=-1, # channels-last format
@@ -287,7 +285,7 @@ class Discriminator(Layer):
         self.layers.append(
             Sequential(
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
-                Conv2D(channels, kernel_size=4, stride=1, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
+                Conv2D(channels, kernel_size=4, strides=1, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -297,7 +295,7 @@ class Discriminator(Layer):
                 ),
                 LeakyReLU(0.2),
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
-                Conv2D(1, kernel_size=4, stride=1, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02))
+                Conv2D(1, kernel_size=4, strides=1, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02))
             )
         )
 
@@ -329,7 +327,7 @@ class MultiscaleDiscriminator(Layer):
             )
 
         # Downsampling layer to pass inputs between discriminators at different scales
-        self.downsample = AveragePooling2D(3, stride=2, padding=1, count_include_pad=False)
+        self.downsample = AveragePooling2D(3, strides=2, padding="same")
 
     def forward(self, x):
         outputs = []
@@ -385,7 +383,7 @@ class Encoder(Layer):
         # Downsampling layers
         for i in range(n_layers):
             layers += [
-                Conv2D(2 * channels, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
+                Conv2D(2 * channels, kernel_size=3, strides=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=2 * channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -400,7 +398,7 @@ class Encoder(Layer):
         # Upsampling layers
         for i in range(n_layers):
             layers += [
-                Conv2DTranspose(channels // 2, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
+                Conv2DTranspose(channels // 2, kernel_size=3, strides=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=channels // 2, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -414,8 +412,7 @@ class Encoder(Layer):
 
         layers += [
             ReflectionPad2D((3,3,3,3)),
-            Conv2D(out_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
-            tanh()
+            Conv2D(out_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02), activation="tanh"),
         ]
         self.layers = Sequential(*layers)
 
@@ -553,7 +550,7 @@ class Loss(Layer):
         return g_loss, d_loss, x_fake.detach() # Original code has .detach() on the x_fake Pytorch tensor
 
 # https://www.tensorflow.org/datasets/catalog/cityscapes
-
+# https://www.cityscapes-dataset.com/
 n_classes = 35                  # total number of object classes
 rgb_channels = n_features = 3
 device = 'cuda'
@@ -595,7 +592,7 @@ discriminator2 = MultiscaleDiscriminator(n_classes + 1 + rgb_channels)
 g2_optimizer = Adam(list(generator2.parameters()) + list(encoder.parameters()), learning_rate=lr_lambda, beta_1 = betas[0], beta_2 = betas[1])
 d2_optimizer = Adam(list(discriminator2.parameters()), learning_rate=lr_lambda, beta_1 = betas[0], beta_2 = betas[1])
 
-def train(dataloader, models, optimizers):
+def Train(dataloader, models, optimizers):
     encoder, generator, discriminator = models
     g_optimizer, d_optimizer = optimizers
 
@@ -633,7 +630,7 @@ def train(dataloader, models, optimizers):
 
 # Phase 1: Low Resolution
 #######################################################################
-train(
+Train(
     dataloader1,
     [encoder, generator1, discriminator1],
     [g1_optimizer, d1_optimizer]
@@ -664,7 +661,7 @@ def freeze(encoder):
     
     return forward
 
-train(
+Train(
     dataloader2,
     [freeze(encoder), generator2, discriminator2],
     [g2_optimizer, d2_optimizer]
