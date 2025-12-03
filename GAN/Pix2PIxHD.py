@@ -8,12 +8,15 @@ from tensorflow.keras.initializers import Orthogonal
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input
 from tensorflow.keras.layers import Input, Conv2D, Activation, ReLU, Embedding, Dense, BatchNormalization, GroupNormalization, Conv2DTranspose, AveragePooling2D, MaxPool2D, Layer, SpectralNormalization, UpSampling2D, ZeroPadding2D, LeakyReLU
+from tensorflow.keras.initializers import RandomNormal
 from tensorflow.keras.losses import mean_absolute_error
 from tensorflow.keras.activations import tanh
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers.schedules import LearningRateSchedule
 from tensorflow.keras import layers, losses, optimizers, regularizers
 from tensorflow.keras.regularizers import l2
 from utils.GPU import InitializeGPU, UseCPU
+from utils.Image import show_tensor_images
 from utils.TrainingMetricsPlot import PlotGANLossHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
@@ -40,7 +43,7 @@ class ResidualBlock(Layer):
         self._channels = channels
         self.layers = Sequential([
             ReflectionPad2D(),
-            Conv2D(channels, kernel_size=3, padding="valid"),
+            Conv2D(channels, kernel_size=3, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
             GroupNormalization(
                 groups=self._channels, # Set groups to the number of channels for Instance Normalization effect
                 axis=-1, # channels-last format
@@ -50,7 +53,7 @@ class ResidualBlock(Layer):
             ),
             ReLU(),
             ReflectionPad2D(),
-            Conv2D(channels, kernel_size=3, padding="valid"),
+            Conv2D(channels, kernel_size=3, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
             GroupNormalization(
                 groups=self._channels, # Set groups to the number of channels for Instance Normalization effect
                 axis=-1, # channels-last format
@@ -81,7 +84,7 @@ class GlobalGenerator(Layer):
         # Initial convolutional layer
         g1 = [
             ReflectionPad2D((3,3,3,3)),
-            Conv2D(base_channels, kernel_size=7, padding="valid"),
+            Conv2D(base_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
             GroupNormalization(
                 groups=base_channels, # Set groups to the number of channels for Instance Normalization effect
                 axis=-1, # channels-last format
@@ -96,7 +99,7 @@ class GlobalGenerator(Layer):
         # Frontend blocks
         for _ in range(fb_blocks):
             g1 += [
-                Conv2D(2 * channels, kernel_size=3, stride=2, padding="same"),
+                Conv2D(2 * channels, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=2 * channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -115,7 +118,7 @@ class GlobalGenerator(Layer):
         # Backend blocks
         for _ in range(fb_blocks):
             g1 += [
-                Conv2DTranspose(channels // 2, kernel_size=3, stride=2, padding="same"),
+                Conv2DTranspose(channels // 2, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=channels // 2, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -130,7 +133,7 @@ class GlobalGenerator(Layer):
         # Output convolutional layer as its own Sequential since it will be omitted in second training phase
         self.out_layers = Sequential(
             ReflectionPad2D((3,3,3,3)),
-            Conv2D(out_channels, kernel_size=7, padding="valid"),
+            Conv2D(out_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
             tanh(),
         )
         self.g1 = Sequential(*g1)
@@ -173,7 +176,7 @@ class LocalEnhancer(Layer):
             Sequential(
                 # Initial convolutional layer
                 ReflectionPad2D((3,3,3,3)),
-                Conv2D(base_channels, kernel_size=7, padding="valid"),
+                Conv2D(base_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=base_channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -183,7 +186,7 @@ class LocalEnhancer(Layer):
                 ),
                 ReLU(),
                 # Frontend block
-                Conv2D(2 * base_channels, kernel_size=3, stride=2, padding="same"),
+                Conv2D(2 * base_channels, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=2 * base_channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -202,7 +205,7 @@ class LocalEnhancer(Layer):
                 *[ResidualBlock(2 * base_channels) for _ in range(local_res_blocks)],
 
                 # Backend blocks
-                Conv2DTranspose(base_channels, kernel_size=3, stride=2, padding="same"),
+                Conv2DTranspose(base_channels, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=base_channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -214,7 +217,7 @@ class LocalEnhancer(Layer):
 
                 # Output convolutional layer
                 ReflectionPad2D((3,3,3,3)),
-                Conv2D(out_channels, kernel_size=7, padding="valid"),
+                Conv2D(out_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 tanh()
             )
         )
@@ -252,7 +255,7 @@ class Discriminator(Layer):
         self.layers.append(
             Sequential(
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
-                Conv2D(base_channels, kernel_size=4, stride=2, padding="valid"),
+                Conv2D(base_channels, kernel_size=4, stride=2, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 LeakyReLU(0.2),
             )
         )
@@ -265,7 +268,7 @@ class Discriminator(Layer):
             self.layers.append(
                 Sequential(
                     ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
-                    Conv2D(channels, kernel_size=4, stride=2, padding="valid"),
+                    Conv2D(channels, kernel_size=4, stride=2, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                     GroupNormalization(
                         groups=channels, # Set groups to the number of channels for Instance Normalization effect
                         axis=-1, # channels-last format
@@ -283,7 +286,7 @@ class Discriminator(Layer):
         self.layers.append(
             Sequential(
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
-                Conv2D(channels, kernel_size=4, stride=1, padding="valid"),
+                Conv2D(channels, kernel_size=4, stride=1, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -293,7 +296,7 @@ class Discriminator(Layer):
                 ),
                 LeakyReLU(0.2),
                 ZeroPadding2D(padding=2), # Adds 2 units of padding on all sides
-                Conv2D(1, kernel_size=4, stride=1, padding="valid"),
+                Conv2D(1, kernel_size=4, stride=1, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02))
             )
         )
 
@@ -367,7 +370,7 @@ class Encoder(Layer):
 
         layers = [
             ReflectionPad2D((3,3,3,3)),
-            Conv2D(base_channels, kernel_size=7, padding="valid"),
+            Conv2D(base_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
             GroupNormalization(
                 groups=base_channels, # Set groups to the number of channels for Instance Normalization effect
                 axis=-1, # channels-last format
@@ -381,7 +384,7 @@ class Encoder(Layer):
         # Downsampling layers
         for i in range(n_layers):
             layers += [
-                Conv2D(2 * channels, kernel_size=3, stride=2, padding="same"),
+                Conv2D(2 * channels, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=2 * channels, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -396,7 +399,7 @@ class Encoder(Layer):
         # Upsampling layers
         for i in range(n_layers):
             layers += [
-                Conv2DTranspose(channels // 2, kernel_size=3, stride=2, padding="same"),
+                Conv2DTranspose(channels // 2, kernel_size=3, stride=2, padding="same", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
                 GroupNormalization(
                     groups=channels // 2, # Set groups to the number of channels for Instance Normalization effect
                     axis=-1, # channels-last format
@@ -404,13 +407,13 @@ class Encoder(Layer):
                     center=True,
                     scale=True,
                 ),
-                ReLU(),
+                ReLU()
             ]
             channels //= 2
 
         layers += [
             ReflectionPad2D((3,3,3,3)),
-            Conv2D(out_channels, kernel_size=7, padding="valid"),
+            Conv2D(out_channels, kernel_size=7, padding="valid", kernel_initializer=RandomNormal(mean=0.0, stddev=0.02)),
             tanh()
         ]
         self.layers = Sequential(*layers)
@@ -546,5 +549,118 @@ class Loss(Layer):
             self.adv_loss(fake_preds_for_d, False)
         )
         return g_loss, d_loss, x_fake.detach() # Original code has .detach() on the x_fake Pytorch tensor
-    
+
 # https://www.tensorflow.org/datasets/catalog/cityscapes
+
+n_classes = 35                  # total number of object classes
+rgb_channels = n_features = 3
+device = 'cuda'
+train_dir = ['data']
+epochs = 200                    # total number of train epochs
+decay_after = 100               # number of epochs with constant lr
+lr = 0.0002
+betas = (0.5, 0.999)
+
+def lr_lambda(epoch):
+    ''' Function for scheduling learning '''
+    return 1. if epoch < decay_after else 1 - float(epoch - decay_after) / (epochs - decay_after)
+
+loss_fn = Loss(device=device)
+
+## Phase 1: Low Resolution (1024 x 512)
+#dataloader1 = DataLoader(
+#    CityscapesDataset(train_dir, target_width=1024, n_classes=n_classes),
+#    collate_fn=CityscapesDataset.collate_fn, batch_size=1, shuffle=True, drop_last=False, pin_memory=True,
+#)
+encoder = Encoder(rgb_channels, n_features)
+generator1 = GlobalGenerator(n_classes + n_features + 1, rgb_channels)
+discriminator1 = MultiscaleDiscriminator(n_classes + 1 + rgb_channels, n_discriminators=2)
+
+g1_optimizer = Adam(list(generator1.parameters()) + list(encoder.parameters()), learning_rate=lr_lambda, beta_1 = betas[0], beta_2 = betas[1])
+d1_optimizer = Adam(list(discriminator1.parameters()), learning_rate=lr_lambda, beta_1 = betas[0], beta_2 = betas[1])
+
+## Phase 2: High Resolution (2048 x 1024)
+#dataloader2 = DataLoader(
+#    CityscapesDataset(train_dir, target_width=2048, n_classes=n_classes),
+#    collate_fn=CityscapesDataset.collate_fn, batch_size=1, shuffle=True, drop_last=False, pin_memory=True,
+#)
+generator2 = LocalEnhancer(n_classes + n_features + 1, rgb_channels)
+discriminator2 = MultiscaleDiscriminator(n_classes + 1 + rgb_channels)
+
+g2_optimizer = Adam(list(generator2.parameters()) + list(encoder.parameters()), learning_rate=lr_lambda, beta_1 = betas[0], beta_2 = betas[1])
+d2_optimizer = Adam(list(discriminator2.parameters()), learning_rate=lr_lambda, beta_1 = betas[0], beta_2 = betas[1])
+
+def train(dataloader, models, optimizers):
+    encoder, generator, discriminator = models
+    g_optimizer, d_optimizer = optimizers
+
+    cur_step = 0
+    display_step = 100
+
+    mean_g_loss = 0.0
+    mean_d_loss = 0.0
+
+    for epoch in tqdm(range(epochs)):
+        start = time.time()
+        for (x_real, labels, insts, bounds) in tqdm(dataloader, position=0):
+            with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+                g_loss, d_loss, x_fake = loss_fn(
+                    x_real, labels, insts, bounds, encoder, generator, discriminator
+                )
+            # Compute gradients
+            g_gradients = gen_tape.gradient(g_loss, generator.trainable_variables)
+            d_gradients = disc_tape.gradient(d_loss, discriminator.trainable_variables)
+
+            # Apply gradients to update weights to model
+            g_optimizer.apply_gradients(zip(g_gradients, generator.trainable_variables))
+            d_optimizer.apply_gradients(zip(d_gradients, discriminator.trainable_variables))
+
+            mean_g_loss += g_loss.item() / display_step
+            mean_d_loss += d_loss.item() / display_step
+            if cur_step % display_step == 0 and cur_step > 0:
+                print('Step {}: Generator loss: {:.5f}, Discriminator loss: {:.5f}'.format(cur_step, mean_g_loss, mean_d_loss))
+                show_tensor_images(x_fake.to(x_real.dtype))
+                show_tensor_images(x_real)
+                mean_g_loss = 0.0
+                mean_d_loss = 0.0
+            cur_step += 1
+        print(f"Epoch {epoch + 1}: {time.time()-start}s")
+
+# Phase 1: Low Resolution
+#######################################################################
+train(
+    #dataloader1,
+    [encoder, generator1, discriminator1],
+    [g1_optimizer, d1_optimizer]
+)
+
+# Phase 2: High Resolution
+#######################################################################
+# Update global generator in local enhancer with trained
+generator2.g1 = generator1.g1
+
+# Freeze encoder and wrap to support high-resolution inputs/outputs
+def freeze(encoder):
+    encoder.eval()
+    for p in encoder.parameters():
+        p.requires_grad = False
+
+    def _resize(x, scale_factor:float):
+        new_height = tf.cast(tf.shape(x)[1] * scale_factor, tf.int32)
+        new_width = tf.cast(tf.shape(x)[2] * scale_factor, tf.int32)
+        return [new_height, new_width]        
+
+    @tf.function
+    def forward(x, inst):
+        x = tf.image.resize(x, size=_resize(x, 0.5), method=tf.image.ResizeMethod.BILINEAR, align_corners=True)
+        inst = tf.image.resize(x, size=_resize(x, 0.5), method=tf.image.ResizeMethod.BILINEAR, align_corners=True)
+        feat = encoder(x, inst.int())
+        return tf.image.resize(feat, size=_resize(x, 2.0), method=tf.image.ResizeMethod.BILINEAR, align_corners=True)
+    
+    return forward
+
+train(
+    #dataloader2,
+    [freeze(encoder), generator2, discriminator2],
+    [g2_optimizer, d2_optimizer]
+)
