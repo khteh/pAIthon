@@ -497,13 +497,13 @@ class GauGANApp():
         self._decay_after = decay_after
         self._learning_rate = learning_rate
         self._gaugan_config = {
-            'n_classes': 35,
-            'spatial_size': (128, 256), # Default (256, 512): halve size for memory
-            'base_channels': 32,        # Default 64: halve channels for memory
-            'z_dim': 256,
-            'n_upsample': 5,            # Default 6: decrease layers for memory
-            'n_disc_layers': 2,
-            'n_disc': 3,
+            'n_classes': classes,
+            'spatial_size': spatial_size, # Default (256, 512): halve size for memory
+            'base_channels': base_channels,        # Default 64: halve channels for memory
+            'z_dim': z_dim,
+            'n_upsample': n_upsample,            # Default 6: decrease layers for memory
+            'n_disc_layers': n_disc_layers,
+            'n_disc': n_disc,
         }
         self._gaugan = GauGAN(**self._gaugan_config)
         self._PrepareData()
