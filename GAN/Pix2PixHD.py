@@ -569,6 +569,10 @@ class Pix2PixHD():
     _betas = (0.5, 0.999)
     _loss_fn: Loss = None
     _batch_size:int = None
+    _images = []
+    _instances = []
+    _labels = []
+    _bounds = []
     _data = {}
     _dataset1 = None
     _dataset2 = None
@@ -770,14 +774,14 @@ class Pix2PixHD():
         inst_suffix = '_gtFine_instanceIds.png'
         for file in Path(self._path).rglob("*.png"):
             if file.is_file():  # Ensure it's a file, not a directory:
-                if file.endswith(img_suffix):
-                    prefix = file[:-len(img_suffix)]
+                if file.name.endswith(img_suffix):
+                    prefix = file.name[:-len(img_suffix)]
                     attr = 'orig_img'
-                elif file.endswith(label_suffix):
-                    prefix = file[:-len(label_suffix)]
+                elif file.name.endswith(label_suffix):
+                    prefix = file.name[:-len(label_suffix)]
                     attr = 'label_map'
-                elif file.endswith(inst_suffix):
-                    prefix = file[:-len(inst_suffix)]
+                elif file.name.endswith(inst_suffix):
+                    prefix = file.name[:-len(inst_suffix)]
                     attr = 'inst_map'
                 else:
                     continue
@@ -818,6 +822,15 @@ class Pix2PixHD():
         label = tf.io.read_file(label)
         label = tf.image.decode_image(label, channels=1)
         label = tf.cast(label, tf.float32) #/ 255.0
+        # Convert labels to one-hot vectors
+        #label = tf.zeros(self.n_classes, img.shape[1], img.shape[2]).scatter_(0, label, 1.0).to(img.dtype) <- pytorch code
+        #label = tf.zeros(self.n_classes, img.shape[1], img.shape[2])
+        #indices = tf.constant([[label]], dtype=tf.int32) # Full coordinates
+        #updates = tf.constant([1.0], dtype=img.dtype)
+        #label = tf.tensor_scatter_nd_update(label, indices, updates)
+        # Convert labels to one-hot vectors
+        label = tf.one_hot(label, depth=self._classes)
+
         inst = tf.io.read_file(inst)
         inst = tf.image.decode_image(inst, channels=1)
         inst = tf.cast(inst, tf.float32) #/ 255.0
@@ -837,7 +850,6 @@ class Pix2PixHD():
             #transforms.ToTensor(),
             Normalization([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
         ])
-
         # Initialize transforms for semantic label and instance maps
         self._map_transforms = Sequential([
             Lambda(lambda img: self._scale_width(img, width, Image.NEAREST)),

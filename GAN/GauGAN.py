@@ -7,7 +7,7 @@ from utils.Image import CreateGIF, ShowImage
 from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input
 from tensorflow.keras.initializers import Orthogonal
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Input, Conv2D, Activation, ReLU, Embedding, Flatten, Dense, BatchNormalization, GroupNormalization, AveragePooling2D, MaxPool2D, Layer, SpectralNormalization, UpSampling2D, LeakyReLU, ZeroPadding2D
+from tensorflow.keras.layers import Input, Conv2D, Activation, ReLU, Lambda, Normalization, Resizing, Flatten, Dense, BatchNormalization, GroupNormalization, AveragePooling2D, MaxPool2D, Layer, SpectralNormalization, UpSampling2D, LeakyReLU, ZeroPadding2D
 from tensorflow.keras.activations import tanh
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import MeanAbsoluteError
@@ -467,93 +467,171 @@ class Loss(Layer):
         )
         return g_loss, d_loss, x_fake # Original code has .detach() on the x_fake Pytorch tensor
 
-# https://www.tensorflow.org/datasets/catalog/cityscapes
-# https://www.cityscapes-dataset.com/
-epochs = 200                    # total number of train epochs
-decay_after = 100               # number of epochs with constant lr
-betas = (0.0, 0.999)
-def lr_lambda(epoch):
-    ''' Function for scheduling learning rate '''
-    return 1. if epoch < decay_after else 1 - float(epoch - decay_after) / (epochs - decay_after)
+class GauGANApp():
+    # https://www.tensorflow.org/datasets/catalog/cityscapes
+    # https://www.cityscapes-dataset.com/
+    _path:str = None
+    _epochs = 200                    # total number of train epochs
+    _decay_after = 100               # number of epochs with constant lr
+    _betas = [0.0, 0.999]
+    _learning_rate:float = 0.0002
+    _batch_size:int = None
+    _gaugan_config = None
+    _loss: Loss = None
+    _gaugan: GauGAN = None
+    _images = []
+    _labels = []
+    _data = {}
+    _dataset = None
+    _img_transforms: Sequential = None
+    _map_transforms: Sequential = None
+    _g_params = None
+    _d_params = None
+    _g_optimizer:Adam = None
+    _d_optimizer:Adam = None
+    def __init__(self, path:str, classes:int, spatial_size, base_channels:int, z_dim: int, n_upsample:int, n_disc_layers:int, n_disc:int, batch_size:int, betas, decay_after, learning_rate):
+        self._path = path
+        self._classes = classes
+        self._betas = betas
+        self._batch_size = batch_size
+        self._decay_after = decay_after
+        self._learning_rate = learning_rate
+        self._gaugan_config = {
+            'n_classes': 35,
+            'spatial_size': (128, 256), # Default (256, 512): halve size for memory
+            'base_channels': 32,        # Default 64: halve channels for memory
+            'z_dim': 256,
+            'n_upsample': 5,            # Default 6: decrease layers for memory
+            'n_disc_layers': 2,
+            'n_disc': 3,
+        }
+        self._gaugan = GauGAN(**self._gaugan_config)
+        self._PrepareData()
+        self._loss = Loss()
+        self._loss_fn = Loss()
 
-gaugan_config = {
-    'n_classes': 35,
-    'spatial_size': (128, 256), # Default (256, 512): halve size for memory
-    'base_channels': 32,        # Default 64: halve channels for memory
-    'z_dim': 256,
-    'n_upsample': 5,            # Default 6: decrease layers for memory
-    'n_disc_layers': 2,
-    'n_disc': 3,
-}
-gaugan = GauGAN(**gaugan_config)
-loss = Loss()
+    def BuildModel(self):
+        self._g_params = list(self._gaugan.generator.parameters()) + list(self._gaugan.encoder.parameters())
+        self._d_params = list(self._gaugan.discriminator.parameters())
+        self._g_optimizer = Adam(self._g_params, learning_rate=self._lr_lambda, beta_1 = self._betas[0], beta_2 = self._betas[1])
+        self._d_optimizer = Adam(self._d_params, learning_rate=self._lr_lambda, beta_1 = self._betas[0], beta_2 = self._betas[1])
 
-# Initialize dataloader
-train_dir = ['data']
-batch_size = 16                 # Default 32: decrease for memory
-#dataset = CityscapesDataset(
-#    train_dir, img_size=gaugan_config['spatial_size'], n_classes=gaugan_config['n_classes'],
-#)
-# def __init__(self, paths, img_size=(256, 512), n_classes=35):
-dataloader = GauGANCityscapeDataGenerator("data/cityscape/", img_size=gaugan_config['spatial_size'], n_classes=gaugan_config['n_classes'])
-#dataloader = DataLoader(
-#    dataset, collate_fn=CityscapesDataset.collate_fn,
-#    batch_size=batch_size, shuffle=True,
-#    drop_last=False, pin_memory=True,
-#)
+    def Train(self, epochs:int):
+        cur_step = 0
+        display_step = 100
 
-# Initialize optimizers + schedulers
-epochs = 200                    # total number of train epochs
-decay_after = 100               # number of epochs with constant lr
-betas = (0.0, 0.999)
+        mean_g_loss = 0.0
+        mean_d_loss = 0.0
 
-g_params = list(gaugan.generator.parameters()) + list(gaugan.encoder.parameters())
-d_params = list(gaugan.discriminator.parameters())
+        for epoch in tqdm(range(epochs)):
+            start = time.time()
+            for (x_real, labels) in tqdm(self._dataset, position=0):
 
-g_optimizer = Adam(g_params, learning_rate=lr_lambda, beta_1 = betas[0], beta_2 = betas[1])
-d_optimizer = Adam(d_params, learning_rate=lr_lambda, beta_1 = betas[0], beta_2 = betas[1])
+                # Enable autocast to FP16 tensors (new feature since torch==1.6.0)
+                # If you're running older versions of torch, comment this out
+                # and use NVIDIA apex for mixed/half precision training
+                with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+                    g_loss, d_loss, x_fake = self._loss(x_real, labels, self._gaugan)
 
-def Train(dataloader, gaugan, optimizers):
-    g_optimizer, d_optimizer = optimizers
+                # Compute gradients
+                g_gradients = gen_tape.gradient(g_loss, self._gaugan.generator.trainable_variables)
+                d_gradients = disc_tape.gradient(d_loss, self._gaugan.discriminator.trainable_variables)
 
-    cur_step = 0
-    display_step = 100
+                # Apply gradients to update weights to model
+                self._g_optimizer.apply_gradients(zip(g_gradients, self._gaugan.generator.trainable_variables))
+                self._d_optimizer.apply_gradients(zip(d_gradients, self._gaugan.discriminator.trainable_variables))
 
-    mean_g_loss = 0.0
-    mean_d_loss = 0.0
+                mean_g_loss += g_loss.item() / display_step
+                mean_d_loss += d_loss.item() / display_step
 
-    for epoch in tqdm(range(epochs)):
-        start = time.time()
-        for (x_real, labels) in tqdm(dataloader, position=0):
+                if cur_step % display_step == 0 and cur_step > 0:
+                    print('Step {}: Generator loss: {:.5f}, Discriminator loss: {:.5f}'.format(cur_step, mean_g_loss, mean_d_loss))
+                    show_tensor_images(x_fake.to(x_real.dtype))
+                    show_tensor_images(x_real)
+                    mean_g_loss = 0.0
+                    mean_d_loss = 0.0
+                cur_step += 1
+            print(f"Epoch {epoch + 1}: {time.time()-start}s")
 
-            # Enable autocast to FP16 tensors (new feature since torch==1.6.0)
-            # If you're running older versions of torch, comment this out
-            # and use NVIDIA apex for mixed/half precision training
-            with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-                g_loss, d_loss, x_fake = loss(x_real, labels, gaugan)
+    def _PrepareData(self):
+        # Collect list of examples
+        self._data = {}
+        img_suffix = '_leftImg8bit.png'
+        label_suffix = '_gtFine_labelIds.png'
+        for file in Path(self._path).rglob("*.png"):
+            if file.is_file():  # Ensure it's a file, not a directory:
+                if file.name.endswith(img_suffix):
+                    prefix = file.name[:-len(img_suffix)]
+                    attr = 'orig_img'
+                elif file.name.endswith(label_suffix):
+                    prefix = file.name[:-len(label_suffix)]
+                    attr = 'label_map'
+                else:
+                    continue
+                if prefix not in self._data.keys():
+                    self._data[prefix] = {}
+                self._data[prefix][attr] = file
+        self._data = list(self._data.values())
+        assert all(len(example) == 2 for example in self._data)
+        self._images = []
+        self._instances = []
+        self._labels = []
+        self._dataset = tf.data.Dataset.from_tensor_slices((self._images, self._labels))
+        self._dataset = self._dataset.map(self._load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
+        self._dataset = self._transform_image(self._dataset, 1024)
 
-            # Compute gradients
-            g_gradients = gen_tape.gradient(g_loss, gaugan.generator.trainable_variables)
-            d_gradients = disc_tape.gradient(d_loss, gaugan.discriminator.trainable_variables)
+    def _transform_image(self, ds):
+        # Initialize transforms for the real color image
+        self._img_transforms = Sequential([
+            Resizing(self._gaugan_config["spatial_size"]),
+            Lambda(lambda img: numpy.array(img)),
+            #transforms.ToTensor(),
+            Normalization([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
+        ])
+        # Initialize transforms for semantic label maps
+        self._map_transforms = Sequential([
+            Resizing(self._gaugan_config["spatial_size"]),
+            Lambda(lambda img: numpy.array(img)),
+            #transforms.ToTensor(),
+        ])
+        ds = ds.map(lambda x, y: (self._img_transforms(x, training=True), y), num_parallel_calls=tf.data.AUTOTUNE)
+        ds = ds.map(lambda x, y: (self._map_transforms(x, training=True), y), num_parallel_calls=tf.data.AUTOTUNE)
+        return ds.shuffle(len(self._labels), reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
-            # Apply gradients to update weights to model
-            g_optimizer.apply_gradients(zip(g_gradients, gaugan.generator.trainable_variables))
-            d_optimizer.apply_gradients(zip(d_gradients, gaugan.discriminator.trainable_variables))
+    def _load_and_preprocess_image(self, image_path, label):
+        # Read the image file
+        img = tf.io.read_file(image_path)
+        # Decode the image (adjust based on your image format, e.g., decode_jpeg, decode_png)
+        img = tf.image.decode_image(img, channels=3) # Assumes 3 channels (RGB)
+        img = tf.cast(img, tf.float32) #/ 255.0
+        label = tf.io.read_file(label)
+        label = tf.image.decode_image(label, channels=1)
+        label = tf.cast(label, tf.float32) #/ 255.0
+        # Convert labels to one-hot vectors
+        label = tf.one_hot(label, depth=self._classes)
+        label = tf.squeeze(label, axis=0)
+        label = tf.transpose(label, perm=[2, 0, 1])
+        return img, label
+    
+    def _lr_lambda(self, epoch):
+        ''' Function for scheduling learning rate '''
+        return 1. if epoch < decay_after else 1 - float(epoch - decay_after) / (epochs - decay_after)
 
-            mean_g_loss += g_loss.item() / display_step
-            mean_d_loss += d_loss.item() / display_step
+if __name__ == "__main__":
+    classes = 35
+    spatial_size = (128, 256) # Default (256, 512): halve size for memory
+    base_channels = 32        # Default 64: halve channels for memory
+    z_dim = 256
+    n_upsample = 5            # Default 6: decrease layers for memory
+    n_disc_layers = 2
+    n_disc = 3
 
-            if cur_step % display_step == 0 and cur_step > 0:
-                print('Step {}: Generator loss: {:.5f}, Discriminator loss: {:.5f}'
-                      .format(cur_step, mean_g_loss, mean_d_loss))
-                show_tensor_images(x_fake.to(x_real.dtype))
-                show_tensor_images(x_real)
-                mean_g_loss = 0.0
-                mean_d_loss = 0.0
-            cur_step += 1
-        print(f"Epoch {epoch + 1}: {time.time()-start}s")
+    batch_size = 16                 # Default 32: decrease for memory
+    epochs = 200                    # total number of train epochs
+    decay_after = 100               # number of epochs with constant lr
+    betas = [0.0, 0.999]
+    learning_rate:float = 0.0002
 
-Train(
-    dataloader, gaugan,
-    [g_optimizer, d_optimizer],
-)
+    # def __init__(self, path:str, classes:int, spatial_size, base_channels:int, z_dim: int, n_upsample:int, n_disc_layers:int, n_disc:int, batch_size:int, betas, decay_after, learning_rate):
+    gaugan = GauGANApp("data/cityscapes", classes, spatial_size, base_channels, z_dim, n_upsample, n_disc_layers, n_disc, batch_size, betas, decay_after, learning_rate)
+    gaugan.Train(epochs)
