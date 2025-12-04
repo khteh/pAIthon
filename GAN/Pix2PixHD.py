@@ -584,13 +584,15 @@ class Pix2PixHD():
     _g2_optimizer: Adam = None
     _d2_optimizer: Adam = None
     _centroids = None
-    def __init__(self, path:str, classes:int, batch_size:int, betas):
+    def __init__(self, path:str, classes:int, batch_size:int, betas, decay_after, learning_rate):
         self._path = path
         self._classes = classes
         self._betas = betas
         self._batch_size = batch_size
-        self._loss_fn = Loss()
+        self._decay_after = decay_after
+        self._learning_rate = learning_rate
         self._PrepareData()
+        self._loss_fn = Loss()
 
     def BuildModel(self):
         ## Phase 1: Low Resolution (1024 x 512)
@@ -766,8 +768,7 @@ class Pix2PixHD():
         img_suffix = '_leftImg8bit.png'
         label_suffix = '_gtFine_labelIds.png'
         inst_suffix = '_gtFine_instanceIds.png'
-        patterns = ["*_leftImg8bit.png", "*_gtFine_labelIds.png", "*_gtFine_instanceIds.png"]
-        for file in Path(self._path).rglob(patterns):
+        for file in Path(self._path).rglob("*.png"):
             if file.is_file():  # Ensure it's a file, not a directory:
                 if file.endswith(img_suffix):
                     prefix = file[:-len(img_suffix)]
@@ -785,7 +786,7 @@ class Pix2PixHD():
                 self._data[prefix][attr] = file
         self._data = list(self._data.values())
         assert all(len(example) == 3 for example in self._data)
-
+        #print(f"_data: {self._data}")
         self._images = []
         self._instances = []
         self._labels = []
@@ -799,13 +800,13 @@ class Pix2PixHD():
             self._labels.append(self._data["label_map"])
             self._instances.append(self._data["inst_map"])
             self._bounds.append(self._data["inst_map"])
-
+        #print(f"images: {self._images}")
         self._dataset1 = tf.data.Dataset.from_tensor_slices((self._images, self._labels, self._instances, self._bounds))
-        self._dataset1 = self._dataset.map(self._load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
+        self._dataset1 = self._dataset1.map(self._load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
         self._dataset1 = self._transform_image_width(self._dataset1, 1024)
 
         self._dataset2 = tf.data.Dataset.from_tensor_slices((self._images, self._labels, self._instances, self._bounds))
-        self._dataset2 = self._dataset.map(self._load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
+        self._dataset2 = self._dataset2.map(self._load_and_preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
         self._dataset2 = self._transform_image_width(self._dataset1, 2048)
     
     def _load_and_preprocess_image(self, image_path, label, inst, bound):
@@ -880,6 +881,7 @@ if __name__ == "__main__":
     learning_rate:float = 0.0002
     betas = [0.5, 0.999]
     # def __init__(self, path:str, classes:int, batch_size:int, betas):
-    pix2pix = Pix2PixHD("data/cityscapes", classes, 1, betas)
+    decay_after:int = 100               # number of epochs with constant lr
+    pix2pix = Pix2PixHD("data/cityscapes", classes, 1, betas, decay_after, learning_rate)
     pix2pix.Train(epochs)
     pix2pix.Inference(1)
