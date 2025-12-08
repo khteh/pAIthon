@@ -44,9 +44,9 @@ class NameEntityRecognition():
         Use the 🤗 DistilBERT fast tokenizer, which standardizes the length of your sequence to 512 and pads with zeros.
         This matches the maximum length used when creating tags.
         """
-        self._tokenizer = DistilBertTokenizerFast.from_pretrained('tokenizer/')
+        #self._tokenizer = DistilBertTokenizerFast.from_pretrained('tokenizer/')
         #self._tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
-        #self._tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
+        self._tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
         self._PrepareData()
         #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file(): # TFDistilBertForTokenClassification is NOT decorated @keras.saving.register_keras_serializable()
         #    print(f"Using saved model {self._model_path}...")
@@ -60,8 +60,8 @@ class NameEntityRecognition():
         new_model = not self._model
         if not self._model:
             # https://github.com/tensorflow/tensorflow/issues/105815
-            self._model = TFDistilBertForTokenClassification.from_pretrained('models/NameEntityRecognition', num_labels=len(self._unique_tags))
-            #self._model = TFDistilBertForTokenClassification.from_pretrained("distilbert-base-uncased")
+            #self._model = TFDistilBertForTokenClassification.from_pretrained('models/NameEntityRecognition', num_labels=len(self._unique_tags))
+            self._model = TFDistilBertForTokenClassification.from_pretrained("distilbert-base-uncased", use_safetensors=False)
             # https://github.com/tensorflow/tensorflow/issues/100330
             # https://github.com/keras-team/keras/issues/21666
             self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=self._model.hf_compute_loss, metrics=['accuracy']) # can also use any keras loss fn
