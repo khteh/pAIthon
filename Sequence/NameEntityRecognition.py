@@ -8,7 +8,7 @@ from tensorflow.keras.models import load_model
 from tf_keras.optimizers import Adam
 from pandas import DataFrame
 from tqdm import tqdm
-from transformers import DistilBertTokenizerFast, TFDistilBertForTokenClassification #, TFDistilBertModel
+from transformers import DistilBertTokenizerFast, TFDistilBertForTokenClassification, AutoTokenizer, DistilBertForTokenClassification #, TFDistilBertModel
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.GPU import InitializeGPU, SetMemoryLimit
 tf.get_logger().setLevel('ERROR')
@@ -45,6 +45,8 @@ class NameEntityRecognition():
         This matches the maximum length used when creating tags.
         """
         self._tokenizer = DistilBertTokenizerFast.from_pretrained('tokenizer/')
+        #self._tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        #self._tokenizer = DistilBertTokenizerFast.from_pretrained("distilbert-base-uncased")
         self._PrepareData()
         #if self._model_path and len(self._model_path) and Path(self._model_path).exists() and Path(self._model_path).is_file(): # TFDistilBertForTokenClassification is NOT decorated @keras.saving.register_keras_serializable()
         #    print(f"Using saved model {self._model_path}...")
@@ -57,7 +59,9 @@ class NameEntityRecognition():
         print(f"\n=== {self.BuildTrainModel.__name__} ===")
         new_model = not self._model
         if not self._model:
+            # https://github.com/tensorflow/tensorflow/issues/105815
             self._model = TFDistilBertForTokenClassification.from_pretrained('models/NameEntityRecognition', num_labels=len(self._unique_tags))
+            #self._model = TFDistilBertForTokenClassification.from_pretrained("distilbert-base-uncased")
             # https://github.com/tensorflow/tensorflow/issues/100330
             # https://github.com/keras-team/keras/issues/21666
             self._model.compile(optimizer=Adam(learning_rate=self._learning_rate), loss=self._model.hf_compute_loss, metrics=['accuracy']) # can also use any keras loss fn
