@@ -19,7 +19,8 @@ from utils.GPU import InitializeGPU
 from utils.TrainingMetricsPlot import PlotModelHistory
 from numpy.random import Generator, PCG64DXSM
 rng = Generator(PCG64DXSM())
-
+# https://towardsdatascience.com/generating-music-using-deep-learning-cb5843a9d55e/
+# https://github.com/thamsuppp/MusicGenDL
 @saving.register_keras_serializable()
 class ArgMaxLayer(Layer):
     def call(self, x):
