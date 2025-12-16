@@ -47,5 +47,4 @@ dependencies = [
 [dependency-groups]
 dev = [
     "check50",
-    "netron>=8.7.8",
 ]

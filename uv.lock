@@ -1526,14 +1526,6 @@ wheels = [
 ]
 
 [[package]]
-name = "netron"
-version = "8.7.8"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/93/ea/25b9f34165c2a407c61728902f076c6d1da7f6a885dc85cb01967dbcafa0/netron-8.7.8-py3-none-any.whl", hash = "sha256:dd022a258d60536da7bcfddd81b4a89d45001b16e81d4a7166a8abbc49625d24", size = 2967493, upload-time = "2025-12-12T23:23:49.528Z" },
-]
-
-[[package]]
 name = "networkx"
 version = "3.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1921,7 +1913,6 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "check50" },
-    { name = "netron" },
 ]
 
 [package.metadata]
@@ -1966,10 +1957,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "check50" },
-    { name = "netron", specifier = ">=8.7.8" },
-]
+dev = [{ name = "check50" }]
 
 [[package]]
 name = "pandas"
