@@ -47,4 +47,5 @@ dependencies = [
 [dependency-groups]
 dev = [
     "check50",
+    "neutron>=27.0.1",
 ]
