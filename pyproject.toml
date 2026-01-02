@@ -41,7 +41,8 @@ dependencies = [
     "music21",
     "nibabel",
     "pydotplus",
-    "shap",
+    "shap>=0.49.1",
+    "numba==0.63.1",
 ]
 
 [dependency-groups]
