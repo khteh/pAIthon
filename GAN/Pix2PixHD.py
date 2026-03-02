@@ -814,6 +814,7 @@ class Pix2PixHD():
         self._dataset2 = self._transform_image_width(self._dataset1, 2048)
     
     def _load_and_preprocess_image(self, image_path, label, inst, bound):
+        #print(f"\n=== {self._load_and_preprocess_image.__name__} image_path: {image_path}, label: {label}, inst: {inst}, bound: {bound} ===")
         # Read the image file
         img = tf.io.read_file(image_path)
         # Decode the image (adjust based on your image format, e.g., decode_jpeg, decode_png)

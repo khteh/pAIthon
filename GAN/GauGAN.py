@@ -599,6 +599,7 @@ class GauGANApp():
         return ds.shuffle(len(self._labels), reshuffle_each_iteration=True).batch(self._batch_size).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
     def _load_and_preprocess_image(self, image_path, label):
+        #print(f"\n=== {self._load_and_preprocess_image.__name__} image_path: {image_path}, label: {label} ===")
         # Read the image file
         img = tf.io.read_file(image_path)
         # Decode the image (adjust based on your image format, e.g., decode_jpeg, decode_png)
