@@ -803,7 +803,7 @@ Input: 128x128 greyscale image
 Dense: 256 neurons
 #parameters = 128 * 128 * 256 + 256 = 4194560 parameters
 ================================================================================================================================================================================
-Convolution:
+Convolution (C4_W1.pdf):
 Early/Shallow layers often see the finer details with simpler shapes and patterns in smaller regions of the input (low-level/primitive features) such as edges and simple textures.
 Later/Deeper layers often see more complex shapes and patterns in larger regions of the input (high-level features) such as more complex textures and object classes.
 In other words, early/shallow layers zoom in, later/deeper layers zoom out.
@@ -869,11 +869,28 @@ Nc[l] = Filter#
 One property of convolution network is that the number of parameters are independent of the size of the input. This reduces overfitting.
 
 Example parameters# calculation:
+
 Input: 256x256 RGB
 First hidden layer: 64 neurons.
 NO Convolution
 Bias: Nc[l] = 64
 This hidden layer has 256 * 256 * 3 * 64 + 64 = 12582976 parameters
+
+Conv1D (C4_W4.pdf page 40):
+Input: 128-length vectors with 1 timesteps
+Filter: 5x1
+Activations:N[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(128 - 5) + 1 = 124
+
+Input: 14x14x3
+Filter: 1 5x5x3
+p = (f-1)/2 = 4/2 = 2
+Activations:
+Nh[l] = floor((Nh[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 - 5) + 1 = 10
+Nw[l] = floor((Nw[l-1] + 2p[l] - f[l]) / s[l]) + 1 = floor(14 - 5) + 1 = 10
+10 * 10 = 100
+Weights: 5x5x1 = 25
+Bias: Nc[l] = 1
+This hidden layer has 25 + 1 = 26 parameters
 
 Input: 256x256 grayscale image
 Filter: 128 3x3
