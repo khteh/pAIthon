@@ -1,11 +1,9 @@
-import sys
-import tensorflow as tf
-import importlib.metadata as md
+import sys, tensorflow as tf, importlib.metadata as md
 
-print("Python:", sys.version)
-print("TensorFlow:", tf.__version__)
+print(f"Python: {sys.version}")
+print(f"TensorFlow: {tf.__version__} {tf.version.VERSION}")
 
 try:
-    print("tf-keras:", md.version("tf-keras"))
+    print(f"tf-keras: {md.version("tf-keras")}")
 except md.PackageNotFoundError:
     print("tf-keras: not installed")
