@@ -1987,7 +1987,7 @@ requires-dist = [
     { name = "statsmodels" },
     { name = "tabulate" },
     { name = "tensorflow", extras = ["and-cuda"] },
-    { name = "tf-keras", specifier = ">=2.19.0" },
+    { name = "tf-keras", specifier = ">=2.20.0" },
     { name = "tqdm" },
     { name = "transformers" },
     { name = "xgboost" },

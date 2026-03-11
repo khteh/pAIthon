@@ -20,7 +20,7 @@ dependencies = [
     "tensorflow[and-cuda]",
     "spacy",
     "python-magic",
-    "tf-keras>=2.19.0",
+    "tf-keras>=2.20.0",
     "tabulate",
     "networkx",
     "pydot",
