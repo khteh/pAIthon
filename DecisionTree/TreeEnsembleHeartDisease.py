@@ -262,7 +262,7 @@ class HeartDisease(DecisionTree):
             self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
             self._Y_test_risk = self._Y_test_risk.reindex(self._X_test_risk.index)
             #print(self._X_test_risk.head())
-        print(f"X_test: {self._X_test.shape}") # (92, 20)
+        print(f"X_test type: {type(self._X_test)}: {self._X_test.shape}") # (92, 20)
         print(f"self._X_test_risk.index[{i}]: {self._X_test_risk.index[i]}")
         print(f"self._Y_test_risk.index[{i}]: {self._Y_test_risk.index[i]}")
         print(self._X_test_risk.head())
