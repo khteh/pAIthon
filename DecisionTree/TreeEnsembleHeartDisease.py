@@ -267,8 +267,9 @@ class HeartDisease(DecisionTree):
         print(f"self._Y_test_risk.index[{i}]: {self._Y_test_risk.index[i]}")
         print(self._X_test_risk.head())
         self._shap = shap.TreeExplainer(model)
-        X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy()
-        X = X[numpy.newaxis, ...] # Add axis-0 as samples
+        # https://github.com/shap/shap/issues/4224
+        X = self._X_test.loc[[self._X_test_risk.index[i]], :] # Need to maintain the pandas DataFrame dtype
+        X = pd.concat([X], keys=['#samples']) # Add axis-0 as samples
         Y = self._Y_test.loc[self._Y_test_risk.index[i]]
         Y = Y[numpy.newaxis, ...] # Add axis-0 as samples
         print(f"X: {type(X)}, {X.shape}\n{X}") # (20,)
@@ -291,27 +292,27 @@ class HeartDisease(DecisionTree):
             #print(f"dmatrix: {dmatrix}")
             #shap_values = self._shap.shap_values(dmatrix)
             shap_values = self._shap.shap_values(X)
-            #shap_value = shap_values[0]
-            shap_value = shap_values[:,1]
-            #print(f"shap_values: {shap_values.shape}, {shap_values}")
-            #print(f"shap_value: {shap_value.shape}, {shap_value}")
-            #print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}")
-            #shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
+            shap_value = shap_values[0]
+            print(f"--- XGBClassifier ---")
+            print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 20)
+            print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (20,)
+            print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: scalar
+            # shap.plots.force(base_value, shap_values=None, features=None, feature_names=None, out_names=None, link='identity', plot_cmap='RdBu', matplotlib=False, show=True, figsize=(20, 3), ordering_keys=None, ordering_keys_time_format=None, text_rotation=0, contribution_threshold=0.05)
+            shap.force_plot(self._shap.expected_value, shap_value, feature_names=X.columns, matplotlib=True, figsize=(20, 10))
         else:
             shap_values = self._shap.shap_values(X)
-            shap_value = shap_values[:,1]
-        print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (20, 2)
-        print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (20,)
-        print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
-        #shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
-        shap.force_plot(model, None, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
-        
+            shap_value = shap_values[:,:,1]
+            print(f"--- RandomForest ---")
+            print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 20, 2)
+            print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (1, 20)
+            print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
+            shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=X.columns, matplotlib=True, figsize=(20, 10))
         if isinstance(model, XGBClassifier):
             test_data_dm = DMatrix(data = self._X_test, label = self._Y_test, enable_categorical=True)
             shap_values = self._shap.shap_values(test_data_dm)
         else:
             shap_values = self._shap.shap_values(self._X_test)[:,:,1] # (992, 18, 2),
-        print(f"shap_values: {shap_values.shape}, {shap_values}") # (92, 20)
+        print(f"Summary Plot shap_values: {shap_values.shape}, {shap_values}") # (92, 20)
         shap.summary_plot(shap_values, self._X_test)
         shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex_F')
         shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex_M')
