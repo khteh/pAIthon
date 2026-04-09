@@ -166,7 +166,6 @@ class TreeEnsembleEpidemiologyRiskModel(DecisionTree):
         - The red sections on the left are features which push the model towards the final prediction in the positive direction (i.e. a higher Age increases the predicted risk).
         - The blue sections on the right are features that push the model towards the final prediction in the negative direction (if an increase in a feature leads to a lower risk, it will be shown in blue).
         - Note that the exact output of your chart will differ depending on the hyper-parameters that you choose for your model.
-
         """
         print(f"\n=== {self._ExplainModelPrediction.__name__} ===")
         i = 0
@@ -176,43 +175,61 @@ class TreeEnsembleEpidemiologyRiskModel(DecisionTree):
             self._X_test_risk.loc[:, 'risk'] = model.predict_proba(self._X_test_risk)[:, 1]
             self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
             self._Y_test_risk = self._Y_test_risk.reindex(self._X_test_risk.index)
-            #print(self._X_test_risk.head())
+        print(f"X_test: {type(self._X_test)} {self._X_test.shape}") # (92, 20)
         print(f"self._X_test_risk.index[{i}]: {self._X_test_risk.index[i]}")
         print(f"self._Y_test_risk.index[{i}]: {self._Y_test_risk.index[i]}")
-        print(self._X_test_risk.head())
+        print(f"_X_test_risk:\n{self._X_test_risk.head()}")
         self._shap = shap.TreeExplainer(model)
-        X = self._X_test.loc[self._X_test_risk.index[i], :]
+        #X = self._X_test.loc[self._X_test_risk.index[i], :]
+        # https://github.com/shap/shap/issues/4224
+        X = self._X_test.loc[[self._X_test_risk.index[i]], :] # Need to maintain the pandas DataFrame dtype
+        X = pd.concat([X], keys=['#samples']) # Add axis-0 as samples
+
         Y = self._Y_test.loc[self._Y_test_risk.index[i]]
-        print(f"X: {X}")
-        print(f"Y: {Y}")
+        Y = Y[numpy.newaxis, ...] # Add axis-0 as samples
+        print(f"X: {type(X)}, {X.shape}\n{X}") # (20,)
+        print(f"Y: {type(Y)}, {Y.shape}\n{Y}") # 1 scalar value
         print(f"index: {self._X_test_risk.index[i]}, X: {X.shape}, Y: {Y.shape}")
+        prediction = model.predict_proba(self._X_test) # This needs to be done before adding the "risk" column below
+        print(f"prediction: {prediction.shape}")
+        print(f">>> {type(model)} <<<")
         # https://shap.readthedocs.io/en/latest/generated/shap.TreeExplainer.html
         if isinstance(model, XGBClassifier):
             # Avoid pandas Series which will have the original DF columns as its index and the values of that specific row as its data. 
             # The "name" column is actually the name attribute of the resulting Series, which automatically gets assigned the index label used to retrieve the row.
             # ValueError: DataFrame.dtypes for data must be int, float, bool or category. When categorical type is supplied, the experimental DMatrix parameter`enable_categorical` must be set to `True`.  Invalid columns:371: object
-            X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy()
-            X = X[numpy.newaxis, ...] # Add a single grayacale channel
-            Y = Y[numpy.newaxis, ...] # Add a single grayacale channel
-            dmatrix = DMatrix(data=X, label=Y, enable_categorical=False)
-            #dmatrix = DMatrix(data=X, enable_categorical=True)
-            print(f"dmatrix: {dmatrix}")
-            shap_values = self._shap.shap_values(dmatrix)
+            #X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy() # This also works
+            #X = X[numpy.newaxis, ...] # Add a single grayacale channel # This also works
+            #Y = Y[numpy.newaxis, ...] # Add a single grayacale channel # This also works
+            #dmatrix = DMatrix(data=X, label=Y, enable_categorical=False) # This also works
+            #dmatrix = DMatrix(data=X, enable_categorical=True) # (#samples, #features) This also works
+            #print(f"dmatrix: {dmatrix}")
+            #shap_values = self._shap.shap_values(dmatrix) # This also works
+            shap_values = self._shap.shap_values(X)
             shap_value = shap_values[0]
-            print(f"shap_values: {shap_values.shape}, {shap_values}")
-            print(f"shap_value: {shap_value.shape}, {shap_value}")
+            print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 18)
+            print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (18,)
+            print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: scalar
+            assert (shap_values[0, :].sum() + self._shap.expected_value == prediction[0]).all(), f"{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}"
             shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
         else:
             shap_values = self._shap.shap_values(X)
-            shap_value = shap_values[:,1]
-            print(f"shap_values: {shap_values.shape}, {shap_values}")
-            print(f"shap_value: {shap_value.shape}, {shap_value}")
+            #shap_value = shap_values[:,1]
+            shap_value = shap_values[:,:,1]
+            print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 18, 2)
+            print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (1, 18)
+            print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
+            #assert shap_values[0, :, 0].sum() + self._shap.expected_value[0] == prediction[0, 0], f"{shap_values[0, :, 0].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :, 0].sum() + self._shap.expected_value[0]} != {prediction[0, 0]}"
+            #assert shap_values[0, :, 1].sum() + self._shap.expected_value[1] == prediction[0, 1], f"{shap_values[0, :, 1].sum()} + {self._shap.expected_value[1]} = {shap_values[0, :, 1].sum() + self._shap.expected_value[1]} != {prediction[0, 1]}"
             shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
         if isinstance(model, XGBClassifier):
             test_data_dm = DMatrix(data = self._X_test, label = self._Y_test, enable_categorical=False)
             shap_values = self._shap.shap_values(test_data_dm)
+            #assert (shap_values[0, :].sum() + self._shap.expected_value == prediction[0]).all(), f"{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}"            
         else:
             shap_values = self._shap.shap_values(self._X_test)[:,:,1] # (992, 18, 2),
+            #assert shap_values[0, :, 0].sum() + self._shap.expected_value[0] == prediction[0, 0], f"{shap_values[0, :, 0].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :, 0].sum() + self._shap.expected_value[0]} != {prediction[0, 0]}"
+            #assert shap_values[0, :, 1].sum() + self._shap.expected_value[1] == prediction[0, 1], f"{shap_values[0, :, 1].sum()} + {self._shap.expected_value[1]} = {shap_values[0, :, 1].sum() + self._shap.expected_value[1]} != {prediction[0, 1]}"
         print(f"shap_values: {shap_values.shape}, {shap_values}")
         shap.summary_plot(shap_values, self._X_test)
         shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex')

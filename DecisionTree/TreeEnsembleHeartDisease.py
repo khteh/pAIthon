@@ -9,13 +9,15 @@ from .DecisionTree import DecisionTree
 
 # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
 class HeartDisease(DecisionTree):
+    _path:str = None
     _features = None
     _dt: DecisionTreeClassifier = None
     _rf: RandomForestClassifier = None
     _xgb: XGBClassifier = None
     _shap = None
     def __init__(self, path):
-        self._PrepareData(path)
+        self._path = path
+        self._PrepareData()
 
     def BuildDecisionTreeModel(self):
         """
@@ -195,7 +197,7 @@ class HeartDisease(DecisionTree):
         #PlotDecisionTree(self._xgb, self._features, ['neg', 'pos'], "XGBoostHeartDiseasePrediction") AttributeError: 'XGBClassifier' object has no attribute 'tree_'
         self._ExplainModelPrediction(self._xgb)
 
-    def _PrepareData(self, path:str):
+    def _PrepareData(self):
         """
         Remove the binary variables, because one-hot encoding them would do nothing to them. To achieve this we will just count how many different values there are in each categorical variable and consider only the variables with 3 or more values.
         one-hot encoding aims to transform a categorical variable with n outputs into n binary variables.
@@ -208,7 +210,7 @@ class HeartDisease(DecisionTree):
         """
         print(f"\n=== {self._PrepareData.__name__} ===")
         # Load the dataset using pandas
-        df = pd.read_csv(path)
+        df = pd.read_csv(self._path)
         cat_variables = ['Sex',
             'ChestPainType',
             'RestingECG',
@@ -302,7 +304,7 @@ class HeartDisease(DecisionTree):
             print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 20)
             print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (20,)
             print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: scalar
-            assert (shap_values[0, :].sum() + self._shap.expected_value == prediction[0]).all(), f"{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}"
+            #assert (shap_values[0, :].sum() + self._shap.expected_value == prediction[0]).all(), f"{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}"
             # shap.plots.force(base_value, shap_values=None, features=None, feature_names=None, out_names=None, link='identity', plot_cmap='RdBu', matplotlib=False, show=True, figsize=(20, 3), ordering_keys=None, ordering_keys_time_format=None, text_rotation=0, contribution_threshold=0.05)
             shap.force_plot(self._shap.expected_value, shap_value, feature_names=X.columns, matplotlib=True, figsize=(20, 10))
         else:
@@ -316,9 +318,14 @@ class HeartDisease(DecisionTree):
             shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=X.columns, matplotlib=True, figsize=(20, 10))
         if isinstance(model, XGBClassifier):
             test_data_dm = DMatrix(data = self._X_test, label = self._Y_test, enable_categorical=True)
-            shap_values = self._shap.shap_values(test_data_dm)
+            shap_values = self._shap.shap_values(test_data_dm) # shap_values: (92, 20)
+            print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 20)
+            assert (shap_values[0, :].sum() + self._shap.expected_value == prediction[0]).all(), f"{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}"            
         else:
-            shap_values = self._shap.shap_values(self._X_test)[:,:,1] # (992, 18, 2),
+            shap_values = self._shap.shap_values(self._X_test)[:,:,1] # shap_values: (92, 20)
+            print(f"shap_values: {shap_values.shape}, {shap_values}")
+            #assert shap_values[0, :, 0].sum() + self._shap.expected_value[0] == prediction[0, 0], f"{shap_values[0, :, 0].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :, 0].sum() + self._shap.expected_value[0]} != {prediction[0, 0]}"
+            #assert shap_values[0, :, 1].sum() + self._shap.expected_value[1] == prediction[0, 1], f"{shap_values[0, :, 1].sum()} + {self._shap.expected_value[1]} = {shap_values[0, :, 1].sum() + self._shap.expected_value[1]} != {prediction[0, 1]}"
         print(f"Summary Plot shap_values: {shap_values.shape}, {shap_values}") # (92, 20)
         shap.summary_plot(shap_values, self._X_test)
         shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex_F')
