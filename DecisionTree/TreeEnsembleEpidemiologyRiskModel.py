@@ -70,7 +70,7 @@ class TreeEnsembleEpidemiologyRiskModel(DecisionTree):
             # Val C-Index: 0.7800695629347684
             # classes: [False  True]
             print(f"Best hyperparameters:\n{self._best_hyperparams}")
-            self._shap = shap.TreeExplainer(self._rf)
+        self._shap = shap.TreeExplainer(self._rf)
 
         y_train_best = self._rf.predict_proba(self._X_train)[:, 1]
         print(f"Train C-Index: {CIndex(self._Y_train, y_train_best)}")
@@ -85,7 +85,7 @@ class TreeEnsembleEpidemiologyRiskModel(DecisionTree):
         cindex, subgroup = self._bad_subset(self._rf, self._X_test, self._Y_test)
         print(f"Test dataset Subgroup size: {subgroup}, C-Index: {cindex}")
         #PlotDecisionTree(self._rf, self._X_test.columns, ['neg', 'pos'], "HeartDiseasePredictionDecisionTree") # AttributeError: 'RandomForestClassifier' object has no attribute 'tree_'
-        self._ExplainModelPrediction(self._rf)
+        self._ExplainRandomForestPrediction([("Age", "Sex"), ("Poverty index", "Age")])
 
     def BuildXGBoost(self, model_path:str, retrain:bool = False):
         """
@@ -140,6 +140,7 @@ class TreeEnsembleEpidemiologyRiskModel(DecisionTree):
             }
             self._xgb = self._random_forest_grid_search(XGBClassifier, self._X_train, self._Y_train, self._X_val, self._Y_test, hyperparams, fixed_hyperparams)
             print(f"Best hyperparameters:\n{self._best_hyperparams}")
+        self._shap = shap.TreeExplainer(self._xgb)
         y_train_best = self._xgb.predict_proba(self._X_train)[:, 1]
         print(f"Train C-Index: {CIndex(self._Y_train, y_train_best)}")
 
@@ -153,88 +154,8 @@ class TreeEnsembleEpidemiologyRiskModel(DecisionTree):
         cindex, subgroup = self._bad_subset(self._xgb, self._X_test, self._Y_test)
         print(f"Test dataset Subgroup size: {subgroup}, C-Index: {cindex}")
         #PlotDecisionTree(self._xgb, self._features, ['neg', 'pos'], "XGBoostHeartDiseasePrediction") AttributeError: 'XGBClassifier' object has no attribute 'tree_'
-        self._ExplainModelPrediction(self._xgb)
-
-    def _ExplainModelPrediction(self, model):
-        """
-        You choose to apply **SHAP (SHapley Additive exPlanations)**, a cutting edge method that explains predictions made by black-box machine learning models (i.e. models which are too complex to be understandable by humans as is).
-        Given a prediction made by a machine learning model, SHAP values explain the prediction by quantifying the additive importance of each feature to the prediction. SHAP values have their roots in cooperative game theory, where Shapley values are used to quantify the contribution of each player to the game.
-        Although it is computationally expensive to compute SHAP values for general black-box models, in the case of trees and forests there exists a fast polynomial-time algorithm. For more details, see the [TreeShap paper](https://arxiv.org/pdf/1802.03888.pdf).
-        Use the [shap library](https://github.com/slundberg/shap) to do this for our random forest model.
-
-        How to read this chart:
-        - The red sections on the left are features which push the model towards the final prediction in the positive direction (i.e. a higher Age increases the predicted risk).
-        - The blue sections on the right are features that push the model towards the final prediction in the negative direction (if an increase in a feature leads to a lower risk, it will be shown in blue).
-        - Note that the exact output of your chart will differ depending on the hyper-parameters that you choose for your model.
-        """
-        print(f"\n=== {self._ExplainModelPrediction.__name__} ===")
-        i = 0
-        if self._X_test_risk is None:
-            self._X_test_risk = self._X_test.copy(deep=True)
-            self._Y_test_risk = self._Y_test.copy(deep=True)
-            self._X_test_risk.loc[:, 'risk'] = model.predict_proba(self._X_test_risk)[:, 1]
-            self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
-            self._Y_test_risk = self._Y_test_risk.reindex(self._X_test_risk.index)
-        print(f"X_test: {type(self._X_test)} {self._X_test.shape}") # (92, 20)
-        print(f"self._X_test_risk.index[{i}]: {self._X_test_risk.index[i]}")
-        print(f"self._Y_test_risk.index[{i}]: {self._Y_test_risk.index[i]}")
-        print(f"_X_test_risk:\n{self._X_test_risk.head()}")
-        self._shap = shap.TreeExplainer(model)
-        #X = self._X_test.loc[self._X_test_risk.index[i], :]
-        # https://github.com/shap/shap/issues/4224
-        X = self._X_test.loc[[self._X_test_risk.index[i]], :] # Need to maintain the pandas DataFrame dtype
-        X = pd.concat([X], keys=['#samples']) # Add axis-0 as samples
-
-        Y = self._Y_test.loc[self._Y_test_risk.index[i]]
-        Y = Y[numpy.newaxis, ...] # Add axis-0 as samples
-        print(f"X: {type(X)}, {X.shape}\n{X}") # (20,)
-        print(f"Y: {type(Y)}, {Y.shape}\n{Y}") # 1 scalar value
-        print(f"index: {self._X_test_risk.index[i]}, X: {X.shape}, Y: {Y.shape}")
-        prediction = model.predict_proba(self._X_test) # This needs to be done before adding the "risk" column below
-        print(f"prediction: {prediction.shape}")
-        print(f">>> {type(model)} <<<")
-        # https://shap.readthedocs.io/en/latest/generated/shap.TreeExplainer.html
-        if isinstance(model, XGBClassifier):
-            # Avoid pandas Series which will have the original DF columns as its index and the values of that specific row as its data. 
-            # The "name" column is actually the name attribute of the resulting Series, which automatically gets assigned the index label used to retrieve the row.
-            # ValueError: DataFrame.dtypes for data must be int, float, bool or category. When categorical type is supplied, the experimental DMatrix parameter`enable_categorical` must be set to `True`.  Invalid columns:371: object
-            #X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy() # This also works
-            #X = X[numpy.newaxis, ...] # Add a single grayacale channel # This also works
-            #Y = Y[numpy.newaxis, ...] # Add a single grayacale channel # This also works
-            #dmatrix = DMatrix(data=X, label=Y, enable_categorical=False) # This also works
-            #dmatrix = DMatrix(data=X, enable_categorical=True) # (#samples, #features) This also works
-            #print(f"dmatrix: {dmatrix}")
-            #shap_values = self._shap.shap_values(dmatrix) # This also works
-            shap_values = self._shap.shap_values(X)
-            shap_value = shap_values[0]
-            print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 18)
-            print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (18,)
-            print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: scalar
-            assert (shap_values[0, :].sum() + self._shap.expected_value == prediction[0]).all(), f"{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}"
-            shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
-        else:
-            shap_values = self._shap.shap_values(X)
-            #shap_value = shap_values[:,1]
-            shap_value = shap_values[:,:,1]
-            print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 18, 2)
-            print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (1, 18)
-            print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
-            #assert shap_values[0, :, 0].sum() + self._shap.expected_value[0] == prediction[0, 0], f"{shap_values[0, :, 0].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :, 0].sum() + self._shap.expected_value[0]} != {prediction[0, 0]}"
-            #assert shap_values[0, :, 1].sum() + self._shap.expected_value[1] == prediction[0, 1], f"{shap_values[0, :, 1].sum()} + {self._shap.expected_value[1]} = {shap_values[0, :, 1].sum() + self._shap.expected_value[1]} != {prediction[0, 1]}"
-            shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
-        if isinstance(model, XGBClassifier):
-            test_data_dm = DMatrix(data = self._X_test, label = self._Y_test, enable_categorical=False)
-            shap_values = self._shap.shap_values(test_data_dm)
-            #assert (shap_values[0, :].sum() + self._shap.expected_value == prediction[0]).all(), f"{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}"            
-        else:
-            shap_values = self._shap.shap_values(self._X_test)[:,:,1] # (992, 18, 2),
-            #assert shap_values[0, :, 0].sum() + self._shap.expected_value[0] == prediction[0, 0], f"{shap_values[0, :, 0].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :, 0].sum() + self._shap.expected_value[0]} != {prediction[0, 0]}"
-            #assert shap_values[0, :, 1].sum() + self._shap.expected_value[1] == prediction[0, 1], f"{shap_values[0, :, 1].sum()} + {self._shap.expected_value[1]} = {shap_values[0, :, 1].sum() + self._shap.expected_value[1]} != {prediction[0, 1]}"
-        print(f"shap_values: {shap_values.shape}, {shap_values}")
-        shap.summary_plot(shap_values, self._X_test)
-        shap.dependence_plot('Age', shap_values, self._X_test, interaction_index='Sex')
-        shap.dependence_plot('Poverty index', shap_values, self._X_test, interaction_index='Age')
-   
+        self._ExplainXGBoostPrediction([("Age", "Sex"), ("Poverty index", "Age")])
+  
     def _PrepareData(self):
         """
         NHANES | epidemiology dataset. This dataset contains various features of hospital patients as well as their outcomes, i.e. whether or not they died within 10 years (self._threshold).
