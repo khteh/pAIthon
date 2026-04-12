@@ -1,4 +1,5 @@
 import pickle, itertools, shap, numpy, pandas as pd
+from utils.TermColour import bcolors
 from abc import ABC
 from tqdm import tqdm
 from pathlib import Path
@@ -141,14 +142,16 @@ class DecisionTree(ABC):
             self._X_test_risk = self._X_test.copy(deep=True)
             self._Y_test_risk = self._Y_test.copy(deep=True)
             self._X_test_risk.loc[:, 'risk'] = self._xgb.predict_proba(self._X_test_risk)[:, 1]
-            self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
+            self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False) # Sort by risk descending
             self._Y_test_risk = self._Y_test_risk.reindex(self._X_test_risk.index)
-        print(f"X_test: {type(self._X_test)} {self._X_test.shape}") # (92, 20)
+        print(f"X_test: {type(self._X_test)} {self._X_test.shape}") # X_test: <class 'pandas.core.frame.DataFrame'> (92, 20)
         print(f"self._X_test_risk.index[{i}]: {self._X_test_risk.index[i]}")
         print(f"self._Y_test_risk.index[{i}]: {self._Y_test_risk.index[i]}")
         print(f"_X_test_risk:\n{self._X_test_risk.head()}")
+        self._X_test = self._X_test.reindex(self._X_test_risk.index)
+        self._Y_test = self._Y_test.reindex(self._Y_test_risk.index)
         prediction = self._xgb.predict_proba(self._X_test) # This needs to be done before adding the "risk" column below
-        print(f"prediction: {prediction.shape}")
+        print(f"prediction: {prediction.shape}") # (92, 2)
         # https://shap.readthedocs.io/en/latest/generated/shap.TreeExplainer.html
         # https://github.com/shap/shap/issues/4225
         # https://github.com/shap/shap/pull/4254
@@ -166,19 +169,22 @@ class DecisionTree(ABC):
         # When set to False, you are responsible for converting categorical data into numeric formats (such as one-hot encoding or label encoding) before passing the data into the DMatrix.
         dmatrix = DMatrix(data=X, label=Y, enable_categorical=True) # This also works.
         dmatrix = DMatrix(data=X, enable_categorical=True) # (#samples, #features) This also works
-        print(f"dmatrix: ({dmatrix.num_row()}, {dmatrix.num_col()})") # (1, 20)
+        print(f"dmatrix: ({dmatrix.num_row()}, {dmatrix.num_col()})") # (1, 20) calculate the SHAP values for that single highest-risk patient X
         shap_values = self._shap.shap_values(dmatrix) # This also works
         #shap_values = self._shap.shap_values(X)  # This also works. X must be a Dataframe which has proper dtype info.
         shap_value = shap_values[0]
         print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 20)
         print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (20,)
         print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: scalar
-        #assert (shap_values[0, :].sum() + self._shap.expected_value == prediction[0]).all(), f"{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}"
+        assert numpy.allclose(shap_values[0, :].sum() + self._shap.expected_value, prediction[0]), f"{bcolors.FAIL}{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}{bcolors.DEFAULT}"
+        assert numpy.allclose(shap_values[1, :].sum() + self._shap.expected_value, prediction[1]), f"{bcolors.FAIL}{shap_values[1, :].sum()} + {self._shap.expected_value} = {shap_values[1, :].sum() + self._shap.expected_value} != {prediction[1]}{bcolors.DEFAULT}"
         # shap.plots.force(base_value, shap_values=None, features=None, feature_names=None, out_names=None, link='identity', plot_cmap='RdBu', matplotlib=False, show=True, figsize=(20, 3), ordering_keys=None, ordering_keys_time_format=None, text_rotation=0, contribution_threshold=0.05)
         shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
         test_data_dm = DMatrix(data = self._X_test, label = self._Y_test, enable_categorical=True)
         shap_values = self._shap.shap_values(test_data_dm) # shap_values: (92, 20)
-        #assert (shap_values[0, :].sum() + self._shap.expected_value == prediction[0]).all(), f"{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}"            
+        print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (92, 20)
+        assert numpy.allclose(shap_values[0, :].sum() + self._shap.expected_value, prediction[0]), f"{bcolors.FAIL}{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}{bcolors.DEFAULT}"
+        assert numpy.allclose(shap_values[1, :].sum() + self._shap.expected_value, prediction[1]), f"{bcolors.FAIL}{shap_values[1, :].sum()} + {self._shap.expected_value} = {shap_values[1, :].sum() + self._shap.expected_value} != {prediction[1]}{bcolors.DEFAULT}"
         print(f"Summary Plot shap_values: {shap_values.shape}, {shap_values}") # (92, 20)
         shap.summary_plot(shap_values, self._X_test)
         if dependencies is not None and len(dependencies) > 0:
@@ -207,15 +213,15 @@ class DecisionTree(ABC):
             self._X_test_risk = self._X_test.copy(deep=True)
             self._Y_test_risk = self._Y_test.copy(deep=True)
             self._X_test_risk.loc[:, 'risk'] = self._rf.predict_proba(self._X_test_risk)[:, 1]
-            self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False)
+            self._X_test_risk = self._X_test_risk.sort_values(by='risk', ascending=False) # Sort by risk descending
             self._Y_test_risk = self._Y_test_risk.reindex(self._X_test_risk.index)
-        print(f"X_test: {type(self._X_test)} {self._X_test.shape}") # (92, 20)
+        print(f"X_test: {type(self._X_test)} {self._X_test.shape}") # X_test: <class 'pandas.core.frame.DataFrame'> (92, 20)
         print(f"self._X_test_risk.index[{i}]: {self._X_test_risk.index[i]}")
         print(f"self._Y_test_risk.index[{i}]: {self._Y_test_risk.index[i]}")
         print(f"_X_test_risk:\n{self._X_test_risk.head()}")
         #self._shap = shap.TreeExplainer(self._rf)
         # https://github.com/shap/shap/issues/4224
-        X = self._X_test.loc[[self._X_test_risk.index[i]], :] # Need to maintain the pandas DataFrame dtype
+        X = self._X_test.loc[[self._X_test_risk.index[i]], :] # Slice out a single row X, which corresponds to the highest-risk patient (since i=0). Note: Need to maintain the pandas DataFrame dtype
         X = pd.concat([X], keys=['#samples']) # Add axis-0 as samples
 
         Y = self._Y_test.loc[self._Y_test_risk.index[i]]
@@ -224,23 +230,26 @@ class DecisionTree(ABC):
         print(f"Y: {type(Y)}, {Y.shape}\n{Y}") # 1 scalar value
         print(f"index: {self._X_test_risk.index[i]}") # index: 414, X: (20,), Y: ()
 
-        prediction = self._rf.predict_proba(self._X_test) # This needs to be done before adding the "risk" column below
-        print(f"prediction: {prediction.shape}")
+        self._X_test = self._X_test.reindex(self._X_test_risk.index)
+        prediction = self._rf.predict_proba(self._X_test)
+        print(f"prediction: {prediction.shape}") # (92, 2)
         # https://shap.readthedocs.io/en/latest/generated/shap.TreeExplainer.html
         # https://github.com/shap/shap/issues/4225
         # https://github.com/shap/shap/pull/4254
         # X: A matrix of samples (# samples x # features) on which to explain the model’s output.
-        shap_values = self._shap.shap_values(X)
+        shap_values = self._shap.shap_values(X) # calculate the SHAP values for that single highest-risk patient X
         shap_value = shap_values[:,:,1]
         print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 20, 2)
         print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (1, 20)
         print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
-        #assert shap_values[0, :, 0].sum() + self._shap.expected_value[0] == prediction[0, 0], f"{shap_values[0, :, 0].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :, 0].sum() + self._shap.expected_value[0]} != {prediction[0, 0]}"
-        #assert shap_values[0, :, 1].sum() + self._shap.expected_value[1] == prediction[0, 1], f"{shap_values[0, :, 1].sum()} + {self._shap.expected_value[1]} = {shap_values[0, :, 1].sum() + self._shap.expected_value[1]} != {prediction[0, 1]}"
+        assert numpy.isclose(shap_values[0, :, 0].sum() + self._shap.expected_value[0], prediction[0, 0]), f"{bcolors.FAIL}{shap_values[0, :, 0].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :, 0].sum() + self._shap.expected_value[0]} != {prediction[0, 0]}{bcolors.DEFAULT}"
+        assert numpy.isclose(shap_values[0, :, 1].sum() + self._shap.expected_value[1], prediction[0, 1]), f"{bcolors.FAIL}{shap_values[0, :, 1].sum()} + {self._shap.expected_value[1]} = {shap_values[0, :, 1].sum() + self._shap.expected_value[1]} != {prediction[0, 1]}{bcolors.DEFAULT}"
         shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
         shap_values = self._shap.shap_values(self._X_test)[:,:,1] # shap_values: (92, 20)
-        #assert shap_values[0, :, 0].sum() + self._shap.expected_value[0] == prediction[0, 0], f"{shap_values[0, :, 0].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :, 0].sum() + self._shap.expected_value[0]} != {prediction[0, 0]}"
-        #assert shap_values[0, :, 1].sum() + self._shap.expected_value[1] == prediction[0, 1], f"{shap_values[0, :, 1].sum()} + {self._shap.expected_value[1]} = {shap_values[0, :, 1].sum() + self._shap.expected_value[1]} != {prediction[0, 1]}"
+        print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (92, 20)
+        print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
+        #assert numpy.allclose(shap_values[0, :].sum() + self._shap.expected_value, prediction[0]), f"{bcolors.FAIL}{shap_values[0, :].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}{bcolors.DEFAULT}"
+        #assert numpy.allclose(shap_values[1, :].sum() + self._shap.expected_value, prediction[1]), f"{bcolors.FAIL}{shap_values[1, :].sum()} + {self._shap.expected_value[1]} = {shap_values[1, :].sum() + self._shap.expected_value} != {prediction[1]}{bcolors.DEFAULT}"
         print(f"Summary Plot shap_values: {shap_values.shape}, {shap_values}") # (92, 20)
         shap.summary_plot(shap_values, self._X_test)
         if dependencies is not None and len(dependencies) > 0:
