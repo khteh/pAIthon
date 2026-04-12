@@ -176,15 +176,15 @@ class DecisionTree(ABC):
         print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 20)
         print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (20,)
         print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: scalar
+        # https://github.com/shap/shap/issues/4414
         assert numpy.allclose(shap_values[0, :].sum() + self._shap.expected_value, prediction[0]), f"{bcolors.FAIL}{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}{bcolors.DEFAULT}"
-        assert numpy.allclose(shap_values[1, :].sum() + self._shap.expected_value, prediction[1]), f"{bcolors.FAIL}{shap_values[1, :].sum()} + {self._shap.expected_value} = {shap_values[1, :].sum() + self._shap.expected_value} != {prediction[1]}{bcolors.DEFAULT}"
         # shap.plots.force(base_value, shap_values=None, features=None, feature_names=None, out_names=None, link='identity', plot_cmap='RdBu', matplotlib=False, show=True, figsize=(20, 3), ordering_keys=None, ordering_keys_time_format=None, text_rotation=0, contribution_threshold=0.05)
         shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
         test_data_dm = DMatrix(data = self._X_test, label = self._Y_test, enable_categorical=True)
         shap_values = self._shap.shap_values(test_data_dm) # shap_values: (92, 20)
         print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (92, 20)
-        assert numpy.allclose(shap_values[0, :].sum() + self._shap.expected_value, prediction[0]), f"{bcolors.FAIL}{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}{bcolors.DEFAULT}"
-        assert numpy.allclose(shap_values[1, :].sum() + self._shap.expected_value, prediction[1]), f"{bcolors.FAIL}{shap_values[1, :].sum()} + {self._shap.expected_value} = {shap_values[1, :].sum() + self._shap.expected_value} != {prediction[1]}{bcolors.DEFAULT}"
+        #assert numpy.allclose(shap_values[0, :].sum() + self._shap.expected_value, prediction[0]), f"{bcolors.FAIL}{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}{bcolors.DEFAULT}"
+        #assert numpy.allclose(shap_values[1, :].sum() + self._shap.expected_value, prediction[1]), f"{bcolors.FAIL}{shap_values[1, :].sum()} + {self._shap.expected_value} = {shap_values[1, :].sum() + self._shap.expected_value} != {prediction[1]}{bcolors.DEFAULT}"
         print(f"Summary Plot shap_values: {shap_values.shape}, {shap_values}") # (92, 20)
         shap.summary_plot(shap_values, self._X_test)
         if dependencies is not None and len(dependencies) > 0:
@@ -242,15 +242,25 @@ class DecisionTree(ABC):
         print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 20, 2)
         print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (1, 20)
         print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
-        assert numpy.isclose(shap_values[0, :, 0].sum() + self._shap.expected_value[0], prediction[0, 0]), f"{bcolors.FAIL}{shap_values[0, :, 0].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :, 0].sum() + self._shap.expected_value[0]} != {prediction[0, 0]}{bcolors.DEFAULT}"
-        assert numpy.isclose(shap_values[0, :, 1].sum() + self._shap.expected_value[1], prediction[0, 1]), f"{bcolors.FAIL}{shap_values[0, :, 1].sum()} + {self._shap.expected_value[1]} = {shap_values[0, :, 1].sum() + self._shap.expected_value[1]} != {prediction[0, 1]}{bcolors.DEFAULT}"
+        assert numpy.isclose(shap_values[i, :, 0].sum() + self._shap.expected_value[0], prediction[i, 0]), f"{bcolors.FAIL}{shap_values[i, :, 0].sum()} + {self._shap.expected_value[0]} = {shap_values[i, :, 0].sum() + self._shap.expected_value[0]} != {prediction[i, 0]}{bcolors.DEFAULT}"
+        assert numpy.isclose(shap_values[i, :, 1].sum() + self._shap.expected_value[1], prediction[i, 1]), f"{bcolors.FAIL}{shap_values[i, :, 1].sum()} + {self._shap.expected_value[1]} = {shap_values[i, :, 1].sum() + self._shap.expected_value[1]} != {prediction[i, 1]}{bcolors.DEFAULT}"
         shap.force_plot(self._shap.expected_value[1], shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
-        shap_values = self._shap.shap_values(self._X_test)[:,:,1] # shap_values: (92, 20)
-        print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (92, 20)
-        print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
-        #assert numpy.allclose(shap_values[0, :].sum() + self._shap.expected_value, prediction[0]), f"{bcolors.FAIL}{shap_values[0, :].sum()} + {self._shap.expected_value[0]} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}{bcolors.DEFAULT}"
-        #assert numpy.allclose(shap_values[1, :].sum() + self._shap.expected_value, prediction[1]), f"{bcolors.FAIL}{shap_values[1, :].sum()} + {self._shap.expected_value[1]} = {shap_values[1, :].sum() + self._shap.expected_value} != {prediction[1]}{bcolors.DEFAULT}"
-        print(f"Summary Plot shap_values: {shap_values.shape}, {shap_values}") # (92, 20)
+        # class 0 SHAP values
+        # explainer.expected_value[0] = class 0 base rate
+        # prediction[i, 0]  # class 0 probability for sample i
+        shap_values = self._shap.shap_values(self._X_test)[:,:,0] # class 0 SHAP values: (92, 20)
+        print(f"\nClass-0 shap_values: {shap_values.shape}, {shap_values}") # shap_values: (92, 20)
+        print(f"Class-0 expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
+        assert numpy.isclose(shap_values[i, :].sum() + self._shap.expected_value[0], prediction[i, 0]), f"{bcolors.FAIL}{shap_values[i, :].sum()} + {self._shap.expected_value[0]} = {shap_values[i, :].sum() + self._shap.expected_value[0]} != {prediction[i, 0]}{bcolors.DEFAULT}"
+
+        # class 1 SHAP values
+        # explainer.expected_value[1] = class 1 base rate
+        # prediction[i, 1]  # class 1 probability for sample i
+        shap_values = self._shap.shap_values(self._X_test)[:,:,1] # class 1 SHAP values: (92, 20)
+        print(f"\nClass-1 shap_values: {shap_values.shape}, {shap_values}") # shap_values: (92, 20)
+        print(f"Class-1 expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: (2,)
+        assert numpy.isclose(shap_values[i, :].sum() + self._shap.expected_value[1], prediction[i, 1]), f"{bcolors.FAIL}{shap_values[i, :].sum()} + {self._shap.expected_value[1]} = {shap_values[i, :].sum() + self._shap.expected_value[1]} != {prediction[i, 1]}{bcolors.DEFAULT}"
+        print(f"\nSummary Plot shap_values: {shap_values.shape}, {shap_values}") # (92, 20)
         shap.summary_plot(shap_values, self._X_test)
         if dependencies is not None and len(dependencies) > 0:
             for dep in dependencies:
