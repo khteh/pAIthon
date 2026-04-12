@@ -150,8 +150,8 @@ class DecisionTree(ABC):
         print(f"_X_test_risk:\n{self._X_test_risk.head()}")
         self._X_test = self._X_test.reindex(self._X_test_risk.index)
         self._Y_test = self._Y_test.reindex(self._Y_test_risk.index)
-        prediction = self._xgb.predict_proba(self._X_test) # This needs to be done before adding the "risk" column below
-        print(f"prediction: {prediction.shape}") # (92, 2)
+        # prediction = self._xgb.predict_proba(self._X_test)
+        # print(f"prediction: {prediction.shape}") # (92, 2)
         # https://shap.readthedocs.io/en/latest/generated/shap.TreeExplainer.html
         # https://github.com/shap/shap/issues/4225
         # https://github.com/shap/shap/pull/4254
@@ -160,8 +160,11 @@ class DecisionTree(ABC):
         # The "name" column is actually the name attribute of the resulting Series, which automatically gets assigned the index label used to retrieve the row.
         # https://github.com/shap/shap/issues/4214
         # https://github.com/shap/shap/issues/4224
-        X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy() # This also works
-        X = X[numpy.newaxis, ...] # Add axis-0 as samples  # This also works
+        #X = self._X_test.loc[self._X_test_risk.index[i], :].to_numpy() # ValueError: data did not contain feature names, but the following fields are expected: 
+        #X = X[numpy.newaxis, ...] # Add axis-0 as samples  # This also works
+        X = self._X_test.loc[[self._X_test_risk.index[i]], :] # Slice out a single row X, which corresponds to the highest-risk patient (since i=0). Note: Need to maintain the pandas DataFrame dtype
+        X = pd.concat([X], keys=['#samples']) # Add axis-0 as samples
+
         Y = self._Y_test.loc[self._Y_test_risk.index[i]]
         Y = Y[numpy.newaxis, ...] # Add axis-0 as samples # This also works
         # enable_categorical:
@@ -169,6 +172,8 @@ class DecisionTree(ABC):
         # When set to False, you are responsible for converting categorical data into numeric formats (such as one-hot encoding or label encoding) before passing the data into the DMatrix.
         dmatrix = DMatrix(data=X, label=Y, enable_categorical=True) # This also works.
         dmatrix = DMatrix(data=X, enable_categorical=True) # (#samples, #features) This also works
+        raw_margin = self._xgb.get_booster().predict(dmatrix, output_margin=True) # shape (92,) — one log-odds scalar per sample
+        print(f"raw_margin: {raw_margin.shape} {raw_margin}")
         print(f"dmatrix: ({dmatrix.num_row()}, {dmatrix.num_col()})") # (1, 20) calculate the SHAP values for that single highest-risk patient X
         shap_values = self._shap.shap_values(dmatrix) # This also works
         #shap_values = self._shap.shap_values(X)  # This also works. X must be a Dataframe which has proper dtype info.
@@ -177,14 +182,15 @@ class DecisionTree(ABC):
         print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (20,)
         print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: scalar
         # https://github.com/shap/shap/issues/4414
-        assert numpy.allclose(shap_values[0, :].sum() + self._shap.expected_value, prediction[0]), f"{bcolors.FAIL}{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}{bcolors.DEFAULT}"
+        assert numpy.allclose(shap_values[i, :].sum() + self._shap.expected_value, raw_margin[i]), f"{bcolors.FAIL}{shap_values[i, :].sum()} + {self._shap.expected_value} = {shap_values[i, :].sum() + self._shap.expected_value} != {raw_margin[i]}{bcolors.DEFAULT}"
         # shap.plots.force(base_value, shap_values=None, features=None, feature_names=None, out_names=None, link='identity', plot_cmap='RdBu', matplotlib=False, show=True, figsize=(20, 3), ordering_keys=None, ordering_keys_time_format=None, text_rotation=0, contribution_threshold=0.05)
         shap.force_plot(self._shap.expected_value, shap_value, feature_names=self._X_test.columns, matplotlib=True, figsize=(20, 10))
         test_data_dm = DMatrix(data = self._X_test, label = self._Y_test, enable_categorical=True)
         shap_values = self._shap.shap_values(test_data_dm) # shap_values: (92, 20)
+        raw_margin = self._xgb.get_booster().predict(test_data_dm, output_margin=True) # shape (92,) — one log-odds scalar per sample
+        print(f"raw_margin: {raw_margin.shape}")
         print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (92, 20)
-        #assert numpy.allclose(shap_values[0, :].sum() + self._shap.expected_value, prediction[0]), f"{bcolors.FAIL}{shap_values[0, :].sum()} + {self._shap.expected_value} = {shap_values[0, :].sum() + self._shap.expected_value} != {prediction[0]}{bcolors.DEFAULT}"
-        #assert numpy.allclose(shap_values[1, :].sum() + self._shap.expected_value, prediction[1]), f"{bcolors.FAIL}{shap_values[1, :].sum()} + {self._shap.expected_value} = {shap_values[1, :].sum() + self._shap.expected_value} != {prediction[1]}{bcolors.DEFAULT}"
+        assert numpy.allclose(shap_values[i, :].sum() + self._shap.expected_value, raw_margin[i]), f"{bcolors.FAIL}{shap_values[i, :].sum()} + {self._shap.expected_value} = {shap_values[i, :].sum() + self._shap.expected_value} != {raw_margin[i]}{bcolors.DEFAULT}"
         print(f"Summary Plot shap_values: {shap_values.shape}, {shap_values}") # (92, 20)
         shap.summary_plot(shap_values, self._X_test)
         if dependencies is not None and len(dependencies) > 0:
