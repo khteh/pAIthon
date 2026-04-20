@@ -207,6 +207,26 @@ def min_edit_distance(source, target, ins_cost = 1, del_cost = 1, rep_cost = 2):
     Output:
         D: a matrix of len(source)+1 by len(target)+1 containing minimum edit distances
         med: the minimum edit distance (med) required to convert the source string to the target
+
+        rep_cost:1
+
+        0 r  o s
+        0 0 1  2 3
+        h 1 1  2 3
+        o 2 2 [1] 2 ho-> ro : h->r 1 edits
+        r 3[2] 2 2
+        s 4 3  3 [2] hors -> ros : Remove h 1 del,
+        e 5 4 [4] 3 horse -> ro: Remove "ho": + Remove 'e': 3 dels, s->o 1 edits | horse -> ros: Remove "ho" 2 dels, "se"->"os" 2 edits
+
+        rep_cost:2
+        j  0 1  2 3
+    i      r  o s
+    0    0 1  2 3
+    1  h 1 2  3 4
+    2  o 2 3 [2] 3 ho-> ro : h->r 2 edits
+    3  r 3 [2] 3 4 hor -> r : Remove "ho" 2 dels
+    4  s 4 3  4 [3]  hors -> ros : Remove h: 1 del, "or" -> "ro"
+    5  e 5 4  5 4 horse -> ros: Remove "ho": + Remove 'e': 3 dels, s->o 2 edits
     '''
     print(f"\n=== {min_edit_distance.__name__} ===")
     # use deletion and insert cost as  1
@@ -216,16 +236,15 @@ def min_edit_distance(source, target, ins_cost = 1, del_cost = 1, rep_cost = 2):
     D = numpy.zeros((m+1, n+1), dtype=int) 
     
     # Fill in column 0, from row 1 to row m, both inclusive
-    for row in range(1, m + 1): # Replace None with the proper range
+    for row in range(1, m + 1):
         D[row,0] = D[row-1,0] + del_cost
         
     # Fill in row 0, for all columns from 1 to n, both inclusive
-    for col in range(1, n + 1): # Replace None with the proper range
+    for col in range(1, n + 1):
         D[0,col] = D[0, col-1] + ins_cost
         
     # Loop through row 1 to row m, both inclusive
     for i in range(1,m+1):
-        
         # Loop through column 1 to column n, both inclusive
         for j in range(1,n+1):
             
