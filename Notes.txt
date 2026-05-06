@@ -1632,7 +1632,7 @@ Dev/test datasets:
 - It is ok for the training dataset to come from a slightly different distribution than the dev/test sets. For example, scrapping the dataset from the internet or purchase from third-party vendors.
 - The goal of test set is to evaluate how good the final system is. So it is best to get these datasets from the field - data the system is built for.
 How about size?
-- Test set should be big enough to give high confidencein the overall performance of the system.
+- Test set should be big enough to give high confidence in the overall performance of the system.
 - Train-test split - The "test" is actually the dev/cross-validation dataset.
   - It's ok to not have a test dataset if ensuring "high confidence" in the final system is not critical.
 - Must make sure large percentage of dev/test set to be as close to the field as possible.
