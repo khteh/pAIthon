@@ -60,7 +60,7 @@ def plot_bc_dataset(x, y, title):
     plt.legend(handles=[y_0, y_1], fontsize='x-large')
     plt.show()
 
-def plot_roc_curve(tpr, fpr):
+def plot_roc_curve(tpr, fpr, title):
     """
     Plot an ROC curve given the true-positive and false-positive rates of a model.
     sklearn.metrics.RocCurveDisplay provides this functionality
@@ -73,6 +73,6 @@ def plot_roc_curve(tpr, fpr):
     # Customize the plot
     plt.xlabel("False-Positive Rate (fpr)", fontsize=22)
     plt.ylabel("True-Positive Rate (tpr)", fontsize=22)
-    plt.title("Receiver Operating Characteristics (ROC)) curve", fontsize=22, fontweight="bold", y=1.05)
+    plt.title(f"Receiver Operating Characteristics (ROC)) curve of {title}", fontsize=22, fontweight="bold", y=1.05)
     plt.legend(fontsize='x-large')
     plt.show()

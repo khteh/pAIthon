@@ -298,6 +298,8 @@ class HeartDisease(DecisionTree):
         Estimator score method: Estimators have a score method providing a default evaluation criterion for the problem they are designed to solve. 
         Most commonly this is accuracy for classifiers and the coefficient of determination (R^2) for regressors. Details for each estimator can be found in its documentation.
         """
+        print(f"\n=== {self._EvaluateTest.__name__} {type(model).__name__} ===")
+        title = f"{type(model).__name__} Heart Disease Classifier"
         predictions = model.predict(self._X_test)
 
         # 1. Accuracy
@@ -307,7 +309,7 @@ class HeartDisease(DecisionTree):
 
         # 2. ROC curve
         # Make predictions with probabilities
-        y_probs = model.predict_proba(X_test) # predict the class probabilities. The returned estimates for all classes are ordered by the label of classes.
+        y_probs = model.predict_proba(self._X_test) # predict the class probabilities. The returned estimates for all classes are ordered by the label of classes.
         # y_probs[0]: Probabilities of class-0 (false)
         # y_probs[1]: Probabilities of class-1 (true)
         y_probs_positives = y_probs[:, 1]
@@ -315,9 +317,9 @@ class HeartDisease(DecisionTree):
         fpr, tpr, thresholds = roc_curve(self._Y_test, y_probs_positives)
         auc_score = roc_auc_score(self._Y_test, y_probs_positives)
         print(f"AUC Score: {auc_score}") # 
-        plot_roc_curve(tpr, fpr)
+        plot_roc_curve(tpr, fpr, title)
         roc_auc = auc(fpr, tpr)
-        rocCurveDisplay = RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=roc_auc, name="Heart Disease Classifier")
+        rocCurveDisplay = RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=roc_auc, name=f"{title} ROC Curve")
         rocCurveDisplay.plot()
         plt.show()
 
@@ -326,7 +328,7 @@ class HeartDisease(DecisionTree):
         print("Confusion matrix:")
         print(confusion)
         ConfusionMatrixDisplay.from_predictions(self._Y_test.values.reshape([1, -1]), predictions.reshape([1,-1]), display_labels=["No Disease", "Disease"])
-        plt.title("Heart Disease Confusion Matrix")
+        plt.title(f"{title} Confusion Matrix")
         plt.show()
 
         # 4. Classification Report
