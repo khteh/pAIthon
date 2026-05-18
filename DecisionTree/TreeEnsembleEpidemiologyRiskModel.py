@@ -212,6 +212,13 @@ class TreeEnsembleEpidemiologyRiskModel(DecisionTree):
         return performance, subgroup_size
     
     def _Evaluate(self, Y, probabilities):
+        """
+        Method used by the DecisionTree base class to score the model selection process.
+        Evaluate the model's performance using the regular concordance index
+        Args:
+            Y: Y_val
+            probabilities: the predicted probabilities of the classes
+        """
         return CIndex(Y, probabilities[:,1])
     
     def _prob_drop(self, age):

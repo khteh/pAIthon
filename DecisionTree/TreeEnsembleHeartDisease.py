@@ -336,10 +336,11 @@ class HeartDisease(DecisionTree):
         
     def _Evaluate(self, Y, probabilities):
         """
-        Method used by the DecisionTree base class to score the model selection process
+        Method used by the DecisionTree base class to score the model selection process.
+        Evaluate the model's performance using the accuracy score
         Args:
             Y: Y_val
-            probabilities: the predicted probabilities
+            probabilities: the predicted probabilities of the classes
         """
         predicted_labels = (probabilities[:, 1] > 0.5).astype(int)
         return accuracy_score(Y, predicted_labels)

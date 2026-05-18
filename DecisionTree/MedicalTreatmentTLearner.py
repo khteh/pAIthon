@@ -315,7 +315,13 @@ class MedicalTreatmentTLearner(DecisionTree):
         self._Y_control_val = self._Y_val[self._X_val.TRTMT == False].to_numpy().ravel()
 
     def _Evaluate(self, Y, predictions):
-        # Evaluate the model's performance using the regular concordance index
+        """
+        Method used by the DecisionTree base class to score the model selection process,
+        Evaluate the model's performance using the regular concordance index
+        Args:
+            Y: Y_val
+            probabilities: the predicted probabilities of the classes
+        """
         return CIndex(Y, predictions[:, 1])
 
     def _event_rate(self):
