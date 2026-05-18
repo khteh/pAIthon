@@ -1,10 +1,12 @@
 import argparse, pandas as pd, matplotlib.pyplot as plt, shap, numpy
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_curve, roc_auc_score, ConfusionMatrixDisplay, RocCurveDisplay, auc
 from xgboost import XGBClassifier, DMatrix
 from utils.DecisionTreeViz import PlotDecisionTree
+from utils.Plots import plot_roc_curve, CorrelationMatrixHeatMap
+from utils.ConfusionMatrix import ConfusionMatrix
 from .DecisionTree import DecisionTree
 
 # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
@@ -91,6 +93,7 @@ class HeartDisease(DecisionTree):
         PlotDecisionTree(self._dt, self._features, ['neg', 'pos'], "HeartDiseasePredictionDecisionTree") # Matches with self._dt.classes_
         plt.clf()
         plt.close()
+        self._EvaluateTest(self._dt)
 
     def BuildRandomForestModel(self, model_path:str, retrain:bool = False):
         """
@@ -131,11 +134,13 @@ class HeartDisease(DecisionTree):
             }
             self._rf = self._random_forest_grid_search(RandomForestClassifier, self._X_train, self._Y_train, self._X_val, self._Y_val, hyperparams, fixed_hyperparams)
             print(f"Best hyperparameters:\n{self._best_hyperparams}")
-        self._shap = shap.TreeExplainer(self._rf)
+        self._shap = shap.TreeExplainer(self._rf) # self._shap.expected_value is calculated during shap.TreeExplainer(model) initialization from the model's internal structure
+        print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}")
         print(f"classes: {self._rf.classes_}") # classes: [False  True]
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._rf.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._rf.predict(self._X_val), self._Y_val):.4f}")
         #PlotDecisionTree(self._rf, self._features, ['neg', 'pos'], "RandomForestHeartDiseasePrediction") AttributeError: 'RandomForestClassifier' object has no attribute 'tree_'
         self._ExplainRandomForestPrediction([("Age", "Sex_F"), ("Age", "Sex_M")])
+        self._EvaluateTest(self._rf)
 
     def BuildXGBoost(self, model_path:str, retrain:bool = False):
         """
@@ -191,10 +196,12 @@ class HeartDisease(DecisionTree):
             self._xgb = self._random_forest_grid_search(XGBClassifier, self._X_train, self._Y_train, self._X_val, self._Y_val, hyperparams, fixed_hyperparams)
             print(f"Best hyperparameters:\n{self._best_hyperparams}")
         self._shap = shap.TreeExplainer(self._xgb)
+        print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}")
         print(f"Best iteration with lowest evaluation metric: {self._xgb.best_iteration}")
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_val), self._Y_val):.4f}")
         #PlotDecisionTree(self._xgb, self._features, ['neg', 'pos'], "XGBoostHeartDiseasePrediction") AttributeError: 'XGBClassifier' object has no attribute 'tree_'
         self._ExplainXGBoostPrediction([("Age", "Sex_F"), ("Age", "Sex_M")])
+        self._EvaluateTest(self._xgb)
 
     def _PrepareData(self):
         """
@@ -210,6 +217,8 @@ class HeartDisease(DecisionTree):
         print(f"\n=== {self._PrepareData.__name__} ===")
         # Load the dataset using pandas
         df = pd.read_csv(self._path)
+        self._PlotData(df)
+        CorrelationMatrixHeatMap(df.corr())
         cat_variables = ['Sex',
             'ChestPainType',
             'RestingECG',
@@ -240,8 +249,98 @@ class HeartDisease(DecisionTree):
         print(f"Y: shape: {self._Y_train.shape}, {self._Y_train[:10]}")
         print(f"X:")
         print(self._X_train.head())
-    
+
+    def _PlotData(self, data):
+        print(f"\n=== {self._PlotData.__name__} ===")
+        ages = numpy.sort(data.Age.unique())
+        type(ages)
+        males = []
+        females = []
+        for age in ages:
+            males.append(len(data[(data.Age == age) & (data.Sex == 'M') & (data.HeartDisease == 1)]))
+            females.append(len(data[(data.Age == age) & (data.Sex == 'F') & (data.HeartDisease == 1)]))
+
+        #data.plot(kind='scatter', x='age', y='chol', c='target')
+        fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(20,6), sharex=True)
+
+        age_cholesterol = ax[0].scatter(x=data['Age'], y=data['Cholesterol'], c=data['HeartDisease'])
+        ax[0].set(title="Heart Disease (Age and Cholesterol Levels)", ylabel="Cholesterol")
+        ax[0].legend(*age_cholesterol.legend_elements(), title="Diagnosis") # legend_elements() will look for the c=data['target']
+        ax[0].axhline(data.Cholesterol.mean(), linestyle="--")
+
+        genders = {
+            'Male': males,
+            'Female': females
+        }
+
+        x = ages #np.arange(len(species))  # the label locations
+        width = 0.25  # the width of the bars
+        multiplier = 0
+
+        for gender, count in genders.items():
+            offset = width * multiplier
+            rects = ax[1].bar(x + offset, count, width, label=gender)
+            ax[1].bar_label(rects, padding=3)
+            multiplier += 1
+
+        # Add some text for labels, title and custom x-axis tick labels, etc.
+        ax[1].set(title='Heart Disease (Age and Gender)', xlabel="Age", ylabel="Count")
+        ax[1].set_xticks(x + width, ages)
+        ax[1].legend(loc='upper left', ncols=3)
+        ax[1].set_ylim(0, 10)
+        fig.suptitle("Heart Disease Analysis", fontsize=16, fontweight="bold")
+        plt.legend(fontsize='x-large')
+        plt.show()
+
+    def _EvaluateTest(self, model):
+        """
+        # https://scikit-learn.org/stable/modules/model_evaluation.html
+        Estimator score method: Estimators have a score method providing a default evaluation criterion for the problem they are designed to solve. 
+        Most commonly this is accuracy for classifiers and the coefficient of determination (R^2) for regressors. Details for each estimator can be found in its documentation.
+        """
+        predictions = model.predict(self._X_test)
+
+        # 1. Accuracy
+        model.score(self._X_train, self._Y_train)
+        accuracy = model.score(self._X_test, self._Y_test)
+        print(f"Accuracy: {accuracy}")
+
+        # 2. ROC curve
+        # Make predictions with probabilities
+        y_probs = model.predict_proba(X_test) # predict the class probabilities. The returned estimates for all classes are ordered by the label of classes.
+        # y_probs[0]: Probabilities of class-0 (false)
+        # y_probs[1]: Probabilities of class-1 (true)
+        y_probs_positives = y_probs[:, 1]
+        # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html
+        fpr, tpr, thresholds = roc_curve(self._Y_test, y_probs_positives)
+        auc_score = roc_auc_score(self._Y_test, y_probs_positives)
+        print(f"AUC Score: {auc_score}") # 
+        plot_roc_curve(tpr, fpr)
+        roc_auc = auc(fpr, tpr)
+        rocCurveDisplay = RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=roc_auc, name="Heart Disease Classifier")
+        rocCurveDisplay.plot()
+        plt.show()
+
+        # 3. Confusion Matrix
+        confusion = ConfusionMatrix(self._Y_test, predictions)
+        print("Confusion matrix:")
+        print(confusion)
+        ConfusionMatrixDisplay.from_predictions(self._Y_test.values.reshape([1, -1]), predictions.reshape([1,-1]), display_labels=["No Disease", "Disease"])
+        plt.title("Heart Disease Confusion Matrix")
+        plt.show()
+
+        # 4. Classification Report
+        report = classification_report(self._Y_test, predictions)
+        print("Classification Report:")
+        print(report)
+        
     def _Evaluate(self, Y, probabilities):
+        """
+        Method used by the DecisionTree base class to score the model selection process
+        Args:
+            Y: Y_val
+            probabilities: the predicted probabilities
+        """
         predicted_labels = (probabilities[:, 1] > 0.5).astype(int)
         return accuracy_score(Y, predicted_labels)
 

@@ -175,12 +175,13 @@ class DecisionTree(ABC):
         raw_margin = self._xgb.get_booster().predict(dmatrix, output_margin=True) # shape (92,) — one log-odds scalar per sample
         print(f"raw_margin: {raw_margin.shape} {raw_margin}")
         print(f"dmatrix: ({dmatrix.num_row()}, {dmatrix.num_col()})") # (1, 20) calculate the SHAP values for that single highest-risk patient X
+        print(f"before shap_values(): {self._shap.expected_value}")
         shap_values = self._shap.shap_values(dmatrix) # This also works
         #shap_values = self._shap.shap_values(X)  # This also works. X must be a Dataframe which has proper dtype info.
         shap_value = shap_values[0]
         print(f"shap_values: {shap_values.shape}, {shap_values}") # shap_values: (1, 20)
         print(f"shap_value: {shap_value.shape}, {shap_value}") # shap_value: (20,)
-        print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: scalar
+        print(f"expected_value: {self._shap.expected_value.shape}, {self._shap.expected_value}") # expected_value: scalar. It's calculated during shap.TreeExplainer(model) initialization from the model's internal structure
         # https://github.com/shap/shap/issues/4414
         assert numpy.allclose(shap_values[i, :].sum() + self._shap.expected_value, raw_margin[i]), f"{bcolors.FAIL}{shap_values[i, :].sum()} + {self._shap.expected_value} = {shap_values[i, :].sum() + self._shap.expected_value} != {raw_margin[i]}{bcolors.DEFAULT}"
         # shap.plots.force(base_value, shap_values=None, features=None, feature_names=None, out_names=None, link='identity', plot_cmap='RdBu', matplotlib=False, show=True, figsize=(20, 3), ordering_keys=None, ordering_keys_time_format=None, text_rotation=0, contribution_threshold=0.05)
