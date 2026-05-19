@@ -94,8 +94,8 @@ class HeartDisease(DecisionTree):
         PlotDecisionTree(self._dt, self._features, ['neg', 'pos'], "HeartDiseasePredictionDecisionTree") # Matches with self._dt.classes_
         plt.clf()
         plt.close()
-        self._EvaluateTest(self._dt)
         evaluate_model(self._dt, self._X_val, self._Y_val, 5, "Heart Disease model scores")
+        self._EvaluateTest(self._dt)
 
     def BuildRandomForestModel(self, model_path:str, retrain:bool = False):
         """
@@ -142,8 +142,8 @@ class HeartDisease(DecisionTree):
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._rf.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._rf.predict(self._X_val), self._Y_val):.4f}")
         #PlotDecisionTree(self._rf, self._features, ['neg', 'pos'], "RandomForestHeartDiseasePrediction") AttributeError: 'RandomForestClassifier' object has no attribute 'tree_'
         self._ExplainRandomForestPrediction([("Age", "Sex_F"), ("Age", "Sex_M")])
-        self._EvaluateTest(self._rf)
         evaluate_model(self._rf, self._X_val, self._Y_val, 5, "Heart Disease model scores")
+        self._EvaluateTest(self._rf)
 
     def BuildXGBoost(self, model_path:str, retrain:bool = False):
         """
@@ -204,8 +204,8 @@ class HeartDisease(DecisionTree):
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_val), self._Y_val):.4f}")
         #PlotDecisionTree(self._xgb, self._features, ['neg', 'pos'], "XGBoostHeartDiseasePrediction") AttributeError: 'XGBClassifier' object has no attribute 'tree_'
         self._ExplainXGBoostPrediction([("Age", "Sex_F"), ("Age", "Sex_M")])
-        self._EvaluateTest(self._xgb)
         evaluate_model(self._xgb, self._X_val, self._Y_val, 5, "Heart Disease model scores")
+        self._EvaluateTest(self._xgb)
 
     def _PrepareData(self):
         """
