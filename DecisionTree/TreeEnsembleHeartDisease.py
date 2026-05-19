@@ -7,7 +7,7 @@ from xgboost import XGBClassifier, DMatrix
 from utils.DecisionTreeViz import PlotDecisionTree
 from utils.Plots import plot_roc_curve, CorrelationMatrixHeatMap
 from utils.ConfusionMatrix import ConfusionMatrix
-from utils.ModelEvaluationScores import evaluate_model
+from utils.ModelEvaluationScores import KFoldCrossValidation
 from .DecisionTree import DecisionTree
 
 # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
@@ -94,7 +94,7 @@ class HeartDisease(DecisionTree):
         PlotDecisionTree(self._dt, self._features, ['neg', 'pos'], "HeartDiseasePredictionDecisionTree") # Matches with self._dt.classes_
         plt.clf()
         plt.close()
-        evaluate_model(self._dt, self._X_val, self._Y_val, 5, "Heart Disease model scores")
+        KFoldCrossValidation(self._dt, self._X_val, self._Y_val, 5, "Heart Disease model scores")
         self._EvaluateTest(self._dt)
 
     def BuildRandomForestModel(self, model_path:str, retrain:bool = False):
@@ -142,7 +142,7 @@ class HeartDisease(DecisionTree):
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._rf.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._rf.predict(self._X_val), self._Y_val):.4f}")
         #PlotDecisionTree(self._rf, self._features, ['neg', 'pos'], "RandomForestHeartDiseasePrediction") AttributeError: 'RandomForestClassifier' object has no attribute 'tree_'
         self._ExplainRandomForestPrediction([("Age", "Sex_F"), ("Age", "Sex_M")])
-        evaluate_model(self._rf, self._X_val, self._Y_val, 5, "Heart Disease model scores")
+        KFoldCrossValidation(self._rf, self._X_val, self._Y_val, 5, "Heart Disease model scores")
         self._EvaluateTest(self._rf)
 
     def BuildXGBoost(self, model_path:str, retrain:bool = False):
@@ -204,7 +204,7 @@ class HeartDisease(DecisionTree):
         print(f"Metrics train:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_train), self._Y_train):.4f}\nMetrics test:\n\tAccuracy score: {accuracy_score(self._xgb.predict(self._X_val), self._Y_val):.4f}")
         #PlotDecisionTree(self._xgb, self._features, ['neg', 'pos'], "XGBoostHeartDiseasePrediction") AttributeError: 'XGBClassifier' object has no attribute 'tree_'
         self._ExplainXGBoostPrediction([("Age", "Sex_F"), ("Age", "Sex_M")])
-        evaluate_model(self._xgb, self._X_val, self._Y_val, 5, "Heart Disease model scores")
+        KFoldCrossValidation(self._xgb, self._X_val, self._Y_val, 5, "Heart Disease model scores")
         self._EvaluateTest(self._xgb)
 
     def _PrepareData(self):
