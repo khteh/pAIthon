@@ -7,6 +7,7 @@ from xgboost import XGBClassifier, DMatrix
 from utils.DecisionTreeViz import PlotDecisionTree
 from utils.Plots import plot_roc_curve, CorrelationMatrixHeatMap
 from utils.ConfusionMatrix import ConfusionMatrix
+from utils.ModelEvaluationScores import evaluate_model
 from .DecisionTree import DecisionTree
 
 # https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction?resource=download
@@ -94,6 +95,7 @@ class HeartDisease(DecisionTree):
         plt.clf()
         plt.close()
         self._EvaluateTest(self._dt)
+        evaluate_model(self._dt, self._X_val, self._Y_val, 5, "Heart Disease model scores")
 
     def BuildRandomForestModel(self, model_path:str, retrain:bool = False):
         """
@@ -141,6 +143,7 @@ class HeartDisease(DecisionTree):
         #PlotDecisionTree(self._rf, self._features, ['neg', 'pos'], "RandomForestHeartDiseasePrediction") AttributeError: 'RandomForestClassifier' object has no attribute 'tree_'
         self._ExplainRandomForestPrediction([("Age", "Sex_F"), ("Age", "Sex_M")])
         self._EvaluateTest(self._rf)
+        evaluate_model(self._rf, self._X_val, self._Y_val, 5, "Heart Disease model scores")
 
     def BuildXGBoost(self, model_path:str, retrain:bool = False):
         """
@@ -202,6 +205,7 @@ class HeartDisease(DecisionTree):
         #PlotDecisionTree(self._xgb, self._features, ['neg', 'pos'], "XGBoostHeartDiseasePrediction") AttributeError: 'XGBClassifier' object has no attribute 'tree_'
         self._ExplainXGBoostPrediction([("Age", "Sex_F"), ("Age", "Sex_M")])
         self._EvaluateTest(self._xgb)
+        evaluate_model(self._xgb, self._X_val, self._Y_val, 5, "Heart Disease model scores")
 
     def _PrepareData(self):
         """
