@@ -639,7 +639,7 @@ To predict 1 even when in doubt, use low value of threshold. This results in low
 
 Picking the threshold is not something can be done with cross-validation. It's up to the business needs / use-case.
 To automatically decide on the best learning algorithm without having to manually select between Precision and Recall, choose the algorithm with the highest F1 score.
-F1 score = 2 * PR / (P + R) <= Harmonic mean. A mean calculation which pays attention to the lower value.
+F1 score = 2 * P * R / (P + R) <= Harmonic mean. A mean calculation which pays attention to the lower value.
 
 Classification model evaluation metrics:
 (1) Accuracy
