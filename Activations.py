@@ -54,6 +54,8 @@ def sigmoid(Z):
     """
     Compute the sigmoid of z (logit). 
     Sigmoid is for binary or multi-label classification, producing independent probabilities for each class.
+    In multi-label classification, a sample can have zero, one, or several labels simultaneously. For example, tagging a movie as both Action and Sci-Fi is multilabel because genres overlap.
+    In NN, multi-label uses independent Sigmoid activation functions with binary cross-entropy loss functions independently for each label.
 
     Args:
         z (ndarray): A scalar, numpy array of any size.
