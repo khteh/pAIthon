@@ -152,7 +152,7 @@ L2 Loss: (actual - prediction)^2 -> Penalizes worse / bigger loss more harshly. 
 
 Underfitting (High bias):
 - J(train) AND J(cv) are high
-- The model has a strong preconception of how the data  should fit into itself. For example, linear function, etc.
+- The model has a strong preconception/assumption of how the data should fit into itself. For example, linear function, etc.
 - More data will NOT help.
 - Example: Training dataset performance: 64%, Test dataset performance: 47%
 
@@ -259,21 +259,27 @@ This causes the gradient descent to take longer time to find it's global minimum
 (2) Mean normalization. This will produce scaled input data of [-1, 1] which centers around 0.
     - Find the average value: miu = numpy.mean(X)
     - X -= miu
-(3) Variance normalization. This will produce features with variance = 1.
+(3) Variance normalization (also known as unit variance scaling or standardization). This will produce features with variance = 1.
     - sigma^2 = numpy.sum(X ** 2) / m
     - OR: sigma = numpy.std(X)
     - X /= sigma
-(4) Z-score normalization: Find the standard deviation (d) and the mean. (x - ave) / d.
-    Mean: sum(data) / len(data)
-    standard deviation: sum((data[i] - mean) ** 2) / len(data)
+(4) Z-score normalization: Find the standard deviation (d) and the mean. (x - μ) / 𝜆.
+    Mean, μ: sum(data) / len(data)
+    standard deviation, 𝜆: sum((data[i] - mean) ** 2) / len(data)
 Note:
-- Sigma = standard deviation
+- Sigma, 𝜆 = standard deviation
 - Sigma^2 = Variance.
   - Vairance quantifies the spread of a normal distribution.
   - Covariance measures the variance between 2 dimensions.
     - 0: independent
     - -ve: lobside spread in y=-x direction
     - +ve: lobside spread in y=x direction.
+
+Standard deviation and variance both measure how spread out numbers are from the average (mean) in a data set, but standard deviation is the square root of the variance.
+Variance is the average of the squared differences from the mean. Standard deviation is the square root of that average.
+Deviations: (x_i - μ)
+For Population: Variance = sum((x_i - μ) ** 2) / N
+For Sample: Variance = sum((x_i - μ) ** 2) / (N - 1) : N - 1 is known as Bassel's correction to accurately account for missing population data.
 
 Batch Normalization:
 - HxW for each batch of data, x, (x - miu_x) / sigma_x. Do it for every channel.
@@ -620,7 +626,7 @@ Cons:
 
 Skewed Datasets:
 Precision = #True positives / (#True + #False positives) = #True positives / (#Total predicted positives)
-Recall = #True positives / (#True positives + #False negatives) = #True positives / (#Total actual positives) - Helps detect if the learning algorithm is predicting negatives all the time because the value will be zero.
+Recall (TPR) = #True positives / (#True positives + #False negatives) = #True positives / (#Total actual positives) - Helps detect if the learning algorithm is predicting negatives all the time because the value will be zero.
 0 Precision and/or Recall is bad.
 For use cases with skewed classes or a rare class, decently high precision and recall values helps reassures the usefulness of the learning algorithm.
 

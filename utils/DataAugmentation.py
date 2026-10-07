@@ -8,7 +8,7 @@ def ResizeRescale(ds, size: int):
         Resizing(size, size),
         Rescaling(1./255)
     ])
-    return ds.map(lambda x, y: (resize_rescale(x, training=True), y), num_parallel_calls=tf.data.AUTOTUNE)
+    return ds.map(lambda x, y: (resize_rescale(x, training = True), y), num_parallel_calls = tf.data.AUTOTUNE)
 
 def data_augmenter():
     '''
@@ -34,6 +34,6 @@ def AugmentData(ds, augment=False):
     # Use data augmentation only on the training set.
     if augment:
         augmenter = data_augmenter()
-        ds = ds.map(lambda x, y: (augmenter(x, training=True), y), num_parallel_calls=tf.data.AUTOTUNE)
+        ds = ds.map(lambda x, y: (augmenter(x, training = True), y), num_parallel_calls = tf.data.AUTOTUNE)
     # Use buffered prefetching on all datasets.
     return ds.prefetch(buffer_size=tf.data.AUTOTUNE)

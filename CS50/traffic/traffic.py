@@ -11,7 +11,7 @@ from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Flatten, Dropou
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import plot_model
-from utils.DataAugmentation import AugmentData, ResizeRescale
+from utils.DataAugmentation import AugmentData
 from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 from utils.TrainingMetricsPlot import PlotModelHistory
 """

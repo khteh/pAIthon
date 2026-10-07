@@ -8,7 +8,7 @@ from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Input, Conv2D, ReLU, MaxPool2D, Dropout, Flatten, Dense, BatchNormalization, Normalization
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import l2
-from utils.DataAugmentation import AugmentData, ResizeRescale
+from utils.DataAugmentation import AugmentData
 from utils.TrainingMetricsPlot import PlotModelHistory
 from utils.TrainingUtils import CreateTensorBoardCallback, CreateCircuitBreakerCallback
 from utils.GPU import InitializeGPU

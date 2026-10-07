@@ -310,10 +310,8 @@ def single_variate_binary_classification(C: float = 1.0):
     model = LogisticRegression(solver='liblinear', C=C, random_state=0).fit(x, y)
     # The attribute .classes_ represents the array of distinct values that y takes:
     print(f"LogisticRegression model.classes_: {model.classes_}, intercept (b0): {model.intercept_}, slope (b1): {model.coef_}")
-    """
-    matrix of probabilities that the predicted output is equal to zero or one
-    each row corresponds to a single observation. The first column is the probability of the predicted output being zero, that is 1 - 𝑝(𝑥). The second column is the probability that the output is one, or 𝑝(𝑥).
-    """
+    # matrix of probabilities that the predicted output is equal to zero or one
+    # each row corresponds to a single observation. The first column is the probability of the predicted output being zero, that is 1 - 𝑝(𝑥). The second column is the probability that the output is one, or 𝑝(𝑥).
     print(f"prediction probabilities: {model.predict_proba(x)}")
     predictions = model.predict(x)
     confusion = confusion_matrix(y, predictions)
@@ -326,10 +324,8 @@ def single_variate_binary_classification_statsmodels():
     print(f"\n=== {single_variate_binary_classification_statsmodels.__name__} ===")
     x = numpy.arange(10).reshape(-1, 1) # one column for each input, and the number of rows should be equal to the number of observations.
     y = numpy.array([0, 1, 0, 0, 1, 1, 1, 1, 1, 1])
-    """
-    add_constant() takes the array x as the argument and returns a new array with the additional column of ones.
-    The first column of x corresponds to the intercept 𝑏₀. The second column contains the original values of x.
-    """
+    # add_constant() takes the array x as the argument and returns a new array with the additional column of ones.
+    # The first column of x corresponds to the intercept 𝑏₀. The second column contains the original values of x.
     x = sm.add_constant(x)
     model = sm.Logit(y, x).fit(method='newton') # or, if you want to apply L1 regularization, with .fit_regularized():
     print(f"params: {model.params}")
@@ -353,18 +349,16 @@ def HandwritingClassification():
     """
     x, y = load_digits(return_X_y=True)
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
-    """
-    Standardization is the process of transforming data in a way such that the mean of each column becomes equal to zero, and the standard deviation of each column is one. This way, you obtain the same scale for all columns. Take the following steps to standardize your data:
+    # Standardization is the process of transforming data in a way such that the mean of each column becomes equal to zero, and the standard deviation of each column is one. This way, you obtain the same scale for all columns. Take the following steps to standardize your data:
 
-    Calculate the mean and standard deviation for each column.
-    Subtract the corresponding mean from each element.
-    Divide the obtained difference by the corresponding standard deviation.
-    It’s a good practice to standardize the input data that you use for logistic regression, although in many cases it’s not necessary. Standardization might improve the performance of your algorithm. It helps if you need to compare and interpret the weights. 
-    It’s important when you apply penalization because the algorithm is actually penalizing against the large values of the weights.
-    StandardScaler from scikitlearn computes the z-score of your inputs. As a refresher, the z-score is given by the equation:
-        z = (x - 𝜇) / lambda
-    where  𝜇 is the mean of the feature values and lambda is the standard deviation. 
-    """
+    # Calculate the mean and standard deviation for each column.
+    # Subtract the corresponding mean from each element.
+    # Divide the obtained difference by the corresponding standard deviation.
+    # It’s a good practice to standardize the input data that you use for logistic regression, although in many cases it’s not necessary. Standardization might improve the performance of your algorithm. It helps if you need to compare and interpret the weights. 
+    # It’s important when you apply penalization because the algorithm is actually penalizing against the large values of the weights.
+    # StandardScaler from scikitlearn computes the z-score of your inputs. As a refresher, the z-score is given by the equation:
+    #    z = (x - 𝜇) / 𝜆
+    # where 𝜇 is the mean of the feature values and 𝜆 is the standard deviation. 
     print(f"\n=== {HandwritingClassification.__name__} ===")
     scaler = StandardScaler() # perform z-score normalization
     x_train = scaler.fit_transform(x_train)
