@@ -34,10 +34,13 @@ def PrepareData():
 
 def NNSoftmax(X_train, y_train):
     """
+    L1 and L2 regularization are techniques used in machine learning to prevent overfitting by adding a penalty to the model's loss function based on the size of its weights.
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
-                               Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
+                              Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
+                              Example: You have a high-dimensional dataset with many irrelevant features and want a sparse, interpretable model that performs feature selection (e.g., text classification with thousands of words).
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
-                               Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
+                              Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
+                              Used when you have multicollinearity (correlated features) or want all features to contribute in a stable, balanced way to improve overall prediction accuracy.
     """
     print(f"\n=== {NNSoftmax.__name__} ===")
     model = Sequential(
@@ -67,10 +70,13 @@ def NNStableSoftmax(X_train, y_train):
     """
     More stable and accurate results can be obtained if the sigmoid/softmax and loss are combined during training.
     In the preferred organization the final layer has a linear activation. For historical reasons, the outputs in this form are referred to as *logits*. The loss function has an additional argument: `from_logits = True`. This informs the loss function that the sigmoid/softmax operation should be included in the loss calculation. This allows for an optimized implementation.
+    L1 and L2 regularization are techniques used in machine learning to prevent overfitting by adding a penalty to the model's loss function based on the size of its weights.
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
-                               Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
+                              Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
+                              Example: You have a high-dimensional dataset with many irrelevant features and want a sparse, interpretable model that performs feature selection (e.g., text classification with thousands of words).
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
-                               Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
+                              Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
+                              Used when you have multicollinearity (correlated features) or want all features to contribute in a stable, balanced way to improve overall prediction accuracy.
     """
     print(f"\n=== {NNStableSoftmax.__name__} ===")
     preferred_model = Sequential(

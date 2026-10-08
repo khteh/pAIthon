@@ -15,10 +15,13 @@ rng = Generator(PCG64DXSM())
 class Discriminator():
     """
     The discriminator is a CNN-based image classifier. It classifies the generated images as real or fake. The model will be trained to output positive values for real images, and negative values for fake images.
+    L1 and L2 regularization are techniques used in machine learning to prevent overfitting by adding a penalty to the model's loss function based on the size of its weights.
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
-                               Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
+                              Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
+                              Example: You have a high-dimensional dataset with many irrelevant features and want a sparse, interpretable model that performs feature selection (e.g., text classification with thousands of words).
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
-                               Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
+                              Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
+                              Used when you have multicollinearity (correlated features) or want all features to contribute in a stable, balanced way to improve overall prediction accuracy.
     """
     model = None
     _cross_entropy = None
@@ -85,10 +88,13 @@ class Generator():
     The generator will generate handwritten digits resembling the MNIST data.
     The generator uses tf.keras.Conv2DTranspose (upsampling) layers to produce an image from a seed (random noise). Start with a Dense layer that takes this seed as input, then upsample several times until you reach the desired image size of 28x28x1. 
     Notice the tf.keras.LeakyReLU activation for each layer, except the output layer which uses tanh since the output coefficients should be in the interval from -1 to 1
+    L1 and L2 regularization are techniques used in machine learning to prevent overfitting by adding a penalty to the model's loss function based on the size of its weights.
     L1 Regularization (Lasso): Penalizes the absolute values of the weights. This can lead to sparsity, driving some weights to exactly zero, effectively performing feature selection by "turning off" less important features or nodes in the network.
-                               Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
+                              Useful when there are many features and some might be irrelevant, as it can effectively perform feature selection.
+                              Example: You have a high-dimensional dataset with many irrelevant features and want a sparse, interpretable model that performs feature selection (e.g., text classification with thousands of words).
     L2 Regularization (Ridge): Penalizes the squared values of the weights. This shrinks the weights but generally doesn't force them to zero. This helps to prevent individual weights from becoming excessively large and dominating the model.
-                               Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
+                              Generally preferred in deep learning for its ability to smoothly reduce weight magnitudes and improve model generalization without completely removing features.
+                              Used when you have multicollinearity (correlated features) or want all features to contribute in a stable, balanced way to improve overall prediction accuracy.
     Note: The tuorial code turns off bias use_bias=False only for the generator network. However, I don't see
     """
     model = None
