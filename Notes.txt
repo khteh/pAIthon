@@ -1125,7 +1125,7 @@ YOLO (You Only Look Once):
 - Helps output more accurate bounding boxes.
 (1) Splits the input image into grid cells.
 (2) Label each of the grid cells, Y = [Pc, bx, by, bh, bw, C1, C2, C3,...]
-(3) Takes the midpoint of detected object and assign it to the grid cell which contains the midpoint. By using a fine-grained grid, this helps to avoid assigning multiple objects' midpoint assigned to the same cell.
+(3) Takes the midpoint of detected object and assign it to the grid cell which contains the midpoint. By using a fine-grained grid, this helps to avoid assigning multiple objects' midpoint to the same cell.
 (4) Output is grid shape x Y shape
 (5) Every grid cell can only detect ONE object.
 (6) This allows the NN to output bounding boxes of any aspect ratio and more precise coodinates which are otherwise dictated by the strides of the sliding-window classifier.
