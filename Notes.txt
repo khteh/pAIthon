@@ -624,9 +624,19 @@ Cons:
 (1) Excludes potentially useful hand-crafted / manual components. This is especially true when there is lack of end-to-end data. The NN don't have sufficient data to learn the features to map X to Y in this case.
 (2) Sometimes divide-and-conquer works better. Need to weight the relative complexity vs data availability.
 
+Accuracy:
+- Use as a rough indicator of model training progress/convergence for balanced datasets.
+- For model performance, use only in combination with other metrics.
+- Avoid for imbalanced datasets. Consider using another metric.
+
 Skewed Datasets:
 Precision = #True positives / (#True + #False positives) = #True positives / (#Total predicted positives)
-Recall (TPR) = #True positives / (#True positives + #False negatives) = #True positives / (#Total actual positives) - Helps detect if the learning algorithm is predicting negatives all the time because the value will be zero.
+  - Use when it's very important for positive predictions to be accurate.
+Recall (TPR) = #True positives / (#True positives + #False negatives) = #True positives / (#Total actual positives) 
+  - Use when false negatives are more expensive than false positives.
+  - Helps detect if the learning algorithm is predicting negatives all the time because the value will be zero.
+False Positive Rate (FPR) = #False positives / (#False positives + #True negatives) = Probability of False Alarm.
+  - Use when false positives are more expensive than false negatives.
 0 Precision and/or Recall is bad.
 For use cases with skewed classes or a rare class, decently high precision and recall values helps reassures the usefulness of the learning algorithm.
 
@@ -639,7 +649,9 @@ To predict 1 even when in doubt, use low value of threshold. This results in low
 
 Picking the threshold is not something can be done with cross-validation. It's up to the business needs / use-case.
 To automatically decide on the best learning algorithm without having to manually select between Precision and Recall, choose the algorithm with the highest F1 score.
-F1 score = 2 * P * R / (P + R) <= Harmonic mean. A mean calculation which pays attention to the lower value.
+F1 score = 2 * P * R / (P + R) <= Harmonic mean (a kind of average) of precision and recall.
+  - A mean calculation which pays attention to the lower value.
+  - When precision and recall are far apart, F1 will be similar to whichever metric is worse.
 
 Classification model evaluation metrics:
 (1) Accuracy
