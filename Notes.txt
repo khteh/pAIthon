@@ -468,6 +468,18 @@ Types of Layers:
 (2) Convolution: Neurons only look at regions of the data. Benefits:
     (i) Faster computation.
     (ii) Need less training data - less prone to overfitting.
+    
+Sigmoid:
+- maps a single real-valued number into a probability between 0 and 1 independently
+- binary classification (yes/no) or multi-label tasks where categories are independent.
+- treats each output node separately, meaning multiple outputs can be high or low at the same time. 
+- takes a single scalar input.
+
+Softmax:
+- converts a vector of raw scores into a normalized probability distribution where all values sum to 1
+- mutually exclusive multi-class classification (e.g., is this image a cat, dog, or horse?).
+- interconnects all outputs; if one class probability goes up, the others must go down.
+- takes a vector of inputs and divides each exponentiated score by the sum of all exponentiated scores.
 
 Dimensions:
 - n[l] = #units at layer l
